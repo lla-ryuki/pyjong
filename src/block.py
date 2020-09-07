@@ -1,6 +1,5 @@
-from enum import Enum
 
-class Block(Enum) :
+class Block :
     ## 旧版
     # PON = 1
     # CHI = 2
@@ -17,4 +16,11 @@ class Block(Enum) :
     OPENED_KAN = 5        # 明槓（大明槓, 加槓）
     CLOSED_KAN = 6        # 暗槓
     PAIR = 7              # 対子
+
+
+    # 面子構成
+    RUNS      = {Block.OPENED_RUN, Block.CLOSED_RUN}
+    TRIPLETS  = {Block.OPENED_TRIPLET, Block.CLOSED_TRIPLET}
+    KANS      = {Block.OPENED_KAN, Block.CLOSED_KAN}
+
 
