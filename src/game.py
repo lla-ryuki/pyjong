@@ -101,8 +101,8 @@ class Game :
     def _set_wall_containing_red(self) -> None :
         i, red = 0, False
         for j in range(1,38) :
-            if j in Kinds.blanks : continue
-            if j in Kinds.fives : red = True
+            if j in TileType.BLANKS : continue
+            if j in TileType.FIVES : red = True
             for k in range(4) :
                 if red :
                     self.wall[i] = j - 5
@@ -121,17 +121,17 @@ class Game :
 
         for i in range(5) :
             # ドラをセット
-            if dora_indicators[i] in Kinds.reds : indicator = dora_indicators[i] + 5
+            if dora_indicators[i] in TileType.REDS : indicator = dora_indicators[i] + 5
             else : indicator = dora_indicators[i]
-            if indicator in Kinds.nines : doras[i] = indicator - 8
+            if indicator in TileType.NINES : doras[i] = indicator - 8
             elif indicator == 34 : doras[i] = 31
             elif indicator == 37 : doras[i] = 35
             else : doras[i] = indicator + 1
 
             # 裏ドラをセット
-            if ura_indicators[i] in Kinds.reds : indicator = ura_indicators[i] + 5
+            if ura_indicators[i] in TileType.REDS : indicator = ura_indicators[i] + 5
             else : indicator = ura_indicators[i]
-            if ura_indicator in Kinds.nines : uras[i] = ura_indicator - 8
+            if ura_indicator in TileType.NINES : uras[i] = ura_indicator - 8
             elif ura_indicator == 34 : uras[i] = 31
             elif ura_indicator == 37 : uras[i] = 35
             else : uras[i] = ura_indicator + 1
@@ -179,7 +179,7 @@ class Game :
 
     # 暗槓が行われた時の処理
     def proc_ankan(self, tile: int) -> None :
-        if tile in Kinds.reds : tile += 5
+        if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 4
         self.is_first_turn = False
         self.open_new_dora()
@@ -188,14 +188,14 @@ class Game :
 
     # 加槓が行われた時の処理
     def proc_kakan(self, tile: int) -> None :
-        if tile in Kinds.reds : tile += 5
+        if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 1
         self.kakan_flag = True
 
 
     # 大明槓が行われた時の処理
     def proc_daiminkan(self, tile: int, action_players_num: int) -> None :
-        if tile in Kinds.reds : tile += 5
+        if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 3
         self.is_first_turn = False
         self.i_player = action_players_num
@@ -205,7 +205,7 @@ class Game :
 
     # ポンが行われた時の処理
     def proc_pon(self, tile: int, action_players_num : int) -> None :
-        if tile in Kinds.reds : tile += 5
+        if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 2
         self.is_first_turn = False
         self.has_stealed_flag = True
@@ -214,7 +214,7 @@ class Game :
 
     # チーが行われた時の処理
     def proc_chii(self, tile: int, tile1: int, tile2: int) -> None :
-        if tile in Kinds.reds :
+        if tile in TileType.REDS :
             tile += 5
             tile1 += 5
             tile2 += 5
@@ -417,7 +417,7 @@ class Game :
 
     # 和了牌をセット
     def set_winning_tile(self, tile: int) -> None:
-        if tile in Kinds.REDS : self.winning_tile = tile + 5
+        if tile in TileType.REDS : self.winning_tile = tile + 5
         else : self.winning_tile = tile
 
 
@@ -440,7 +440,7 @@ class Game :
 
     # 全員に公開されている牌を追加
     def add_to_appearing_tiles(self, tile: int) -> None :
-        if tile in Kinds.REDS :
+        if tile in TileType.REDS :
             self.appearing_red_tiles[tile // 10] = True
             self.appearing_tiles[tile + 5] += 1
         else : self.appearing_tiles[tile] += 1
@@ -569,7 +569,7 @@ class Game :
             if hand[i] == 0 : continue
             if hand[i] >= 2 :
                 hand[i] -= 2
-                self.temp[self.i_temp] = Block.TOITSU
+                self.temp[self.i_temp] = Block.PAIR
                 self.temp[self.i_temp+1] = i
                 self.i_temp += 2
                 self._pick_out_mentsu(player.has_stealed, hand);
@@ -588,8 +588,8 @@ class Game :
             if hand[i] == 0 : continue
             if hand[i] >= 3 :
                 hand[i] -= 3
-                if self.winning_tile == i and self.wins_by_ron and hand[i] == 0 : self.temp[self.i_temp] = Block.PON
-                else : self.temp[self.i_temp] = Block.ANKO
+                if self.winning_tile == i and self.wins_by_ron and hand[i] == 0 : self.temp[self.i_temp] = Block.CLOSED_TRIPLET
+                else : self.temp[self.i_temp] = Block.CLOSED_TRIPLET
                 self.temp[self.i_temp + 1] = i
                 self.i_temp += 2
                 self._pick_out_mentsu(has_stealed, hand)
@@ -601,7 +601,7 @@ class Game :
                 hand[i] -= 1
                 hand[i+1] -= 1
                 hand[i+2] -= 1
-                self.temp[self.i_temp] = Block.SYUNTSU
+                self.temp[self.i_temp] = Block.CLOSED_RUN
                 self.temp[self.i_temp+1] = i
                 self.i_temp += 2
                 self._pick_out_mentsu(has_stealed, hand)
@@ -651,31 +651,31 @@ class Game :
         if not(has_stealed) and self.wins_by_ron : fu += 10
         elif not(self.wins_by_ron) : fu += 2
         for i in range(0, 10, 2) :
-            if self.temp[i] == Block.SYUNTSU :
+            if self.temp[i] == Block.CLOSED_RUN :
                 if (self.temp[i+1] == self.winning_tile - 2 and self.temp[i+1] % 10 == 1) or \
                    (self.temp[i+1] == self.winning_tile and self.temp[i+1] % 10 == 7) or \
                    (self.temp[i+1] == self.winning_tile - 1) :
                     fu += 2
                     break
-            elif self.temp[i] == Block.TOITSU :
+            elif self.temp[i] == Block.PAIR :
                 if self.temp[i+1] == self.winning_tile :
                     fu += 2
                     break
         for i in range(0, 10, 2) :
-            if self.temp[i] == Block.PON :
+            if self.temp[i] == Block.OPENED_TRIPLET :
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 4
                 else : fu += 2
-            elif self.temp[i] == Block.TOITSU :
+            elif self.temp[i] == Block.PAIR :
                 if self.temp[i+1] >= 35 or self.temp[i+1] == self.prevailing_wind : fu += 2
                 if self.temp[i+1] == self.players_wind : fu += 2
-            elif self.temp[i] in [Block.CHI, Block.SYUNTSU] : continue
-            elif self.temp[i] == Block.ANKO :
+            elif self.temp[i] in Block.RUNS : continue
+            elif self.temp[i] == Block.CLOSED_TRIPLET :
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 8
                 else : fu += 4
-            elif self.temp[i] == Block.MINKAN :
+            elif self.temp[i] == Block.OPENED_KAN :
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 16
                 else : fu += 8
-            elif self.temp[i] == Block.ANKAN :
+            elif self.temp[i] == Block.CLOSED_KAN :
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 32
                 else : fu += 16
         if fu == 20 : fu = 30
@@ -758,7 +758,7 @@ class Game :
                 if players[self.i_player].is_nagashi_mangan : players[self.i_player].check_nagashi_mangan()
                 # 四風連打の判定
                 if self.is_first_turn and (4 + self.i_player - self.rotations_num) % 4 == 3 :
-                    if (discarded_tile in Kinds.WINDS) and (players[0].discarded_tiles[0] == players[1].discarded_tiles[0] == players[2].discarded_tiles[0] == players[3].discarded_tiles[0]) :
+                    if (discarded_tile in TileType.WINDS) and (players[0].discarded_tiles[0] == players[1].discarded_tiles[0] == players[2].discarded_tiles[0] == players[3].discarded_tiles[0]) :
                         self.is_abortive_draw = True
                 if self.is_abortive_draw : break
 
