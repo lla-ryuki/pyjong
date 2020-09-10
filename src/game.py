@@ -14,21 +14,15 @@ from yaku import *
 from yakuman import *
 
 
-"""
-Gameクラス
-イメージはゲームモデルでいうEnvironmentとAgentの複合体
-    Environment : あらゆる状態を保有するもの
-    Agent       : 状態を操作したり，何かを判定するもの
-"""
 class Game :
 
 
     def __init__(self) :
-        self.rounds_num = 0                             # 場 0:東場，1:南場，2:西場
-        self.rotations_num = 0                          # 局 0:1局目 ... 3:4局目
+        self.rounds_num = 0                            # 場 0:東場，1:南場，2:西場
+        self.rotations_num = 0                         # 局 0:1局目 ... 3:4局目
         self.counters_num = 0                          # 積み棒の数
         self.deposits_num = 0                          # 供託の数
-        self.prevailing_wind = 31 + self.rounds_num     # 場風にあたる牌番号
+        self.prevailing_wind = 31 + self.rounds_num    # 場風にあたる牌番号
         self.is_abortive_draw = False                  # 途中流局になるとTrueになる
         self.is_first_turn = True                      # Trueの間は1巡目であることを示す
         self.is_over = False                           # Trueになると半荘終了
@@ -61,7 +55,6 @@ class Game :
         self.i_rinshan = 0                             # 嶺上牌用のインデックス
         self.i_first_turn = 0                          # 最初の1巡目かどうかを判定するために使うインデックス
 
-        ######
         # 和了，点数計算関連
         self.winning_tile = -1                         # 和了牌の牌番号
         self.basic_points = 0                          # 和了の基本点
@@ -93,8 +86,61 @@ class Game :
 
     # 局開始時の初期化
     def init_subgame(self) -> None :
-        self.i_player = self.rotations_num
-        ### 書く必要あるで
+        self.is_abortive_draw = False                  # 途中流局になるとTrueになる
+        self.is_first_turn = True                      # Trueの間は1巡目であることを示す
+
+        self.prevailing_wind = 31 + self.rounds_num    # 場風にあたる牌番号
+        self.is_abortive_draw = False                  # 途中流局になるとTrueになる
+        self.is_first_turn = True                      # Trueの間は1巡目であることを示す
+        self.pao_info = [-1] * 4
+
+        # 牌の状態
+        self.doras = [0] * 5                           # ドラ
+        self.dora_indicators = [0] * 5                 # ドラ表示牌
+        self.uras = [0] * 5                            # 裏
+        self.ura_indicators = [0] * 5                  # 裏表示牌
+        self.dora_has_opened = [False] * 5             # ドラの状態, i番目がTrue → dora_indicators[i]がめくれている状態
+        self.rinshan_tiles = [0] * 4                   # 嶺上牌
+        self.appearing_tiles = [0] * 38                # プレイヤ全員に見えている牌， appearing_tiles[i] が j → i番の牌がj枚見えている
+        self.appearing_red_tiles = [False] * 3         # プレイヤ全員に見えている赤牌． 萬子，筒子，索子の順．
+        self.wall = [0] * 136                          # 山
+
+        # インデックス
+        self.i_player = self.rotations_num             # 次のループで行動するプレイヤの番号
+        self.i_wall = 0                                # 山用のインデックス
+        self.i_rinshan = 0                             # 嶺上牌用のインデックス
+        self.i_first_turn = 0                          # 最初の1巡目かどうかを判定するために使うインデックス
+
+        # 和了，点数計算関連
+        self.winning_tile = -1                         # 和了牌の牌番号
+        self.basic_points = 0                          # 和了の基本点
+        self.dealer_wins = False
+        self.wins_by_ron = False
+        self.wins_by_tenhou = False
+        self.wins_by_chiihou = False
+        self.wins_by_last_tile = False
+        self.wins_by_chankan = False
+        self.wins_by_rinshan_kaihou = False
+        self.wins_by_pao= False
+        self.liability_player = -1
+        self.temp = [0] * 10                           # 向聴数計算に使う配列
+        self.fu = 0                                    # 符の数
+        self.han = 0                                   # 翻の数
+        self.i_temp = 0                                # temp[]用のindex
+        self.fu_temp = 0                               # 符の数（仮）
+        self.han_temp = 0                              # 翻の数（仮）
+        self.yakuman = 0                               # 役満の数
+
+        # 分岐処理用flag
+        self.win_flag = False                          # 局終了判定処理用
+        self.ready_flag = False                        # リーチ宣言時の放銃処理用
+        self.daiminkan_flag = False                    # 大明槓処理用
+        self.kakan_flag = False                        # 加槓処理用
+        self.ankan_flag = False                        # 暗槓処理用
+        self.has_stealed_flag = False                  # 手出し処理用
+
+        self._set_doras()
+        self._set_rinshan_tiles()
 
 
     # 赤有りの牌山を生成
@@ -225,7 +271,9 @@ class Game :
 
 
     # 点数計算前の準備
-    def _preproc_calc_score(self, i_winner: int) -> None :
+    def _preproc_calculating_basic_points(self, i_winner: int) -> None :
+        # プレイヤの風牌を記録
+        self.players_wind = 31 + (((i_winner + 4) - self.rounds_num) % 4)
         # 親かどうかを確認
         if self.rotations_num == i_winner : self.dealer_wins = True
         else : self.dealer_wins = False
@@ -250,33 +298,33 @@ class Game :
     # ロン和了の処理
     def _proc_ron(self, players: List[Player], i_winner: int) -> int :
         # 基本点から得点を算出
-        if self.dealer_wins : score = self.basic_points * 6
-        else : score = self.basic_points * 4
+        if self.dealer_wins : points = self.basic_points * 6
+        else : points = self.basic_points * 4
 
         # 点数移動
         if self.wins_by_pao:
-            players[self.i_player].score(-1 * (score // 2))
-            players[liability_player].score(-1 * ((score // 2) + (300 * self.counters_num)))
-            players[self.i_player].score(score)
+            players[self.i_player].score_points(-1 * (points // 2))
+            players[liability_player].score_points(-1 * ((points // 2) + (300 * self.counters_num)))
+            players[self.i_player].score_points(points)
         else :
-            if score % 100 != 0 : score += int(100 - (score % 100)) # 100の位で切り上げ
-            players[self.i_player].score(-1 * (score + (300 * self.counters_num)))
-            players[i_winner].score(score)
+            if points % 100 != 0 : points += int(100 - (points % 100)) # 100の位で切り上げ
+            players[self.i_player].score_points(-1 * (points + (300 * self.counters_num)))
+            players[i_winner].score_points(points)
 
 
     # ツモ和了の処理
     def _proc_tsumo(self, players: List[Player], i_winner: int) -> int :
         if self.wins_by_pao:
-            if not(self.dealer_wins) : score = self.basic_points * 4
-            else : score = self.basic_points * 6
-            players[liability_player].score(-1 * (score + (300 * self.counters_num)))
-            players[self.i_player].score(score)
+            if not(self.dealer_wins) : points = self.basic_points * 4
+            else : points = self.basic_points * 6
+            players[liability_player].score_points(-1 * (points + (300 * self.counters_num)))
+            players[self.i_player].score_points(points)
         else :
             if self.dealer_wins :
-                score = self.basic_points * 2
-                if score % 100 != 0 : score += (100 - (score % 100))
-                for i in range(1,4) : players[(i_winner + i) % 4].score(-1 * (score + (100 * self.counters_num)))
-                players[i_winner].score(score * 3)
+                points = self.basic_points * 2
+                if points % 100 != 0 : points += (100 - (points % 100))
+                for i in range(1,4) : players[(i_winner + i) % 4].score_points(-1 * (points + (100 * self.counters_num)))
+                players[i_winner].score_points(points * 3)
             else :
                 score_which_dealer_pay = self.basic_points * 2
                 if score_which_dealer_pay % 100 != 0 : score_which_dealer_pay += (100 - (score_which_dealer_pay % 100))
@@ -285,11 +333,11 @@ class Game :
                 for i in range(1,4) :
                     i_payer = (i_winner + i) % 4
                     if i_payer != self.rotations_num :
-                        players[i_payer].score(-1 * (score_which_child_pay + (100 * self.counters_num)))
-                        players[i_winner].score(score_which_child_pay)
+                        players[i_payer].score_points(-1 * (score_which_child_pay + (100 * self.counters_num)))
+                        players[i_winner].score_points(score_which_child_pay)
                     else :
-                        players[i_payer].score(-1 * (score_which_dealer_pay + (100 * self.counters_num)))
-                        players[self.i_player].score(score_which_dealer_pay)
+                        players[i_payer].score_points(-1 * (score_which_dealer_pay + (100 * self.counters_num)))
+                        players[self.i_player].score_points(score_which_dealer_pay)
 
 
     # 和了時の処理
@@ -299,12 +347,12 @@ class Game :
         for i in range(4) :
             i_winner = (self.i_player + i) % 4
             if players[i_winner].wins :
-                self._preproc_calc_score()
-                self.basic_points = self._calc_basic_points(players[self.i_player])
+                self._preproc_calculating_basic_points()
+                self.basic_points = self._calculate_basic_points(players[self.i_player])
                 if self.wins_by_ron : self._proc_ron(i_winner)
                 else : self._proc_tsumo(i_winner)
-                players[i_winner].score(300 * self.counters_num)
-                players[i_winner].score(1000 * self.deposits_num)
+                players[i_winner].score_points(300 * self.counters_num)
+                players[i_winner].score_points(1000 * self.deposits_num)
                 self.counters_num, self.deposits_num = 0, 0
                 if i == 0 : break
         # ゲーム終了判定
@@ -323,7 +371,7 @@ class Game :
     def proc_drawn_game(self, players: List[Player]) -> None :
         tenpai_players_num = 0
         for i in range(4) :
-            if players[i].is_tenpai : tenpai_players_num += 1
+            if players[i].is_ready : tenpai_players_num += 1
         if tenpai_players_num != 0 and tenpai_players_num != 4 :
             not_tenpai_penalty = 3000 // tenpai_players_num
             tenpai_reward = -3000 // (4 - tenpai_players_num)
@@ -331,13 +379,13 @@ class Game :
             penalty = 0
             reaward = 0
         for i in range(4) :
-            if players[i].is_tenpai : players[i].score(tenpai_reward)
-            else : players[i].score(not_tenpai_penalty)
+            if players[i].is_ready : players[i].score_points(tenpai_reward)
+            else : players[i].score_points(not_tenpai_penalty)
         # ゲーム終了判定
-        self.is_over = self._check_game_is_over(players, players[self.rotations_num].is_tenpai)
+        self.is_over = self._check_game_is_over(players, players[self.rotations_num].is_ready)
         # 局の数等の変数操作
         self.counters_num += 1
-        if players[self.rotations_num].is_tenpai is False :
+        if players[self.rotations_num].is_ready is False :
             self.rotations_num += 1
             if self.rotations_num == 4 :
                 self.rounds_num += 1
@@ -349,18 +397,18 @@ class Game :
         for i in range(4) :
             if players[i].is_nagashi_mangan :
                 if self.rotations_num == i :
-                    players[i].score(12000)
-                    for j in range(1,4) : players[(i+j)%4].score(-4000)
+                    players[i].score_points(12000)
+                    for j in range(1,4) : players[(i+j)%4].score_points(-4000)
                 else :
-                    players[i].score(8000)
+                    players[i].score_points(8000)
                     for j in range(1,4) :
-                        if ((i+j)%4) == self.rotations_num : players[(i+j)%4].score(-4000)
-                        else : players[(i+j)%4].score(-2000)
+                        if ((i+j)%4) == self.rotations_num : players[(i+j)%4].score_points(-4000)
+                        else : players[(i+j)%4].score_points(-2000)
         # ゲーム終了判定
-        self.is_over = self._check_game_is_over(players, players[self.rotations_num].is_tenpai)
+        self.is_over = self._check_game_is_over(players, players[self.rotations_num].is_ready)
         # 局の数等の変数操作
         self.counters_num += 1
-        if players[self.rotations_num].is_tenpai is False :
+        if players[self.rotations_num].is_ready is False :
             self.rotations_num += 1
             if self.rotations_num == 4 :
                 self.rounds_num += 1
@@ -466,21 +514,19 @@ class Game :
             if not(player.has_stealed) and not(self.wins_by_ron) : self.han += 1
             if self.wins_by_rinshan_kaihou : self.han += 1
             if self.wins_by_last_tile : self.han += 1
-            # if self.wins_by_haitei : self.han += 1
-            # if self.wins_by_houtei : self.han += 1
             if self.wins_by_chankan : self.han += 1
-            if self.tanyao(hand) : self.han += 1
-            if self.prevailing_wind(hand, self.prevailing_wind) : self.han += 1
-            if self.players_wind(hand, self.players_wind) : self.han += 1
-            if self.white(hand) : self.han += 1
-            if self.green(hand) : self.han += 1
-            if self.red(hand) : self.han += 1
-            if self.honroutou(hand) : self.han += 2
-            if self.syousangen(hand) : self.han += 2
-            if self.honitsu(hand) :
+            if all_simples(hand) : self.han += 1
+            if prevailing_wind(hand, self.prevailing_wind) : self.han += 1
+            if players_wind(hand, self.players_wind) : self.han += 1
+            if white_dragon(hand) : self.han += 1
+            if green_dragon(hand) : self.han += 1
+            if red_dragon(hand) : self.han += 1
+            if all_terminals_and_honors(hand) : self.han += 2
+            if little_three_dragons(hand) : self.han += 2
+            if half_flush(hand) :
                 if not(player.has_stealed) : self.han += 3
                 else : self.han += 2
-            if chinitsu(hand) :
+            if flush(hand) :
                 if not(player.has_stealed) : self.han += 6
                 else : self.han += 5
             if player.red[0] : self.han += 1
@@ -489,8 +535,10 @@ class Game :
             for i in range(5) :
                 if self.dora_has_opened[i] :
                     self.han += hand[self.doras[i]]
-                    if player.has_declared_ready or player.has_declared_double_ready : self.han += hand[self.uras[i]]
-            if self.han < 13 : self._analyze_best_composition(player)
+                    if player.has_declared_ready or player.has_declared_double_ready :
+                        self.han += hand[self.uras[i]]
+            if self.han < 13 :
+                self._analyze_best_composition(player)
             else : self.yakuman = 1
 
 
@@ -506,13 +554,11 @@ class Game :
             if not(self.wins_by_ron) : self.han += 1
             if self.wins_by_rinshan_kaihou : self.han += 1
             if self.wins_by_last_tile : self.han += 1
-            # if self.wins_by_haitei : self.han += 1
-            # if self.wins_by_houtei : self.han += 1
             if self.wins_by_chankan : self.han += 1
-            if tanyao(hand) : self.han += 1
-            if chinitsu(hand) : self.han += 6
-            if honitsu(hand) : self.han += 3
-            if honroutou(hand) : self.han += 2
+            if all_simples(hand) : self.han += 1
+            if flush(hand) : self.han += 6
+            if half_flush(hand) : self.han += 3
+            if all_terminals_and_honors(hand) : self.han += 2
             if player.red[0] : self.han += 1
             if player.red[1] : self.han += 1
             if player.red[2] : self.han += 1
@@ -525,18 +571,18 @@ class Game :
 
 
     # 基本点の計算
-    def _calc_basic_points(self, player: Player) -> int :
+    def _calculate_basic_points(self, player: Player) -> int :
         self.han = 0
         if self.wins_by_tenhou : self.yakuman += 1
         if self.wins_by_chiihou : self.yakuman += 1
-        player.calc_shanten_num_of_kokushi()
-        player.calc_shanten_num_of_chiitoi()
-        player.calc_shanten_num_of_normal()
+        player.calculate_shanten_num_of_kokushi()
+        player.calculate_shanten_num_of_chiitoi()
+        player.calculate_shanten_num_of_normal()
         if player.shanten_num_of_normal == -1 : self._count_han_of_normal_hand(player)
         elif player.shanten_num_of_chiitoi == -1 : self._count_han_of_seven_pairs_hand(player)
         elif player.shanten_num_of_kokushi == -1 : self.yakuman += 1
         else :
-            print("error : Game._calc_basic_points")
+            print("error : Game._calculate_basic_points")
 
         basic_points = self.fu * (2 ** (self.han + 2))
         if self.yakuman > 0 : basic_points = self.yakuman * 8000
@@ -637,12 +683,14 @@ class Game :
         if three_kans(self.temp) : han_temp += 2
         if han_temp > self.han :
             self.han = han_temp
-            self.fu = self._calc_fu(has_stealed)
+            self.fu = self._calculate_fu(has_stealed)
         elif han_temp == self.han :
-            fu_temp = self._calc_fu(has_stealed)
+            fu_temp = self._calculate_fu(has_stealed)
             if fu_temp > self.fu : self.fu = fu_temp
 
-    def _calc_fu(self, has_stealed: bool) -> int :
+
+    # 符計算
+    def _calculate_fu(self, has_stealed: bool) -> int :
         fu = 0
         if no_points_hand(self.temp, self.winning_tile, self.prevailing_wind, self.players_wind) :
             if self.wins_by_ron : return 30
@@ -782,7 +830,7 @@ class Game :
                     if self.ready_flag :
                         self.deposits_num -= 1
                         self.ready_flag = False
-                        players[self.i_player].score(1000)
+                        players[self.i_player].score_points(1000)
                         players[i_winner].get_tile(tile)
                         self.win_flag = True
                         self.wins_by_ron = True
