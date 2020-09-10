@@ -529,9 +529,9 @@ class Game :
             if flush(hand) :
                 if not(player.has_stealed) : self.han += 6
                 else : self.han += 5
-            if player.red[0] : self.han += 1
-            if player.red[1] : self.han += 1
-            if player.red[2] : self.han += 1
+            if player.reds[0] : self.han += 1
+            if player.reds[1] : self.han += 1
+            if player.reds[2] : self.han += 1
             for i in range(5) :
                 if self.dora_has_opened[i] :
                     self.han += hand[self.doras[i]]
@@ -559,9 +559,9 @@ class Game :
             if flush(hand) : self.han += 6
             if half_flush(hand) : self.han += 3
             if all_terminals_and_honors(hand) : self.han += 2
-            if player.red[0] : self.han += 1
-            if player.red[1] : self.han += 1
-            if player.red[2] : self.han += 1
+            if player.reds[0] : self.han += 1
+            if player.reds[1] : self.han += 1
+            if player.reds[2] : self.han += 1
             for i in range(5) :
                 if self.dora_has_opened[i] :
                     self.han += hand[self.doras[i]]
