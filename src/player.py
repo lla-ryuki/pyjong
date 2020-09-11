@@ -12,6 +12,8 @@ from tile_type import TileType
 
 """
 ツモ切りのDとd逆にしたい
+変数名 mentsu tahtsu
+
 """
 
 
@@ -108,75 +110,52 @@ class Player :
         self.starting_hand = []
         self.tiles_player_drew = []
 
-        # self.hand = [0] * 38
-        # self.opened_hand = [0] * 20
-        # self.has_stealed = False
-        # self.opened_sets_num = 0
-        # self.discarded_tiles = []
-        # self.discarded_state = []
-        # self.furiten_tiles = [0] * 38
-        # self.round_furiten_tiles = []
-        # self.red = [False] * 3
-        # self.tsumo = -1
-        # self.action = [-1, False, False, False, False]
-        # self.riichi = False
-        # self.d_riichi = False
-        # self.ready = True
-        # self.ippatsu = False
-        # self.win = False
-        # self.all_discarded_tiles_are_edge_tiles = True
-        # self.num_of_dragon = 0
-        # self.num_of_winds = 0
-        # self.num_of_kan = 0
-        # self.syanten_num_of_kokushi = 13
-        # self.syanten_num_of_chiitoi = 6
-        # self.syanten_num_of_normal = 8
-        # self.syanten_num_of_temp = 0
-        # self.n_mentsu = 0
-        # self.n_pair = 0
-        # self.n_taatsu = 0
-        # self.composition_of_hand = [0] * 10
-        # self.p_composition_of_hand = 0
-        # self.behavior = []
-        # self.first_hand = []
-        # self.tsumo_tiles = []
 
 
-    def calc_syanten_num_of_kokushi(self, int ron_tile = -1) : #国士無双のシャンテン数を返す
-        def int[38] hand = self.hand
-        def int i, pair, syanten_num
+    # 国士無双の向聴数を返す
+    def calc_syanten_num_of_kokushi(self, tile:int = -1 ) :
+        hand = deepcopy(self.hand) # handに牌を足す可能性がある時は元のhandが壊れないようにコピーを作る
 
-        if ron_tile > -1 :
-            if ron_tile in [0,10,20] : ron_tile += 5
-            hand[ron_tile] += 1
-        pair = 0
+        if tile > -1 :
+            if tile in TileType.REDS :
+                tile += 5
+            hand[tile] += 1
+
+        pairs_num = 0
         syanten_num = 13
-        for i in [1,9,11,19,21,29,31,32,33,34,35,36,37] :
+
+        for i in (TileType.TERMINALS | TileType.HONORS) :
             if hand[i] != 0 : syanten_num -= 1
-            if hand[i] > 1 and pair == 0 : pair = 1
-        syanten_num -= pair
+            if hand[i] > 1 and pairs_num == 0 : pairs_num = 1
+
+        syanten_num -= pairs_num
         self.syanten_num_of_kokushi = syanten_num
-        ###print("syanten_num : %d" % syanten_num)
+
         return syanten_num
 
-    def list effective_tiles_of_kokushi(self) :
-        def int[38] hand = self.hand
-        def int[38] effective_tiles = [0] * 38
-        def int i, n_syanten
-        ###print(effective_tiles)
-        n_syanten = self.calc_syanten_num_of_kokushi()
-        for i in [1,9,11,19,21,29,31,32,33,34,35,36,37] :
-            if self.calc_syanten_num_of_kokushi(i) < n_syanten : effective_tiles[i] = 1
+
+    # 国士無双の有効牌のリストを返す
+    def effective_tiles_of_kokushi(self) -> list :
+        hand = deepcopy(self.hand)
+        effective_tiles = [0] * 38
+
+        syanten_num = self.calc_syanten_num_of_kokushi()
+        for i in (TileType.TERMINALS | TileType.HONORS) :
+            if self.calc_syanten_num_of_kokushi(i) < syanten_num : effective_tiles[i] = 1
+
         return effective_tiles
 
-    def int calc_syanten_num_of_chiitoi(self, int ron_tile = -1) : #七対子のシャンテン数を返す
-        def int[38] hand = self.hand
-        def int i, syanten_num ,kind
-        if ron_tile > -1 :
-            if ron_tile in [0,10,20] : ron_tile += 5
-            hand[ron_tile] += 1
+
+    # 七対子の向聴数を返す
+    def calc_syanten_num_of_chiitoi(self, tile: int = -1) -> int :
+        hand = deepcopy(self.hand)
+
+        if tile > -1 :
+            if tile in TileType.REDS : tile += 5
+            hand[tile] += 1
+
         syanten_num = 6
-        kind = 0
+        kind = 0 # 6対子あっても孤立牌がないと聴牌にならないのでそれのチェック用
         for i in range(1,38) :
             if hand[i] >= 1 :
                 kind += 1
@@ -184,28 +163,35 @@ class Player :
                 syanten_num -= 1
         if kind < 7 :
             syanten_num += 7 - kind
+
         self.syanten_num_of_chiitoi = syanten_num
+
         return syanten_num
 
-    def list effective_tiles_of_chiitoi(self) :
-        def int[38] effective_tiles = [0] * 38
-        def int i, n_syanten
-        n_syanten = self.calc_syanten_num_of_chiitoi()
+
+    # 七対子の有効牌のリストを返す
+    def effective_tiles_of_chiitoi(self) -> list :
+        effective_tiles = [0] * 38
+        syanten_num = self.calc_syanten_num_of_chiitoi()
         for i in range(38) :
             if i % 10 == 0 : continue
-            if self.calc_syanten_num_of_chiitoi(i) < n_syanten : effective_tiles[i] = 1
+            if self.calc_syanten_num_of_chiitoi(i) < syanten_num : effective_tiles[i] = 1
+
         return effective_tiles
 
-    def int calc_syanten_num_of_normal(self, int ron_tile = -1) :
+
+    # 通常手の向聴数を返す
+    def calc_syanten_num_of_normal(self, tile: int = -1) :
+        hand = deepcopy(self.hand)
         self.syanten_num_of_normal = 8
-        self.n_mentsu = self.displayed_num
-        self.n_pair = 0
-        self.n_taatsu = 0
-        def int i
-        def int[38] hand = self.hand
-        if ron_tile > -1 :
-            if ron_tile in [0,10,20] : ron_tile += 5
-            hand[ron_tile] += 1
+        self.sets_num = self.opened_sets_num
+        self.pairs_num = 0
+        self.tahtsu_num = 0
+
+        if tile > -1 :
+            if tile in TileType.REDS : tile += 5
+            hand[tile] += 1
+
         for i in range(1,38) :
             if hand[i] >= 2 :
                 self.n_pair += 1
@@ -214,22 +200,24 @@ class Player :
                 hand[i] += 2
                 self.n_pair -= 1
         self._pick_out_mentsu(1, hand)
-        ###print("syanten_num : %d" % self.syanten_num_of_normal)
+
         return self.syanten_num_of_normal
 
-    def void _pick_out_mentsu(self, int i, int[:] hand) :
+
+    # 面子を抜き出す
+    def _pick_out_mentsu(self, i:int , hand: List[int]) -> None :
         while i < 38 and hand[i] == 0 : i += 1
         if i > 37 :
-            self._pick_out_taatsu(1, hand)
+            self._pick_out_tahtsu(1, hand)
             return
         if hand[i] > 2 :
-            self.n_mentsu += 1
+            self.mentsu_num += 1
             hand[i] -= 3
             self._pick_out_mentsu(i, hand)
             hand[i] += 3
-            self.n_mentsu -= 1
+            self.mentsu_num -= 1
         if  i < 28 and hand[i+1] > 0 and hand[i+2] > 0 :
-            self.n_mentsu += 1
+            self.mentsu_num += 1
             hand[i] -= 1
             hand[i+1] -= 1
             hand[i+2] -= 1
@@ -237,50 +225,53 @@ class Player :
             hand[i] += 1
             hand[i+1] += 1
             hand[i+2] += 1
-            self.n_mentsu -= 1
+            self.mentsu_num -= 1
         self._pick_out_mentsu(i+1, hand)
 
-    def void _pick_out_taatsu(self, int i, int[:] hand) :
+
+    # 塔子を抜き出す
+    def _pick_out_tahtsu(self, i: int, hand: List[int]) -> None :
         while i < 38 and hand[i] == 0 : i += 1
         if i > 37 :
-            self.syanten_num_of_temp = 8 - self.n_mentsu * 2 - self.n_taatsu - self.n_pair
+            self.syanten_num_of_temp = 8 - self.mentsu_num * 2 - self.n_tahtsu - self.n_pair
             if self.syanten_num_of_temp < self.syanten_num_of_normal :
                 self.syanten_num_of_normal = self.syanten_num_of_temp
             return
-        if self.n_mentsu + self.n_taatsu < 4 :
+        if self.mentsu_num + self.n_tahtsu < 4 :
             if hand[i] == 2 :
-                self.n_taatsu += 1
+                self.n_tahtsu += 1
                 hand[i] -= 2
-                self._pick_out_taatsu(i, hand)
+                self._pick_out_tahtsu(i, hand)
                 hand[i] += 2
-                self.n_taatsu -= 1
+                self.n_tahtsu -= 1
             if i < 29 and hand[i+1] != 0 :
-                self.n_taatsu += 1
+                self.n_tahtsu += 1
                 hand[i] -= 1
                 hand[i+1] -= 1
-                self._pick_out_taatsu(i, hand)
+                self._pick_out_tahtsu(i, hand)
                 hand[i] += 1
                 hand[i+1] += 1
-                self.n_taatsu -= 1
+                self.n_tahtsu -= 1
             if i < 29 and i % 10 < 9 and hand[i+2] != 0 :
-                self.n_taatsu += 1
+                self.n_tahtsu += 1
                 hand[i] -= 1
                 hand[i+2] -= 1
-                self._pick_out_taatsu(i, hand)
+                self._pick_out_tahtsu(i, hand)
                 hand[i] += 1
                 hand[i+2] += 1
-                self.n_taatsu -= 1
-        self._pick_out_taatsu(i+1, hand)
+                self.n_tahtsu -= 1
+        self._pick_out_tahtsu(i+1, hand)
 
-    def list effective_tiles_of_normal(self) :
-        def int[38] not_alone_tiles, effective_tiles
-        def int n_syanten, i
+
+    # 通常手の有効牌のリストを返す
+    def effective_tiles_of_normal(self) -> list :
         effective_tiles = [0] * 38
         not_alone_tiles = self._is_not_alone_tiles()
-        n_syanten = self.calc_syanten_num_of_normal()
+        syanten_num = self.calc_syanten_num_of_normal()
+
         for i in range(1, 38) :
             if not_alone_tiles[i] == 0 : continue
-            if self.calc_syanten_num_of_normal(i) < n_syanten : effective_tiles[i] = 1
+            if self.calc_syanten_num_of_normal(i) < syanten_num : effective_tiles[i] = 1
         return effective_tiles
 
     def list _is_not_alone_tiles(self) :

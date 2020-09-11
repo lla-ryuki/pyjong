@@ -626,6 +626,7 @@ class Game :
 
 
     # 面子を抜き出す
+    ## 和了が確定してからしか呼ばれないので高速化のためにPlayer._pick_out_mentsu()でやらなくていい部分を省いている．別物.
     def _pick_out_mentsu(self, has_stealed: bool, hand: List[int]) -> None:
         for i in range(1,38) :
             if self.temp[9] != 0 :
