@@ -12,7 +12,8 @@ from tile_type import TileType
 
 """
 ツモ切りのDとd逆にしたい
-変数名 mentsu tahtsu
+
+tile, exchanged, ready, ankan, kakan, kyushu = players[self.i_player].decide_action(self, players)
 
 """
 
@@ -47,8 +48,8 @@ class Player :
         self.kans_num = 0                                 # 槓した回数
 
         self.players_wind = 31 + self.player_num          # 自風
-        self.last_tile_drawn = -1                         # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
-        self.last_tile_discarded = -1                     # 最後に切った牌 赤牌は番号そのまま(10:赤5筒)
+        self.last_added_tile = -1                         # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
+        self.last_discarded_tile = -1                     # 最後に切った牌 赤牌は番号そのまま(10:赤5筒)
 
         # 手牌いろいろ計算用
         self.syanten_num_of_kokushi = 13
@@ -91,8 +92,8 @@ class Player :
         self.kans_num = 0                                 # 槓した回数
 
         self.players_wind = 31 + (((self.player_num+4) - rotations_num)%4)
-        self.last_tile_drawn = -1                         # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
-        self.last_tile_discarded = -1                     # 最後に切った牌 赤牌は番号そのまま(10:赤5筒)
+        self.last_added_tile = -1                         # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
+        self.last_discarded_tile = -1                     # 最後に切った牌 赤牌は番号そのまま(10:赤5筒)
 
         # 手牌いろいろ計算用
         self.syanten_num_of_kokushi = 13
@@ -274,67 +275,59 @@ class Player :
             if self.calc_syanten_num_of_normal(i) < syanten_num : effective_tiles[i] = 1
         return effective_tiles
 
-    def list _is_not_alone_tiles(self) :
-        #i番の牌を引いた時に孤立牌になる　　 : not_alone_tiles[i] = 0
-        #i番の牌を引いた時に孤立牌にならない : not_alone_tiles[i] = 1
-        def int[38] not_alone_tiles, temp
+
+    # ある牌を引いた時孤立牌になるかどうかの情報が入ったリストを返す
+    ## i番の牌を引いた時に孤立牌になる　　 : not_alone_tiles[i] = 0
+    ## i番の牌を引いた時に孤立牌にならない : not_alone_tiles[i] = 1
+    def _is_not_alone_tiles(self) -> list :
         not_alone_tiles = [0] * 38
-        temp = [0] * 38
+
         for i in range(1, 38) :
             if self.hand[i] == 0 : continue
             if i < 30 :
                 if i % 10 == 1 :
-                    temp[i] = 1
-                    temp[i+1] = 1
-                    temp[i+2] = 1
+                    not_alone_tiles[i:i+3] = [1] * 3
                 elif i % 10 == 2 :
-                    temp[i] = 1
-                    temp[i+1] = 1
-                    temp[i+2] = 1
-                    temp[i-1] = 1
+                    not_alone_tiles[i-1:i+3] = [1] * 4
                 elif i % 10 >= 3 and i % 10 <= 7 :
-                    temp[i] = 1
-                    temp[i+1] = 1
-                    temp[i+2] = 1
-                    temp[i-1] = 1
-                    temp[i-2] = 1
+                    not_alone_tiles[i-2:i+3] = [1] * 5
                 elif i % 10 == 8 :
-                    temp[i] = 1
-                    temp[i+1] = 1
-                    temp[i-2] = 1
-                    temp[i-1] = 1
+                    not_alone_tiles[i-2:i+2] = [1] * 4
                 elif i % 10 == 9 :
-                    temp[i] = 1
-                    temp[i-1] = 1
-                    temp[i-2] = 1
-            elif i > 30 : temp[i] = 1
-        for i in range(1, 38) :
-            if temp[i] == 0 : continue
-            not_alone_tiles[i] = 1
+                    not_alone_tiles[i-2:i+1] = [1] * 3
+            elif i > 30 : not_alone_tiles[i] = 1
+
         return not_alone_tiles
 
-    def void change_score(self, int point) : self.score += point
 
-    def void declare_riichi(self, bool first_round) :
-        if first_round : self.d_riichi = True
-        else : self.riichi = True
-        self.ippatsu = True
-        ##print("player %d riichi" % self.player_num)
-        ##print(self.score)
+    # 点棒の授受
+    def score_points(self, points: int) -> None :
+        self.score += points
+
+
+    # 立直宣言
+    def declare_ready(self, is_first_turn: bool) -> None :
+        if is_first_turn : self.has_declared_double_ready = True
+        else : self.has_declared_ready = True
+        self.has_right_to_one_shot = True
         self.score -= 1000
-        ##print(self.score)
 
-    def void get_tile(self, int tile, bool first_hand = False) :
-        self.tsumo = tile
-        if tile in [0, 10, 20] :
-            if first_hand is False : self.tsumo_tiles.append(51 + (tile // 10))
-            self.red[(tile//10)] = True
+
+    # 牌を手牌に加える．配牌取得，ツモ，ロンで使う．
+    ### get_tile()にするとgetterと紛らわしいのでこの名前になった.もうちょっといい名前ないか?
+    ### ツモる時以外にも使うのでdraw_tile()は相応しくないと判断
+    def add_tile_to_hand(self, tile: int, starting_hand: bool = False) -> None :
+        self.last_added_tile = tile
+        if tile in TileType.REDS :
+            if starting_hand is False : self.tsumo_tiles.append(51 + (tile // 10))
+            self.reds[tile//10] = True
             tile += 5
-        elif first_hand is False : self.tsumo_tiles.append(tile + 10)
+        elif starting_hand is False : self.tsumo_tiles.append(tile + 10)
         self.hand[tile] += 1
 
-    def int discard_tile(self) :
-        def int discarded_tile = self.action[0]
+    # 牌を捨てる
+    def discard_tile(self) -> int :
+        discarded_tile = self.action[0]
         self.discarded_state += [self.action[4]]
         self.discarded_tiles += [discarded_tile]
         if self.action[3] is False :
@@ -602,7 +595,7 @@ class Player :
             return True
         else : return False
 
-    def list set_action(self, action) : self.action = action
+    def list decide_action(self, action) : self.action = action
 
     def void proc_ankan(self) :
         def int tile
@@ -740,10 +733,10 @@ class Player :
                 else : s_hand += "中"
         #print(s_hand)
 
-    def void add_to_first_hand(self, int tile) :
+    def void add_to_starting_hand(self, int tile) :
         if tile in [0, 10, 20] : tile = 51 + (tile // 10)
         else : tile += 10
-        self.first_hand.append(tile)
+        self.starting_hand.append(tile)
 
     def void set_hand(self) :
         def int[38] hand
@@ -753,3 +746,66 @@ class Player :
             hand[29] += 1
         for i in range(21, 30) : hand[i] += 1
         self.hand = hand
+
+
+    # 暗槓できるかどうか判定，できる場合は暗槓できる牌の牌番号のリストを返す
+    def _can_ankan(self, game: Game) -> List[int] :
+        can_ankan_tiles = []
+
+        # 手牌の中に暗槓できる牌があったらcan_ankan_tilesに牌番号を追加
+        for i in range(1,38) :
+            if self.hand[i] == 4 : can_ankan_tiles.append(i)
+
+        # 暗槓できる牌が無かったら空listをreturn
+        if not(can_ankan_tiles) : return can_ankan_tiles
+
+        # ルール上槓できるかをチェック
+        opened_doras_num = 0
+        for state in game.dora_has_opened :
+            if state : opened_doras_num += 1
+        #
+        if opened_doras_num == 5 : return []
+
+        return can_ankan_tiles
+
+
+
+    # 槓しないか or どの牌で槓するか決める
+    def _deside_which_tile_to_kan(self, game: Game, playes: List[Player]) -> int :
+        ### 今は強制的に槓しないようにする
+        ### NNの計算とかが入る
+        return -1
+
+
+    # 槓するかどうか決める
+    def _decide_to_kan(self, game, players) :
+        tile, ankan, kakan = -1, False, False
+
+        # 槓できるか判定
+        can_ankan_tiles = self._can_ankan(game)
+        can_kakan_tiles = self._can_kakan(game)
+
+        # プレイヤが槓の内容（どの牌で槓するか，しないか）を決める
+        tile = self._deside_which_tile_to_kan(game, players)
+        if tile in can_ankan_tiles : ankan = True
+        elif tile in can_kakan_tiles : kakan = True
+        else : tile = -1 # deside_which_tile_to_kan()でとんでもないものが帰ってきたときにバグらないように一応制御
+
+        return tile, ankan, kakan
+
+    def decide_action(self, game, players) :
+        # プレイヤの行動決定，tile:赤は(0,10,20)表示
+        tile, ankan, kakan, ready, exchanged = -1, False, False, False, False
+        dummy = None
+
+        # 槓するかどうか決める
+        tile, ankan, kakan = self._decide_to_kan()
+        if ankan or kakan : return tile, ankan, kakan, ready, exchanged
+
+        # 切る牌を決める．赤は(0, 10, 20)．
+        tile = self.deside_which_tile_to_discard()
+
+        # 立直するかどうか決める
+        ready = self.decide_to_declare_ready(tile)
+
+        return tile, ankan, kakan, ready, exchanged
