@@ -27,6 +27,26 @@ ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open
 """
 
 
+"""
+TODO
+
+四風連打で立直宣言時のリー棒の処理どうなる？
+
+appearing_red_tilesの登録処理
+
+
+ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open_flagとかにする？
+加槓ドラめくり
+ - 加槓 -> 暗槓
+ - 加槓 -> 加槓 （2回目の加槓で槍槓になると1回目の加槓の分は開かれるが2回目の分は開かれない）
+ - 切った後（ロンする前）
+
+四槓散了
+ 加槓，大明槓 : 切った牌が通ったら流局
+ 暗槓 : 切った牌が通ったらっぽい
+"""
+
+
 class Game :
 
 
@@ -91,10 +111,9 @@ class Game :
         # 分岐処理用flag
         self.win_flag = False                          # 局終了判定処理用
         self.ready_flag = False                        # リーチ宣言時の放銃処理用
-        self.daiminkan_flag = False                    # 大明槓処理用
-        self.kakan_flag = False                        # 加槓処理用
-        self.ankan_flag = False                        # 暗槓処理用
         self.steal_flag = False                        # 鳴き処理用
+        self.dora_opens_flag = False                   # 加槓，大明槓による開槓flag．trueのままゲームが終わらず所定の処理までくるとドラを開けてfalseに戻る
+        self.rinshan_draw_flag = False                 # 次のツモが嶺上牌であることを示すflag．trueのままドローフェーズまで来ると嶺上牌をツモってfalseに戻る
 
 
     # 局開始時の初期化
@@ -147,10 +166,9 @@ class Game :
         # 分岐処理用flag
         self.win_flag = False                          # 局終了判定処理用
         self.ready_flag = False                        # リーチ宣言時の放銃処理用
-        self.daiminkan_flag = False                    # 大明槓処理用
-        self.kakan_flag = False                        # 加槓処理用
-        self.ankan_flag = False                        # 暗槓処理用
         self.steal_flag = False                        # 鳴き処理用
+        self.rinshan_draw_flag = False
+        self.dora_opens_flag = False
 
         self._set_doras()
         self._set_rinshan_tiles()
@@ -224,17 +242,6 @@ class Game :
         return tile
 
 
-    # 四槓散了判定
-    def _check_four_kans(self, players: List[Player]) -> bool :
-        kans_num = 0
-        for i in range(4) :
-            if players[i].kans_num == 4 : return False # 一人で4回槓しているのは流局にならない
-            kans_num += players[i].kans_num
-        if kans_num == 4 :
-            self.is_abortive_draw = True
-            return True
-        return False
-
 
     # 大明槓が行われた時の処理
     def _proc_daiminkan(self, tile: int, action_players_num: int) -> None :
@@ -242,7 +249,8 @@ class Game :
         self.appearing_tiles[tile] += 3
         self.is_first_turn = False
         self.i_player = action_players_num
-        self.daiminkan_flag = True
+        self.dora_opens_flag = True
+        self.rinshan_draw_flag
         self.i_player = (4 + action_players_num - 1) % 4
 
 
@@ -450,15 +458,6 @@ class Game :
     def _check_player_wins_by_last_tile(self) -> None :
         if 136 - (self.i_wall + self.i_rinshan) == 14 : self.wins_by_last_tile = True
 
-    # 嶺上開花かチェック
-    def _check_player_wins_by_rinshan_kaihou(self) -> None :
-        if self.kakan_flag or self.daiminkan_flag or self.ankan_flag and not(self.wins_by_ron) : self.wins_by_rinshan_kaihou = True
-
-
-    # 槍槓かチェック
-    def _check_player_wins_by_chankan(self) -> None :
-        if self.kakan_flag and self.wins_by_ron : self.wins_by_chankan = True #チャンカンかどうか確認
-
 
     # 和了牌をセット
     def set_winning_tile(self, tile: int) -> None:
@@ -526,9 +525,9 @@ class Game :
             if flush(hand) :
                 if not(player.has_stealed) : self.han += 6
                 else : self.han += 5
-            if player.red[0] : self.han += 1
-            if player.red[1] : self.han += 1
-            if player.red[2] : self.han += 1
+            if player.reds[0] : self.han += 1
+            if player.reds[1] : self.han += 1
+            if player.reds[2] : self.han += 1
             for i in range(5) :
                 if self.dora_has_opened[i] :
                     self.han += hand[self.doras[i]]
@@ -556,9 +555,9 @@ class Game :
             if flush(hand) : self.han += 6
             if half_flush(hand) : self.han += 3
             if all_terminals_and_honors(hand) : self.han += 2
-            if player.red[0] : self.han += 1
-            if player.red[1] : self.han += 1
-            if player.red[2] : self.han += 1
+            if player.reds[0] : self.han += 1
+            if player.reds[1] : self.han += 1
+            if player.reds[2] : self.han += 1
             for i in range(5) :
                 if self.dora_has_opened[i] :
                     self.han += hand[self.doras[i]]
@@ -730,12 +729,12 @@ class Game :
 
 
     # ドローフェーズの処理
-    def _proc_draw_phase(self) -> None :
+    def _proc_draw_phase(self, players: List[Player]) -> None :
         # ポン，チーした場合はスキップ
         if self.steal_flag : return
 
         # 槓した場合は嶺上牌から，そうでない場合は山からツモる
-        if self.kakan_flag or self.ankan_flag or self.daiminkan_flag : players[self.i_player].add_tile_to_hand(self.supply_next_rinshan_tile())
+        if self.rinshan_draw_flag : players[self.i_player].add_tile_to_hand(self.supply_next_rinshan_tile())
         else : players[self.i_player].add_tile_to_hand(self.supply_next_tile())
 
         # 和了の判定
@@ -745,13 +744,11 @@ class Game :
         if self.win_flag :
             players[self.i_player].wins = True
             self.set_winning_tile(players[self.i_player].last_added_tile)
-            self._check_player_wins_by_rinshan_kaihou()
+            if self.rinshan_draw_flag : self.wins_by_rinshan_kaihou = True
             if self.wins_by_rinshan_kaihou is False : self._check_player_wins_by_last_tile() # 嶺上と河底は重複しない
 
-        # 加槓用の四槓散了判定
-        if self._check_four_kans(players) : self.is_abortive_draw = True
-
-        return
+        # 嶺上flagを元に戻す
+        self.rinshan_draw_flag = False
 
 
     # 立直の処理
@@ -763,14 +760,16 @@ class Game :
 
     # 暗槓が行われた時の処理
     def _proc_ankan(self, tile: int, players: List[Player]) -> None :
-        if self.kakan_open_flag :
+        # 直前の行動が加槓だった場合このタイミングでドラが開く
+        if self.dora_opens_flag :
             self.open_new_dora()
-            self.kakan_open_flag = False
+            self.dora_opens_flag = False
+
         if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 4
         self.is_first_turn = False
         self.open_new_dora()
-        self.ankan_flag = True
+        self.rinshan_draw_flag = True
         for i in range(4) : players[i].one_shot = False
         players[self.i_player].proc_ankan()
 
@@ -781,8 +780,8 @@ class Game :
     def _proc_kakan(self, tile: int, players: List[Player]) -> None :
         if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 1
-        self.kakan_flag = True
-        self.kakan_open_flag = True
+        self.rinshan_draw_flag = True
+        self.dora_opens_flag = True
         for i in range(4) : players[i].one_shot = False
         players[self.i_player].proc_kakan()
 
@@ -791,17 +790,16 @@ class Game :
 
     # アクションフェーズの処理
     def _proc_action_phase(self, players: List[Player]) -> None :
-        # flag初期化
-        self.ankan_flag, self.kakan_flag = False, False
         # プレイヤの行動決定，tile:赤は(0,10,20)表示
         tile, exchanged, ready, ankan, kakan, kyushu = players[self.i_player].decide_action(self, players)
 
         if ready : self._proc_ready(players[self.i_player])
         elif anakn : self._proc_ankan(tile, players)
         elif kakan :
-            if self.kakan_open_flag :
+            # 直前の行動が加槓だった場合このタイミングでドラが開く
+            if self.dora_opens_flag :
                 self.open_new_dora()
-                self.kakan_open_flag = False
+                self.dora_opens_flag = False
             # 槍槓用ロンフェーズ
             self._proc_ron_phase(tile, players, True)
             if self.win_flag : return
@@ -810,8 +808,111 @@ class Game :
 
         return
 
+
+    # 打牌フェーズ
+    def _proc_discard_phase(self, player: Player) -> None :
+        # プレイヤが捨てる牌を決定，discarded_tile:赤は(0,10,20)表示
+        discarded_tile = player.discard_tile()
+        # 捨てられた牌を見えている牌に記録
+        self.add_to_appearing_tiles(discarded_tile)
+        # 鳴いた後に切った場合, 手出し牌に牌を記録
+        if self.steal_flag : player.add_to_discard_tiles_after_stealing(discarded_tile)
+        self.steal_flag = False
+        if player.is_nagashi_mangan : players[self.i_player].check_nagashi_mangan()
+
+
+    # ロンフェーズ
+    def _proc_ron_phase(self, players: List[Player], discarded_tile: int, chankan: bool = False) -> None :
+        winners_num = 0
+        for i in range(1,4) :
+            i_winner = (self.i_player + i) % 4
+            if players[i_winner].decide_win(self, discarded_tile, chankan) :
+                # リーチ宣言時のロンはリーチ不成立
+                if self.ready_flag :
+                    self.ready_flag = False
+                    # リー棒返却
+                    self.deposits_num -= 1
+                    players[self.i_player].score_points(1000)
+
+                # 和了人数をincrement
+                winners_num += 1
+
+                # 切られた牌を手牌に加える
+                players[i_winner].add_tile_to_hand(discarded_tile)
+
+                # 和了牌を記録．平和判定とかに使う．
+                self.set_winning_tile(tile)
+
+                # 槍槓があるかどうかを記録
+                if chankan : self.wins_by_chankan = True
+
+                # 河底のチェック
+                self._check_player_wins_by_last_tile()
+
+                # ロン和了フラグを立てる
+                self.win_flag = True
+                self.wins_by_ron = True
+                players[i_winner].wins = True
+
+        # 三家和判定
+        if winners_num == 3 :
+            self.is_abortive_draw = True
+            self.win_flag = False
+
+
+    # 途中流局（四風連打，四家立直，四槓散了）の判定
+    def _check_game_is_abortive_draw(self, players) -> None :
+        #  四風連打の判定
+        if self.is_first_turn and (4 + self.i_player - self.rotations_num) % 4 == 3 :
+            if (discarded_tile in TileType.WINDS) and (players[0].discarded_tiles[0] == players[1].discarded_tiles[0] == players[2].discarded_tiles[0] == players[3].discarded_tiles[0]) :
+                self.is_abortive_draw = True
+
+        #  四家立直の判定
+        if (players[0].has_declared_ready or players[0].has_declared_double_ready) and \
+            (players[1].has_declared_ready or players[1].has_declared_double_ready) and \
+            (players[2].has_declared_ready or players[2].has_declared_double_ready) and \
+            (players[3].has_declared_ready or players[3].has_declared_double_ready) :
+            self.is_abortive_draw = True
+
+        # 四槓散了判定．四槓散了は暗槓，加槓，大明槓どの場合でも牌がきられて通ったタイミングで判定される
+        kans_num = 0
+        for i in range(4) :
+            if players[i].kans_num == 4 : return False # 一人で4回槓しているのは流局にならない
+            kans_num += players[i].kans_num
+        if kans_num == 4 :
+            self.is_abortive_draw = True
+
+
+    # 副露フェーズ
+    def _proc_steal_phase(self, players: List[Player], discarded_tile: int) -> None :
+        # ポン，カン判定と処理
+        for i in range(1,4) :
+            i_ap = (self.i_player + i) % 4 #i_ap : index of action player
+            pon, kan = players[i_ap].decide_pon_or_kan(self, players, discarded_tile)
+            if (pon and kan) is False : continue
+            else :
+                players[self.i_player].is_nagashi_mangan = False
+                for j in range(4) : players[j].one_shot = False
+                if pon :
+                    players[i_ap].proc_pon(self, discarded_tile)
+                    self._proc_pon(i_ap, discarded_tile)
+                elif kan :
+                    players[i_ap].proc_daiminkan(discarded_tile)
+                    self._proc_daiminkan(i_ap, discarded_tile)
+                break
+
+        # チー判定と処理
+        if (pon and kan) is False :
+            i_ap = (self.i_player + 1) % 4 #i_ap : index of action player
+            chii, tile1, tile2 = players[i_ap].decide_chii(self, players, tile)
+            if chii :
+                players[self.i_player].is_nagashi_mangan = False
+                players[i_ap].proc_chii(tile, tile1, tile2)
+                self.proc_chii(tile, tile1, tile2)
+
+
     # 局の処理
-    def _proc_subgame(players: List[Player], logger: Logger) -> None :
+    def _proc_subgame(self, players: List[Player], logger: Logger) -> None :
         # 配牌を配る
         for i in range(4) :
             for j in range(13) :
@@ -830,88 +931,38 @@ class Game :
             players[self.i_player].reset_same_turn_furiten()
 
             # ツモフェーズ
-            self._proc_draw_phase()
-            # ツモ和了か四槓散了ならループから抜ける
-            if self.win_flag or self.is_abortive_draw : break
+            self._proc_draw_phase(players[self.i_player])
+            # ツモ和了ならループから抜ける
+            if self.win_flag : break
             # 一発の権利がなくなる
             players[self.i_player].has_right_to_one_shot = False
 
             # アクションフェーズ
             self._proc_action_phase(players)
 
-            # 槍槓用
+            # 槍槓ロンならループから抜ける
             if self.win_flag : break
             # 暗槓，加槓の場合，次のツモにスキップ
-            if self.ankan_flag or self.kakan_flag : continue
+            if self.rinshan_draw_flag : continue
             # 九種九牌用
             if self.is_abortive_draw : break
 
-            # 牌を捨てる
-            if not(self.kakan_flag) :
-                # プレイヤが捨てる牌を決定，discarded_tile:赤は(0,10,20)表示
-                discarded_tile = players[self.i_player].discard_tile()
-                # 捨てられた牌を見えている牌に記録
-                self.add_to_appearing_tiles(discarded_tile)
-                # 鳴いた後に切った場合, 手出し牌に牌を記録
-                if self.steal_flag : players[self.i_player].add_to_discard_tiles_after_stealing(discarded_tile)
-                self.steal_flag = False
-                if players[self.i_player].is_nagashi_mangan : players[self.i_player].check_nagashi_mangan()
-                # 四風連打の判定
-                if self.is_first_turn and (4 + self.i_player - self.rotations_num) % 4 == 3 :
-                    if (discarded_tile in TileType.WINDS) and (players[0].discarded_tiles[0] == players[1].discarded_tiles[0] == players[2].discarded_tiles[0] == players[3].discarded_tiles[0]) :
-                        self.is_abortive_draw = True
-                if self.is_abortive_draw : break
+            # 打牌フェーズ
+            discarded_tile = self._proc_discard_phase(players[self.i_player])
 
-            if self.kakan_open_flag :
-                self.open_new_dora()
-                self.kakan_open_flag = False
+            # 大明槓，加槓した場合牌を切った後にドラをめくる
+            if self.dora_opens_flag :
+                self._open_new_dora()
+                self.dora_opens_flag = False
 
-            # 四家立直の判定
-            if (players[0].has_declared_ready or players[0].has_declared_double_ready) and \
-               (players[1].has_declared_ready or players[1].has_declared_double_ready) and \
-               (players[2].has_declared_ready or players[2].has_declared_double_ready) and \
-               (players[3].has_declared_ready or players[3].has_declared_double_ready) :
-                self.abortive_draw = True
+            # ロンフェーズ
+            self._proc_ron_phase(players, discarded_tile)
+            # ロン和了ならループから抜ける
+            if self.win_flag : break
 
-            # 大ミンカンによるドラめくり ※タイミング複雑だけどここで合ってる
-            if self.daiminkan_flag : self.open_new_dora()
-
-            # 他家のロン和了
-            for i in range(1,4) :
-                i_winner = (self.i_player + i) % 4
-                if players[i_winner].decide_win(self, tile) :
-                    # 海底ずれるのでデクリメントする
-                    if self.kakan_flag : self.i_rinshan -= 1
-                    # リーチ宣言時のロンはリーチ不成立
-                    if self.ready_flag :
-                        self.deposits_num -= 1
-                        self.ready_flag = False
-                        players[self.i_player].score_points(1000)
-                        players[i_winner].add_tile_to_hand(tile)
-                        self.win_flag = True
-                        self.wins_by_ron = True
-
-            # ロン和了時の事前変数処理
-            if self.win_flag :
-                self.set_winning_tile(tile)
-                self._check_player_wins_by_last_tile()
-                self._check_player_wins_by_chankan()
-                break
-
-            # 途中流局の場合break
-            if self.abortive_draw : break
-
-            # 槓の処理諸々 ※タイミング複雑だけどここで合ってる
-            if self.ankan_flag :
-                if self._check_four_kans(players) : break # 暗槓用の四槓散了判定
-            if self.kakan_flag :
-                for i in range(4) : players[i].one_shot = False
-                self.open_new_dora() ### 要修正
-                continue
-            if self.daiminkan_flag and self._check_four_kans(players) : break # 大明槓用の四槓散了判定
-            self.ankan_flag = False
-            self.kakan_flag = False
-            self.daiminkan_flag = False
+            # 途中流局の判定
+            self._check_game_is_abortive_draw(players)
+            if self.is_abortive_draw : break
 
             # 切った牌を他家のフリテン牌にセット
             for i in range(1,4) :
@@ -919,50 +970,19 @@ class Game :
                 if players[op].has_declared_ready or players[op].has_declared_double_ready : players[op].set_to_furiten_tiles(discarded_tile)
                 else : players[op].set_to_same_turn_furiten_tiles(discarded_tile)
 
-            # 副露
-            # ポン，カン判定と処理
-            for i in range(1,4) :
-                i_ap = (self.i_player + i) % 4 #i_ap : index of action player
-                pon, kan = players[i_ap].decide_pon_or_kan(self, players, tile)
-                if (pon and kan) is False : continue
-                else :
-                    players[self.i_player].is_nagashi_mangan = False
-                    for j in range(4) : players[j].one_shot = False
-                    if pon :
-                        players[i_ap].proc_pon(self, tile)
-                        self.proc_pon(i_ap, tile)
-                    elif kan :
-                        players[i_ap].proc_daiminkan(tile)
-                        self.proc_daiminkan(i_ap, tile)
-                    break
-
-            # チー判定と処理
-            if (pon and kan) is False :
-                i_ap = (self.i_player + 1) % 4 #i_ap : index of action player
-                chii, tile1, tile2 = players[i_ap].decide_chii(self, players, tile)
-                if chii :
-                    players[self.i_player].is_nagashi_mangan = False
-                    players[i_ap].proc_chii(tile, tile1, tile2)
-                    self.proc_chii(tile, tile1, tile2)
+            # 副露フェーズ
+            self._proc_steal_phase(players)
 
             # プレイヤインデックスを加算
             self.increment_i_player()
 
-            # 1順目かどうかの状態を更新
+            # 1巡目かどうかの状態を更新
             if self.is_first_turn and self.i_player == 4 : self.is_first_turn = False
 
-            # 局終了判定
+            # 通常流局判定
             if 136 - (self.i_wall + self.i_rinshan) == 14 : break
 
         # } ツモループ
-
-        # 三家和の判定 ※ほとんどならない三家和のために毎巡この処理するの嫌だからここに書いてる
-        winners_num = 0
-        for i in range(4) :
-            if players[i].wins : winners_num += 1
-        if winners_num == 3 :
-            self.is_abortive_draw = True
-            self.win_flag = False
 
         # 和了の処理
         if self.win_flag : self.proc_win(players)
@@ -981,7 +1001,6 @@ class Game :
         players = [Player(i) for i in range(4)]
 
         while True :
-
             # 局
             self._init_subgame()
             for i in range(4) : players[i].init_subgame()

@@ -15,6 +15,9 @@ from tile_type import TileType
 
 tile, exchanged, ready, ankan, kakan, kyushu = players[self.i_player].decide_action(self, players)
 
+loggerの処理
+  とりあえずplayerに組み込んだまんまにするけど後から切り分けたい
+
 """
 
 
@@ -49,7 +52,14 @@ class Player :
 
         self.players_wind = 31 + self.player_num          # 自風
         self.last_added_tile = -1                         # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
+
+        # アクションフェーズ用
         self.last_discarded_tile = -1                     # 最後に切った牌 赤牌は番号そのまま(10:赤5筒)
+        self.exchanged = False
+        self.ready = False
+        self.anakn = False
+        self.kakan = False
+        self.kyushu = False
 
         # 手牌いろいろ計算用
         self.syanten_num_of_kokushi = 13
@@ -325,24 +335,29 @@ class Player :
         elif starting_hand is False : self.tsumo_tiles.append(tile + 10)
         self.hand[tile] += 1
 
+
     # 牌を捨てる
     def discard_tile(self) -> int :
-        discarded_tile = self.action[0]
-        self.discarded_state += [self.action[4]]
+        discarded_tile = self.last_discarded_tile
+
+        # 河への記録
+        self.discarded_state += [self.exchanged]
         self.discarded_tiles += [discarded_tile]
-        if self.action[3] is False :
-            if discarded_tile in [0, 10, 20] : self.behavior.append(51 + (discarded_tile // 10))
-            else : self.behavior.append(discarded_tile + 10)
-        else :
-            if discarded_tile in [0, 10, 20] : self.behavior.append("r" + str(51 + (discarded_tile // 10)))
-            else : self.behavior.append("r" + str(discarded_tile + 10))
-        if discarded_tile in [0, 10, 20] :
-            self.red[discarded_tile // 10] = False
+
+        # 赤牌を番号に変換
+        if discarded_tile in TileType.REDS :
+            self.reds[discarded_tile // 10] = False
             discarded_tile += 5
+
+        # 手牌から切る牌を減らす
         self.hand[discarded_tile] -= 1
+        # 切る牌をフリテン牌に記録する
         self.furiten_tiles[discarded_tile] += 1
+        # 枚数だけ記録する河に切る牌を記録する
         self.discarded_tiles_hist[discarded_tile] += 1
+
         return self.action[0]
+
 
     def void check_is_ready(self) :
         if (self.calc_syanten_num_of_normal() == 0) and self.has_used_up_winning_tile() or \
