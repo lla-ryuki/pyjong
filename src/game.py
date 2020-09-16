@@ -13,6 +13,19 @@ from logger import Logger
 from yaku import *
 from yakuman import *
 
+"""
+四風連打で立直宣言時のリー棒の処理どうなる？
+
+appearing_red_tilesの登録処理
+
+
+ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open_flagとかにする？
+加槓ドラめくり
+ - 加槓 -> 暗槓
+ - 加槓 -> 加槓 （2回目の加槓で槍槓になると1回目の加槓の分は開かれるが2回目の分は開かれない）
+ - 切った後（ロンする前）
+"""
+
 
 """
 TODO
@@ -104,7 +117,7 @@ class Game :
 
 
     # 局開始時の初期化
-    def init_subgame(self) -> None :
+    def _init_subgame(self) -> None :
         self.is_abortive_draw = False                  # 途中流局になるとTrueになる
         self.is_first_turn = True                      # Trueの間は1巡目であることを示す
 
@@ -230,24 +243,8 @@ class Game :
 
 
 
-    # 暗槓が行われた時の処理
-    def proc_ankan(self, tile: int) -> None :
-        if tile in TileType.REDS : tile += 5
-        self.appearing_tiles[tile] += 4
-        self.is_first_turn = False
-        self.open_new_dora()
-        self.ankan_flag = True
-
-
-    # 加槓が行われた時の処理
-    def proc_kakan(self, tile: int) -> None :
-        if tile in TileType.REDS : tile += 5
-        self.appearing_tiles[tile] += 1
-        self.kakan_flag = True
-
-
     # 大明槓が行われた時の処理
-    def proc_daiminkan(self, tile: int, action_players_num: int) -> None :
+    def _proc_daiminkan(self, tile: int, action_players_num: int) -> None :
         if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 3
         self.is_first_turn = False
@@ -258,23 +255,23 @@ class Game :
 
 
     # ポンが行われた時の処理
-    def proc_pon(self, tile: int, action_players_num : int) -> None :
+    def _proc_pon(self, tile: int, action_players_num : int) -> None :
         if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 2
         self.is_first_turn = False
-        self.has_stealed_flag = True
+        self.steal_flag = True
         self.i_player = (4 + action_players_num - 1) % 4
 
 
     # チーが行われた時の処理
-    def proc_chii(self, tile: int, tile1: int, tile2: int) -> None :
+    def _proc_chii(self, tile: int, tile1: int, tile2: int) -> None :
         if tile in TileType.REDS :
             tile += 5
             tile1 += 5
             tile2 += 5
         self.appearing_tiles[tile1] += 1
         self.appearing_tiles[tile2] += 1
-        self.has_stealed_flag = True
+        self.steal_flag = True
         self.is_first_turn = False
 
 
@@ -349,7 +346,7 @@ class Game :
 
 
     # 和了時の処理
-    def proc_win(self, players: List[Player]) -> None :
+    def _proc_win(self, players: List[Player]) -> None :
         counters_num_temp = self.counters_num
         # ツモった人，最後に牌を切った人から順に和了を見ていく．※ 複数人の和了の可能性があるので全員順番にチェックする必要がある．
         for i in range(4) :
@@ -376,7 +373,7 @@ class Game :
 
 
     # 流局時の処理
-    def proc_drawn_game(self, players: List[Player]) -> None :
+    def _proc_drawn_game(self, players: List[Player]) -> None :
         tenpai_players_num = 0
         for i in range(4) :
             if players[i].is_ready : tenpai_players_num += 1
@@ -401,7 +398,7 @@ class Game :
 
 
     # 流し満貫時の処理
-    def proc_nagashi_mangan(self, players: List[Player]) -> None :
+    def _proc_nagashi_mangan(self, players: List[Player]) -> None :
         for i in range(4) :
             if players[i].is_nagashi_mangan :
                 if self.rotations_num == i :
@@ -625,6 +622,7 @@ class Game :
 
 
     # 面子を抜き出す
+    ## 和了が確定してからしか呼ばれないので高速化のためにPlayer._pick_out_mentsu()でやらなくていい部分を省いている．別物.
     def _pick_out_mentsu(self, has_stealed: bool, hand: List[int]) -> None:
         for i in range(1,38) :
             if self.temp[9] != 0 :
@@ -919,10 +917,11 @@ class Game :
         for i in range(4) :
             for j in range(13) :
                 tile = self.supply_next_tile()
-                players[i].get_tile(tile)
+                players[i].add_tile_to_hand(tile)
                 logger.add_to_first_hand(i, tile)
 
         # 配牌でテンパイかどうかチェック
+        ### これなんの為？
         for i in range(4) : players[i].check_hand_is_ready()
 
         # ツモループ {
@@ -938,8 +937,8 @@ class Game :
             # 一発の権利がなくなる
             players[self.i_player].has_right_to_one_shot = False
 
-            # 行動決定，tile:赤は(0,10,20)表示
-            tile, ankan, kakan, ready, exchanged = players[self.i_player].decide_action(self, players)
+            # アクションフェーズ
+            self._proc_action_phase(players)
 
             # 槍槓ロンならループから抜ける
             if self.win_flag : break
@@ -1003,7 +1002,7 @@ class Game :
 
         while True :
             # 局
-            self.init_subgame()
+            self._init_subgame()
             for i in range(4) : players[i].init_subgame()
             self._proc_subgame(players, logger)
 

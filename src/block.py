@@ -9,6 +9,8 @@ class Block :
     # SYUNTSU = 6
     # TOITSU = 7
 
+    # def __init__(self) :
+
     OPENED_RUN = 1        # チー
     CLOSED_RUN = 2        # 順子
     OPENED_TRIPLET = 3    # ポン
@@ -19,8 +21,8 @@ class Block :
 
 
     # 面子構成
-    RUNS      = {Block.OPENED_RUN, Block.CLOSED_RUN}
-    TRIPLETS  = {Block.OPENED_TRIPLET, Block.CLOSED_TRIPLET}
-    KANS      = {Block.OPENED_KAN, Block.CLOSED_KAN}
+    RUNS      = {OPENED_RUN, CLOSED_RUN}
+    TRIPLETS  = {OPENED_TRIPLET, CLOSED_TRIPLET}
+    KANS      = {OPENED_KAN, CLOSED_KAN}
 
 
