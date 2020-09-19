@@ -11,13 +11,10 @@ from tile_type import TileType
 
 
 """
+TODO
 ツモ切りのDとd逆にしたい
-
 tile, exchanged, ready, ankan, kakan, kyushu = players[self.i_player].decide_action(self, players)
-
-loggerの処理
-  とりあえずplayerに組み込んだまんまにするけど後から切り分けたい
-
+loggerの処理切り分けてく
 """
 
 
@@ -43,7 +40,7 @@ class Player :
         self.has_right_to_one_shot = False                # 一発があるか
 
         self.is_ready = False                             # テンパイか
-        self.is_nagashi_mangan = True                     # 流し満貫か
+        self.is_nagashi_mangan = True                     # 流し満貫継続中か
 
         self.wins = False                                 # 和了ったか
 
@@ -337,6 +334,7 @@ class Player :
 
 
     # 牌を捨てる
+    ## ここで捨てる牌を決めるわけではない．捨てる牌はdecide_action()で決める．
     def discard_tile(self) -> int :
         discarded_tile = self.last_discarded_tile
 
@@ -356,55 +354,62 @@ class Player :
         # 枚数だけ記録する河に切る牌を記録する
         self.discarded_tiles_hist[discarded_tile] += 1
 
-        return self.action[0]
+        return self.last_discarded_tile
 
 
-    def void check_is_ready(self) :
+    # 聴牌かどうかを判定
+    def check_is_ready(self) -> bool :
         if (self.calc_syanten_num_of_normal() == 0) and self.has_used_up_winning_tile() or \
            self.calc_syanten_num_of_chiitoi() == 0 or \
-           self.calc_syanten_num_of_kokushi() == 0 : self.ready = True
-        else : self.ready = False
+           self.calc_syanten_num_of_kokushi() == 0 : self.is_ready = True
+        else : self.is_ready = False
 
-    def bool has_used_up_winning_tile(self) :
-        #天鳳の処理はこうなってるはず
-        #天鳳では3pを加カンしている状態で嵌3p待ちでもテンパイ扱いだったし，2015年のデータによるテストでは点数に誤差がでていない
-        #(きっとおかしいんだけどね)
-        def int[38] effective_tiles, hand
-        def int num_of_winning_tile, i
+        return self.is_ready
+
+
+    # 和了牌を使い切っているかどうか
+    # 天鳳の処理はこうなってるはず
+    # 天鳳では3pを加カンしている状態で嵌3p待ちでもテンパイ扱いだったし，2015年のデータによるテストでは点数に誤差がでていない
+    # (きっとおかしいんだけどね)
+    def has_used_up_winning_tile(self) -> bool :
         effective_tiles = self.effective_tiles_of_normal()
-        hand = self.hand
         num_of_winning_tile = 0
         for i in range(38) :
             if effective_tiles[i] == 0 : continue
-            #print(i)
             num_of_winning_tile += 4
             num_of_winning_tile -= hand[i]
         if num_of_winning_tile == 0 : return False
         return True
 
 
-    def void check_all_discarded_tiles_are_edge_tiles(self) :
-        if self.action[0] in [1,9,11,19,21,29,31,32,33,34,35,36,37] : dummy = True
-        else : self.all_discarded_tiles_are_edge_tiles = False
+    # 流し満貫かチェック
+    def check_player_is_nagashi_mangan(self) -> bool :
+        if self.last_discarded_tile in (TileType.TERMINALS | TileType.HONORS): self.is_nagashi_mangan = True
+        else : self.is_nagashi_mangan = False
 
-    def void set_furiten_tile(self, tile) : self.furiten_tiles[tile] += 1
+        return self.is_nagashi_mangan
 
-    def void set_round_furiten_tile(self, tile) :
-        self.round_furiten_tiles += [tile]
+
+    # フリテン牌を追加
+    def add_furiten_tile(self, tile) -> None : self.furiten_tiles[tile] += 1
+
+
+    # 同巡フリテン牌を追加
+    def add_same_turn_furiten_tile(self, tile: int) -> None :
+        self.same_turn_furiten_tiles += [tile]
         self.furiten_tiles[tile] += 1
 
-    def void reset_round_furiten(self) :
-        def int i
-        for i in self.round_furiten_tiles : self.furiten_tiles[i] -= 1
-        self.round_furiten_tiles = []
 
-    def void set_win(self, bool state) : self.win = True
-    def void set_ippatsu(self, bool state) : self.ippatsu = state
-    def void set_all_discarded_tiles_are_edge_tiles(self, bool state) : self.all_discarded_tiles_are_edge_tiles = state
+    # 同巡フリテンを解消
+    def reset_same_turn_furiten(self) -> None :
+        for i in self.same_turn_furiten_tiles : self.furiten_tiles[i] -= 1
+        self.same_turn_furiten_tiles = []
 
-    def put_back_displayed_hand(self) :
+
+    # 鳴いて晒した牌を全部戻した手をreturnする
+    def put_back_opened_hand(self) -> List[int] :
         """
-        displayed_hand =
+        opened_hand =
         [[0+4*n]　フーロの種類（0＝フーロなし、1＝ポン、2＝チー、3＝アンカン、4＝ミンカン　5＝カカン）
         [1+4*n]　そのフーロメンツのうち最も小さい牌番号
         [2+4*n]　そのフーロメンツのうち鳴いた牌の牌番号
@@ -412,60 +417,90 @@ class Player :
         [4*4*n]  副露した直後に切った牌
         ]
         """
-        def int[38] hand
-        def int i, n
-        hand = self.hand
+        hand = self.hand[:]
         for i in range(0,20,5) :
-            if self.displayed_hand[i] == 0 : break
-            elif self.displayed_hand[i] == Block.PON : hand[self.displayed_hand[i+1]] += 3
-            elif self.displayed_hand[i] == Block.CHI :
-                n = self.displayed_hand[i+1]
+            if self.opened_hand[i] == 0 : break
+            elif self.opened_hand[i] == Block.OPENED_TRIPLET : hand[self.opened_hand[i+1]] += 3
+            elif self.opened_hand[i] == Block.OPENED_RUN :
+                n = self.opened_hand[i+1]
                 hand[n] += 1
                 hand[n+1] += 1
                 hand[n+2] += 1
-            else : hand[self.displayed_hand[i+1]] += 4
+            else : hand[self.opened_hand[i+1]] += 4
         return hand
 
-    def bool judge_win(self, Game game, int ron_tile = -1) :
+
+    # 和了するかどうかの判定
+    def decide_win(self, game: Game, ron_tile: int = -1) -> bool :
+        # そもそも和了れるかどうかの判定
+        # TODO ここじゃなくてgame.pyの中でやった方がいい気がするよね...
         if not(self.can_win(game, ron_tile)) : return False
-        #和了するかどうかの判定 とりあえず和了れる時は和了るようにしとく Trueを返すと和了ったと判断
-        self.win = True
-        return self.win
 
-    def int judge_pon_or_kan(self, int tile) :
-        def int pon_kan_action
-        def bool red
-        if tile in [0, 10, 20] :
+        # TODO 和了るかどうかの判断　今は和了れたら和了るようにしている
+        self.wins = True
+
+        return self.wins
+
+
+    # ポン or 大明槓するかどうかの判断
+    def decide_pon_or_kan(self, tile: int) -> int :
+        red = False
+        if tile in TileType.REDS :
             tile += 5
             red = True
-        else : red = False
+
+        # そもそもポン or 大明槓できるかの判定
         if self.hand[tile] < 2 : return 0
-        pon_kan_action = 0 #0:スルー, 1:ポン, 2: カン
-        return pon_kan_action
 
-    def int judge_chii(self, int tile) :
-        def int chii_action, tile1, tile2
-        def bool red
-        chii_action = 0 #0:スルー, 1:下, 2:嵌, 3,上
-        if tile in [0, 10, 20] :
+        # TODO ポンするかどうかの判断　今は鳴かないようにしている
+        pon = False
+        kan = False
+
+        return pon, kan
+
+
+    # チーするかどうかの判断
+    def decide_chii(self, tile: int) -> (bool, int, int) :
+        red = False
+        if tile in TileType.REDS :
             tile += 5
             red = True
-        else : red = False
-        ###チーできるかどうかの判定
-        ###チーするかどうかの判定
-        if chii_action == 0 :
-            tile1 = -1
-            tile2 = -1
-        if chii_action == 1 :
-            tile1 = tile - 2
-            tile2 = tile - 1
-        elif chii_action == 2 :
-            tile1 = tile - 1
-            tile2 = tile + 1
-        else :
-            tile1 = tile + 1
-            tile2 = tile + 2
-        return chii_action, tile1, tile2
+
+        # チーできるかどうかの判定
+        if self.can_chii(tile) is False : return chii, -1, -1
+
+        ### TODO チーするかどうかの判断
+        ### chii_action:0 => スルー
+        ### chii_action:1 => 下チー
+        ### chii_action:2 => 嵌張チー
+        ### chii_action:3 => 上チー
+        ### がNNから帰ってくるようにしたい
+
+        # 返り値の処理
+        chii = False
+        chii_action = 0 ### 今はチーできないようにしている
+        if chii_action == 0 : tile1, tile2 = -1, -1
+        elif chii_action == 1 : chii, tile1, tile2 = True, (tile - 2), (tile - 1)
+        elif chii_action == 2 : tile1, tile2 = True, (tile-1), (tile + 1)
+        elif chii_action == 3 : tile1, tile2 = True, (tile+1), (tile + 2)
+        else : tile1, tile2 = -1, -1 # 想定しない処理　一応
+
+        return chii, tile1, tile2
+
+
+    # チーできるかどうか
+    def can_chii(self, tile) -> bool :
+        # 字牌はチーできない
+        if tile > 30 : return False
+
+        # 判定．順に下チー，嵌張チー，上チーの判定をorで繋いでる
+        can_chii = False
+        if (tile % 10 >= 3 and self.hand[tile-2] > 0 and self.hand[tile-1] > 0) or \
+           (tile % 10 >= 2 and tile % 10 <= 8 and self.hand[tile-1] > 0 and self.hand[tile+1] > 0) or \
+           (tile % 10 >= 3 and self.hand[tile-2] > 0 and self.hand[tile-1] > 0) : can_chii = True
+
+        return can_chii
+
 
     def bool can_win(self, Game game, int ron_tile) :
         #和了れるかどうかの判定

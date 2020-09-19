@@ -14,20 +14,6 @@ from yaku import *
 from yakuman import *
 
 """
-四風連打で立直宣言時のリー棒の処理どうなる？
-
-appearing_red_tilesの登録処理
-
-
-ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open_flagとかにする？
-加槓ドラめくり
- - 加槓 -> 暗槓
- - 加槓 -> 加槓 （2回目の加槓で槍槓になると1回目の加槓の分は開かれるが2回目の分は開かれない）
- - 切った後（ロンする前）
-"""
-
-
-"""
 TODO
 
 四風連打で立直宣言時のリー棒の処理どうなる？
@@ -44,6 +30,7 @@ ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open
 四槓散了
  加槓，大明槓 : 切った牌が通ったら流局
  暗槓 : 切った牌が通ったらっぽい
+
 """
 
 
@@ -818,7 +805,7 @@ class Game :
         # 鳴いた後に切った場合, 手出し牌に牌を記録
         if self.steal_flag : player.add_to_discard_tiles_after_stealing(discarded_tile)
         self.steal_flag = False
-        if player.is_nagashi_mangan : players[self.i_player].check_nagashi_mangan()
+        if player.is_nagashi_mangan : players[self.i_player].check_player_is_nagashi_mangan()
 
 
     # ロンフェーズ
@@ -904,11 +891,11 @@ class Game :
         # チー判定と処理
         if (pon and kan) is False :
             i_ap = (self.i_player + 1) % 4 #i_ap : index of action player
-            chii, tile1, tile2 = players[i_ap].decide_chii(self, players, tile)
+            chii, tile1, tile2 = players[i_ap].decide_chii(self, players, discarded_tile)
             if chii :
-                players[self.i_player].is_nagashi_mangan = False
-                players[i_ap].proc_chii(tile, tile1, tile2)
-                self.proc_chii(tile, tile1, tile2)
+                players[self.i_player].is_najsjsuashi_mangan = False
+                players[i_ap].proc_chii(discarded_tile, tile1, tile2)
+                self.proc_chii(discarded_tile, tile1, tile2)
 
 
     # 局の処理
@@ -967,8 +954,8 @@ class Game :
             # 切った牌を他家のフリテン牌にセット
             for i in range(1,4) :
                 op = (self.i_player + i) % 4
-                if players[op].has_declared_ready or players[op].has_declared_double_ready : players[op].set_to_furiten_tiles(discarded_tile)
-                else : players[op].set_to_same_turn_furiten_tiles(discarded_tile)
+                if players[op].has_declared_ready or players[op].has_declared_double_ready : players[op].add_furiten_tile(discarded_tile)
+                else : players[op].add_same_turn_furiten_tile(discarded_tile)
 
             # 副露フェーズ
             self._proc_steal_phase(players)
