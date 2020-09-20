@@ -15,7 +15,6 @@ from yakuman import *
 """
 TODO
 ツモ切りのDとd逆にしたい
-tile, exchanged, ready, ankan, kakan, kyushu = players[self.i_player].decide_action(self, players)
 loggerの処理切り分けてく
 checkなんちゃらメソッドの改名
 """
@@ -569,10 +568,8 @@ class Player :
         return False
 
 
-    def bool _judge_if_there_is_hand_composition_yaku(self, int round_wind, int seat_wind, bool ron, int ron_tile) :
-        def int[38] hand
-        def bool there_is_yaku
-        hand = self.hand
+    def _judge_if_there_is_hand_composition_yaku(self, prevailing_wind: int, ron: bool, ron_tile: int) -> bool :
+        hand = self.hand[:]
         if ron : hand[ron_tile] += 1
         self.composition_of_hand = [0] * 10
         #副露メンツ確定
@@ -598,8 +595,7 @@ class Player :
                 hand[i] = hand[i] + 2
         return False
 
-    def bool _pick_out_mentsu_for_composition_hand(self, int[:] hand, int round_wind, int seat_wind, bool ron, int ron_tile) :
-        def int i
+    def _pick_out_mentsu_for_composition_hand(self, hand: List[int], prevailing_wind: int, ron: bool, ron_tile: int) -> bool :
         for i in range(1,38) :
             if self.composition_of_hand[9] != 0 :
                 if pinfu(self.composition_of_hand, ron_tile, round_wind, seat_wind) : return True
@@ -642,8 +638,7 @@ class Player :
                 hand[i+1] += 1
                 hand[i+2] += 1
 
-    def bool judge_9_kinds(self) :
-        def int i, num_edge_tile
+    def judge_9_kinds(self) -> bool :
         num_edge_tile = 0
         for i in [1,9,11,19,21,29,31,32,33,34,35,36,37] :
             if self.hand[i] > 0 : num_edge_tile += 1
@@ -653,11 +648,9 @@ class Player :
             return True
         else : return False
 
-    def list decide_action(self, action) : self.action = action
 
-    def void proc_ankan(self) :
-        def int tile
-        def str s
+
+    def proc_ankan(self) -> None :
         tile = self.action[0]
         if tile in [0,10,20] : tile += 5
         self.displayed_hand[self.displayed_num * 5] = 3
@@ -670,9 +663,7 @@ class Player :
         s = str(tile + 10)
         self.behavior.append(s+s+s+"a"+s)
 
-    def void proc_kakan(self) :
-        def int tile, i
-        def str s
+    def proc_kakan(self) -> None :
         tile = self.action[0]
         self.num_of_kan += 1
         if tile in [0,10,20] : tile += 5
@@ -686,8 +677,7 @@ class Player :
                 else : self.behavior.append("k"+s+s+s+s)
                 break
 
-    def void proc_minkan(self, int tile, int p) :
-        def int place
+    def proc_minkan(self, tile: int, p: int) -> None :
         place = (4 + p - self.player_num) % 4
         if tile in [0,10,20] :
             if place == 1 : self.behavior.append(str(tile+15) + str(tile+15) + str(tile+15) + "m" + str(51+(tile // 10)))
@@ -713,8 +703,7 @@ class Player :
         self.displayed_tf = True
         self.num_of_kan += 1
 
-    def void proc_pon(self, int tile, int p, Game game) :
-        def int place, min_tile
+    def proc_pon(self, tile: int, p: int, game: Game) -> None :
         place = (4 + p - self.player_num) % 4
         if tile in [0,10,20] :
             red = True
@@ -746,7 +735,7 @@ class Player :
             self.num_of_winds += 1
             if self.num_of_winds == 4 : game.set_pao_of_4_winds(self.player_num, p)
 
-    def proc_chii(self, int tile, int tile1, int tile2) :
+    def proc_chii(self, tile: int, tile1: int, tile2: int) -> None :
         if tile in [0,10,20] :
             self.behavior.append("c" + str(51 + (tile // 10)) + str(tile1 + 10)+str(tile2 + 10))
             self.red[tile // 10] = True
@@ -770,10 +759,9 @@ class Player :
         self.displayed_tf = True
 
     #鳴いた後の手出し牌を登録
-    def void add_tile_player_discard_after_displaying(self, int tile) : self.displayed_hand[((self.displayed_num - 1) * 5) + 4] = tile
+    def add_tile_player_discard_after_displaying(self, tile: int) -> None : self.displayed_hand[((self.displayed_num - 1) * 5) + 4] = tile
 
-    def void print_hand(self) :
-        def str s_hand
+    def print_hand(self) -> None:
         #受け取った手牌を表示
         s_hand = ""
         for i in range(1,38) :
@@ -791,13 +779,12 @@ class Player :
                 else : s_hand += "中"
         #print(s_hand)
 
-    def void add_to_starting_hand(self, int tile) :
+    def add_to_starting_hand(self, tile: int) -> None :
         if tile in [0, 10, 20] : tile = 51 + (tile // 10)
         else : tile += 10
         self.starting_hand.append(tile)
 
-    def void set_hand(self) :
-        def int[38] hand
+    def set_hand(self) -> None :
         hand = [0] * 38
         for i in range(2) :
             hand[21] += 1
@@ -851,10 +838,11 @@ class Player :
 
         return tile, ankan, kakan
 
+
+    # アクションフェーズでのアクションを決める
     def decide_action(self, game, players) :
         # プレイヤの行動決定，tile:赤は(0,10,20)表示
-        tile, ankan, kakan, ready, exchanged = -1, False, False, False, False
-        dummy = None
+        tile, exchanged, ready, ankan, kakan, kyushu = -1, False, False, False, False, False
 
         # 槓するかどうか決める
         tile, ankan, kakan = self._decide_to_kan()
