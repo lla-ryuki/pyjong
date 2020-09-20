@@ -441,9 +441,13 @@ class Game :
         return False
 
 
-    # 海底・河底かチェック
+    # 海底・河底かチェックして記録
     def _check_player_wins_by_last_tile(self) -> None :
-        if 136 - (self.i_wall + self.i_rinshan) == 14 : self.wins_by_last_tile = True
+        if self.is_last_tile() : self.wins_by_last_tile = True
+
+    # 記録はせずに海底・河底かだけ返す
+    def is_last_tile(self) -> None :
+        if 136 - (self.i_wall + self.i_rinshan) == 14 : return True
 
 
     # 和了牌をセット
@@ -784,9 +788,7 @@ class Game :
         elif anakn : self._proc_ankan(tile, players)
         elif kakan :
             # 直前の行動が加槓だった場合このタイミングでドラが開く
-            if self.dora_opens_flag :
-                self.open_new_dora()
-                self.dora_opens_flag = False
+            if self.dora_opens_flag : self.open_new_dora()
             # 槍槓用ロンフェーズ
             self._proc_ron_phase(tile, players, True)
             if self.win_flag : return
@@ -809,11 +811,11 @@ class Game :
 
 
     # ロンフェーズ
-    def _proc_ron_phase(self, players: List[Player], discarded_tile: int, chankan: bool = False) -> None :
+    def _proc_ron_phase(self, players: List[Player], discarded_tile: int) -> None :
         winners_num = 0
         for i in range(1,4) :
             i_winner = (self.i_player + i) % 4
-            if players[i_winner].decide_win(self, discarded_tile, chankan) :
+            if players[i_winner].decide_win(self, discarded_tile) :
                 # リーチ宣言時のロンはリーチ不成立
                 if self.ready_flag :
                     self.ready_flag = False
@@ -830,11 +832,9 @@ class Game :
                 # 和了牌を記録．平和判定とかに使う．
                 self.set_winning_tile(tile)
 
-                # 槍槓があるかどうかを記録
-                if chankan : self.wins_by_chankan = True
-
-                # 河底のチェック
-                self._check_player_wins_by_last_tile()
+                # 偶然役の記録
+                if self.dora_opens_flag : self.wins_by_chankan = True # 槍槓があるかどうかを記録
+                self._check_player_wins_by_last_tile() # 河底のチェック
 
                 # ロン和了フラグを立てる
                 self.win_flag = True

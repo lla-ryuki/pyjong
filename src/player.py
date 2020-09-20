@@ -8,6 +8,8 @@ from typing import List
 from game import Game
 from block import Block
 from tile_type import TileType
+from yaku import *
+from yakuman import *
 
 
 """
@@ -15,6 +17,7 @@ TODO
 ツモ切りのDとd逆にしたい
 tile, exchanged, ready, ankan, kakan, kyushu = players[self.i_player].decide_action(self, players)
 loggerの処理切り分けてく
+checkなんちゃらメソッドの改名
 """
 
 
@@ -121,8 +124,8 @@ class Player :
 
 
     # 国士無双の向聴数を返す
-    def calc_syanten_num_of_kokushi(self, tile:int = -1 ) :
-        hand = deepcopy(self.hand) # handに牌を足す可能性がある時は元のhandが壊れないようにコピーを作る
+    def calc_syanten_num_of_kokushi(self, tile:int = -1) -> int :
+        hand = self.hand[:]
 
         if tile > -1 :
             if tile in TileType.REDS :
@@ -144,7 +147,7 @@ class Player :
 
     # 国士無双の有効牌のリストを返す
     def effective_tiles_of_kokushi(self) -> list :
-        hand = deepcopy(self.hand)
+        hand = self.hand[:]
         effective_tiles = [0] * 38
 
         syanten_num = self.calc_syanten_num_of_kokushi()
@@ -156,7 +159,7 @@ class Player :
 
     # 七対子の向聴数を返す
     def calc_syanten_num_of_chiitoi(self, tile: int = -1) -> int :
-        hand = deepcopy(self.hand)
+        hand = self.hand[:]
 
         if tile > -1 :
             if tile in TileType.REDS : tile += 5
@@ -189,8 +192,8 @@ class Player :
 
 
     # 通常手の向聴数を返す
-    def calc_syanten_num_of_normal(self, tile: int = -1) :
-        hand = deepcopy(self.hand)
+    def calc_syanten_num_of_normal(self, tile: int = -1) -> int :
+        hand = self.hand[:]
         self.syanten_num_of_normal = 8
         self.sets_num = self.opened_sets_num
         self.pairs_num = 0
@@ -502,64 +505,69 @@ class Player :
         return can_chii
 
 
-    def bool can_win(self, Game game, int ron_tile) :
-        #和了れるかどうかの判定
-        def bool ron, is_chiitoi, is_kokushi, is_normal
-        if self.calc_syanten_num_of_chiitoi(ron_tile) == -1 : is_chiitoi = True
-        else : is_chiitoi = False
-        if self.calc_syanten_num_of_kokushi(ron_tile) == -1 : is_kokushi = True
-        else : is_kokushi = False
+    # 和了れるかどうか
+    def can_win(self, game: Game, ron_tile: int = -1) -> bool :
+        ron, is_chiitoi, is_kokushi, is_normal = False, False, False, False
+
+        # 向聴数的に和了っているかどうか確認
         if self.calc_syanten_num_of_normal(ron_tile) == -1 : is_normal = True
-        else : is_normal = False
+        elif self.calc_syanten_num_of_chiitoi(ron_tile) == -1 : is_chiitoi = True
+        elif self.calc_syanten_num_of_kokushi(ron_tile) == -1 : is_kokushi = True
         if not(is_chiitoi or is_kokushi or is_normal) : return False
+
+        # ロンの時の処理
         if ron_tile > -1 :
             ron = True
-            if ron_tile in [0,10,20] : ron_tile += 5
-            if self.is_furiten(is_chiitoi, is_kokushi, is_normal, ron_tile) : return False
-        else : ron = False
-        if self.judge_if_there_is_yaku(game, ron, ron_tile) : return True
+            if self.is_furiten(is_chiitoi, is_kokushi, is_normal, ron_tile) : return False # フリテンだったら和了れない
+
+        # 役があるかどうかをチェック
+        if is_chiitoi or is_kokushi : return True
+        if is_normal and self.has_yaku(game, ron, ron_tile) : return True
+
         return False
 
-    def bool is_furiten(self, bool is_chiitoi, bool is_kokushi, bool is_normal, int ron_tile) :
-        def int[38] hand, effective_tiles
-        hand = self.hand
-        if is_chiitoi :
-            if self.furiten_tiles[ron_tile] > 0 : return True
-        if is_kokushi :
-            effective_tiles = self.effective_tiles_of_kokushi()
-            for i in [1,9,11,19,21,29,31,32,33,34,35,36,37] :
-                if self.furiten_tiles[i] > 0 and effective_tiles[i] > 0 : return True
+
+    # フリテンかどうか
+    def is_furiten(self, is_chiitoi: bool, is_kokushi: bool, is_normal: bool, ron_tile: tile) -> bool :
+        if ron_tile in TileType.REDS : ron_tile += 5
+        hand = self.hand[:]
         if is_normal :
             effective_tiles = self.effective_tiles_of_normal()
             for i in range(1, 38) :
                 if i % 10 == 0 : continue
                 if self.furiten_tiles[i] > 0 and effective_tiles[i] > 0 : return True
+        elif is_chiitoi :
+            if self.furiten_tiles[ron_tile] > 0 : return True
+        elif is_kokushi :
+            effective_tiles = self.effective_tiles_of_kokushi()
+            for i in (TileType.TERMINALS | TileType.HONORS) :
+                if self.furiten_tiles[i] > 0 and effective_tiles[i] > 0 : return True
+
         return False
 
-    def bool judge_if_there_is_yaku(self, Game game, bool ron, int ron_tile) :
-        def int[38] hand
-        def int round_wind, seat_wind
-        if self.riichi : return True
-        if self.d_riichi : return True
+
+    # 役があるか 和了れるかどうかの判定に使うから全部の役は見ない
+    def has_yaku(self, game: Game, ron: bool, ron_tile: int) -> bool:
+        if ron_tile in TileType.REDS : ron_tile += 5
+        if self.has_declared_ready : return True
+        if self.has_declared_double_ready : return True
         hand = self.put_back_displayed_hand()
-        if tanyao(hand) : return True
-        if haku(hand) : return True
-        if hatsu(hand) : return True
-        if chun(hand) : return True
-        round_wind = 31 + game.game_round
-        if bakaze(hand, round_wind) : return True
-        seat_wind = 31 + (((self.player_num + 4) - game.game_num)%4)
-        if jikaze(hand, seat_wind) : return True
-        if not(ron) and not(self.displayed_tf) : return True
-        if honitsu(hand) : return True
-        if chinitsu(hand) : return True
-        if haitei(game.p_wall, game.p_rinsyan, ron) : return True
-        if houtei(game.p_wall, game.p_rinsyan, ron) : return True
-        if chankan(game.kakan_flag, ron) : return True
-        if rinsyan(game.minkan_flag, game.ankan_flag, ron) : return True
-        if tenhou(game.first_round, ron, game.game_num, self.player_num) : return True
-        if chiihou(game.first_round, ron, game.game_num, self.player_num) : return True
+        if all_simples(hand) : return True
+        if white_dragon(hand) : return True
+        if green_dragon(hand) : return True
+        if red_dragon(hand) : return True
+        if prevailing_wind(hand, game.prevailing_wind) : return True
+        if players_wind(hand, self.players_wind) : return True
+        if not(ron) and not(self.has_stealed) : return True
+        if half_flush(hand) : return True
+        if flush(hand) : return True
+        if game.is_last_tile() : return True # 海底・河底
+        if game.rinshan_draw_flag : return True # 嶺上
+        if game.dora_opens_flag : return True # 槍槓
         if self._judge_if_there_is_hand_composition_yaku(round_wind, seat_wind, ron, ron_tile) : return True
+
+        return False
+
 
     def bool _judge_if_there_is_hand_composition_yaku(self, int round_wind, int seat_wind, bool ron, int ron_tile) :
         def int[38] hand
