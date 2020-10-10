@@ -14,14 +14,16 @@ from yakuman import *
 
 """
 TODO
+### 変数名とロジック書き直し
+checkなんちゃらメソッドの改名
 ツモ切りのDとd逆にしたい
 loggerの処理切り分けてく
-checkなんちゃらメソッドの改名
+opend_handとかhand_compositionとかを多次元配列にした方がわかりやすい
+
 """
 
 
 class Player :
-
 
     def __init__(self, player_num) :
 
@@ -67,9 +69,9 @@ class Player :
         self.syanten_num_of_temp = 0
         self.sets_num = 0
         self.pairs_num = 0
-        self.tahtsu_num = 0                               # 英語見つからなくて草
-        self.composition_of_hand = [0] * 10               # 手牌構成
-        self.i_composition_of_hand = 0                    # 手牌構成計算用インデックス
+        self.tahtsu_num = 0
+        self.hand_composition = [0] * 10                  # 手牌構成
+        self.i_hc = 0                                     # 手牌構成計算用インデックス (index of hand composition)
 
         # ログ用
         self.actions = []
@@ -80,7 +82,7 @@ class Player :
     def init_subgame(self, rotations_num: int) -> None :
 
         self.hand = [0] * 38                              # 手牌
-        self.reds = [False] * 3                           # 自分の手の赤があるかどうか，マンピンソウの順, reds[1] is True ==> 手の中に赤5pがある
+        self.reds = [False] * 3                           # 自分の手に赤があるかどうか，マンピンソウの順．例）reds[1] is True ==> 手の中に赤5pがある
         self.opened_hand = [0] * 20                       # 鳴いている牌
         self.discarded_tiles = []                         # 河
         self.discarded_state = []                         # D:ツモ切り，d:手出し , i:"D" ==> discarded_tiles[i]はツモ切られた牌
@@ -113,7 +115,7 @@ class Player :
         self.pairs_num = 0
         self.tahtsu_num = 0                               # 英語見つからなくて草
         self.composition_of_hand = [0] * 10               # 手牌構成
-        self.i_composition_of_hand = 0                    # 手牌構成計算用インデックス
+        self.i_hc = 0                                     # 手牌構成計算用インデックス （index of hand composition)
 
         # ログ用
         self.actions = []
@@ -521,7 +523,7 @@ class Player :
 
         # 役があるかどうかをチェック
         if is_chiitoi or is_kokushi : return True
-        if is_normal and self.has_yaku(game, ron, ron_tile) : return True
+        if is_normal and self._has_yaku(game, ron, ron_tile) : return True
 
         return False
 
@@ -545,8 +547,8 @@ class Player :
         return False
 
 
-    # 役があるか 和了れるかどうかの判定に使うから全部の役は見ない
-    def has_yaku(self, game: Game, ron: bool, ron_tile: int) -> bool:
+    # 役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
+    def _has_yaku(self, game: Game, ron: bool, ron_tile: int) -> bool:
         if ron_tile in TileType.REDS : ron_tile += 5
         if self.has_declared_ready : return True
         if self.has_declared_double_ready : return True
@@ -563,90 +565,94 @@ class Player :
         if game.is_last_tile() : return True # 海底・河底
         if game.rinshan_draw_flag : return True # 嶺上
         if game.dora_opens_flag : return True # 槍槓
-        if self._judge_if_there_is_hand_composition_yaku(round_wind, seat_wind, ron, ron_tile) : return True
+        if self._has_yaku_based_on_tiles(round_wind, seat_wind, ron, ron_tile) : return True
 
         return False
 
 
-    def _judge_if_there_is_hand_composition_yaku(self, prevailing_wind: int, ron: bool, ron_tile: int) -> bool :
+    # 手牌構成による役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
+    def _has_yaku_based_on_tiles(self, prevailing_wind: int, ron: bool, ron_tile: int) -> bool :
         hand = self.hand[:]
         if ron : hand[ron_tile] += 1
-        self.composition_of_hand = [0] * 10
+        self.hand_composition = [0] * 10
+        self.i_hc = 0
+
         #副露メンツ確定
         for i in range(0,4) :
-            if self.displayed_hand[i*5] != 0 :
-                self.composition_of_hand[(i*2)] = self.displayed_hand[i*5]
-                self.composition_of_hand[(i*2)+1] = self.displayed_hand[(i*5)+1]
-                self.p_composition_of_hand += 2
+            if self.opened_hand[i*5] != 0 :
+                self.hand_composition[(i*2)] = self.opened_hand[i*5]
+                self.hand_composition[(i*2)+1] = self.opened_hand[(i*5)+1]
+                self.i_hc += 2
             else : break
+
         #頭抜き出し
         for i in range(1,38) :
             if hand[i] == 0 : continue
             if hand[i] >= 2 :
                 hand[i] = hand[i] - 2
-                self.composition_of_hand[self.p_composition_of_hand] = Block.TOITSU
-                self.composition_of_hand[self.p_composition_of_hand+1] = i
-                self.p_composition_of_hand += 2
+                self.hand_composition[self.i_hc] = Block.TOITSU
+                self.hand_composition[self.i_hc+1] = i
+                self.i_hc += 2
                 there_is_yaku = self._pick_out_mentsu_for_composition_hand(hand, round_wind, seat_wind, ron, ron_tile);
                 if there_is_yaku : return True
-                self.p_composition_of_hand -= 2
-                self.composition_of_hand[self.p_composition_of_hand] = 0
-                self.composition_of_hand[self.p_composition_of_hand+1] = 0
+                self.i_hc -= 2
+                self.hand_composition[self.i_hc] = 0
+                self.hand_composition[self.i_hc+1] = 0
                 hand[i] = hand[i] + 2
+
         return False
 
-    def _pick_out_mentsu_for_composition_hand(self, hand: List[int], prevailing_wind: int, ron: bool, ron_tile: int) -> bool :
+
+    # 面子を抜き出す．_pick_out_mentsu()と違い高速化のため役判定に不要な処理を省いたバージョン．
+    def _pick_out_mentsu2(self, hand: List[int], prevailing_wind: int, ron: bool, ron_tile: int) -> bool :
         for i in range(1,38) :
-            if self.composition_of_hand[9] != 0 :
-                if pinfu(self.composition_of_hand, ron_tile, round_wind, seat_wind) : return True
-                if iipeikou(self.composition_of_hand) : return True
-                if chanta(self.composition_of_hand) : return True
-                if sansyokudoujun(self.composition_of_hand) : return True
-                if ikkitsuukan(self.composition_of_hand) : return True
-                if toitoi(self.composition_of_hand) : return True
-                if sansyokudoukou(self.composition_of_hand) : return True
-                if sankantsu(self.composition_of_hand) : return True
-                if sanankou(self.composition_of_hand) : return True
-                if junchanta(self.composition_of_hand) : return True
+
+            # 判定する手牌構成が決まったら役があるかどか判定結果を返す
+            if self.hand_composition[9] != 0 :
+                if no_points_hand(self.hand_composition, ron_tile, round_wind, seat_wind) : return True
+                if one_set_of_identical_sequences(self.hand_composition) : return True
+                if terminal_or_honor_in_each_set(self.hand_composition) : return True
+                if three_color_straight(self.hand_composition) : return True
+                if straight(self.hand_composition) : return True
+                if all_triplet_hand(self.hand_composition) : return True
+                if three_color_triplets(self.hand_composition) : return True
+                if three_kans(self.hand_composition) : return True
+                if three_closed_triplets(self.hand_composition) : return True
+                if terminal_in_each_set(self.hand_composition) : return True
                 return False
+
+            # インデックスが指す場所に牌がなければ次の牌を見にいく
             if hand[i] == 0 : continue
+
             #暗刻抜き出し
             if hand[i] >= 3 :
                 hand[i] -= 3
-                if i == ron_tile and ron and hand[i] == 0 : self.composition_of_hand[self.p_composition_of_hand] = Block.PON
-                else : self.composition_of_hand[self.p_composition_of_hand] = Block.ANKO
-                self.composition_of_hand[self.p_composition_of_hand+1] = i
-                self.p_composition_of_hand += 2
-                self._pick_out_mentsu_for_composition_hand(hand, round_wind, seat_wind, ron, ron_tile)
-                self.p_composition_of_hand -= 2
-                self.composition_of_hand[self.p_composition_of_hand] = 0
-                self.composition_of_hand[self.p_composition_of_hand+1] = 0
+                if i == ron_tile and ron and hand[i] == 0 : self.hand_composition[self.i_hc] = Block.PON
+                else : self.hand_composition[self.i_hc] = Block.ANKO
+                self.hand_composition[self.i_hc+1] = i
+                self.i_hc += 2
+                self._pick_out_mentsu2(hand, round_wind, seat_wind, ron, ron_tile)
+                self.i_hc -= 2
+                self.hand_composition[self.i_hc] = 0
+                self.hand_composition[self.i_hc+1] = 0
                 hand[i] += 3
+
             #順子抜き出し
             if i < 30 and hand[i] != 0 and hand[i+1] != 0 and hand[i+2] != 0 :
                 hand[i] = hand[i] - 1
                 hand[i+1] = hand[i+1] - 1
                 hand[i+2] = hand[i+2] - 1
-                self.composition_of_hand[self.p_composition_of_hand] = Block.SYUNTSU
-                self.composition_of_hand[self.p_composition_of_hand+1] = i
-                self.p_composition_of_hand += 2
-                self._pick_out_mentsu_for_composition_hand(hand, round_wind, seat_wind, ron, ron_tile)
-                self.p_composition_of_hand -= 2
-                self.composition_of_hand[self.p_composition_of_hand+1] = 0
-                self.composition_of_hand[self.p_composition_of_hand] = 0
+                self.hand_composition[self.i_hc] = Block.SYUNTSU
+                self.hand_composition[self.i_hc+1] = i
+                self.i_hc += 2
+                self._pick_out_mentsu2(hand, round_wind, seat_wind, ron, ron_tile)
+                self.i_hc -= 2
+                self.hand_composition[self.i_hc+1] = 0
+                self.hand_composition[self.i_hc] = 0
                 hand[i] += 1
                 hand[i+1] += 1
                 hand[i+2] += 1
 
-    def judge_9_kinds(self) -> bool :
-        num_edge_tile = 0
-        for i in [1,9,11,19,21,29,31,32,33,34,35,36,37] :
-            if self.hand[i] > 0 : num_edge_tile += 1
-        #今はとりあえず流局できたらするようにする
-        if num_edge_tile > 8 :
-            ###print("drawn game : 9 kinds")
-            return True
-        else : return False
 
 
 
@@ -758,11 +764,14 @@ class Player :
         self.displayed_num += 1
         self.displayed_tf = True
 
-    #鳴いた後の手出し牌を登録
-    def add_tile_player_discard_after_displaying(self, tile: int) -> None : self.displayed_hand[((self.displayed_num - 1) * 5) + 4] = tile
 
+    # 鳴いた後の手出し牌を登録
+    def add_tile_player_discard_after_displaying(self, tile: int) -> None :
+        self.opened_hand[((self.opened_sets_num - 1) * 5) + 4] = tile
+
+
+    # handを標準出力に表示
     def print_hand(self) -> None:
-        #受け取った手牌を表示
         s_hand = ""
         for i in range(1,38) :
             if i == 10 : s_hand += "m"
@@ -777,7 +786,8 @@ class Player :
                 elif i == 35 : s_hand += "白"
                 elif i == 36 : s_hand += "発"
                 else : s_hand += "中"
-        #print(s_hand)
+        print(s_hand)
+
 
     def add_to_starting_hand(self, tile: int) -> None :
         if tile in [0, 10, 20] : tile = 51 + (tile // 10)
@@ -814,8 +824,7 @@ class Player :
         return can_ankan_tiles
 
 
-
-    # 槓しないか or どの牌で槓するか決める
+    # 槓しない or どの牌で槓するか決める
     def _deside_which_tile_to_kan(self, game: Game, playes: List[Player]) -> int :
         ### 今は強制的に槓しないようにする
         ### NNの計算とかが入る
@@ -839,6 +848,22 @@ class Player :
         return tile, ankan, kakan
 
 
+    # 九種九牌を宣言するかどうか決める
+    def _decide_to_declare_nine_orphans(self) -> bool :
+
+        # 九種九牌をそもそも宣言できるかどうかの判定
+        terminals_num = 0
+        for i in (TileType.TERMINALS | TileType.HONORS) :
+            if self.hand[i] > 0 :
+                terminals_num += 1
+
+        # 今はとりあえず流局できたらするようにする
+        # TODO ちゃんと判断するように変更
+        if terminals_num > 8 : return True
+
+        return False
+
+
     # アクションフェーズでのアクションを決める
     def decide_action(self, game, players) :
         # プレイヤの行動決定，tile:赤は(0,10,20)表示
@@ -846,12 +871,16 @@ class Player :
 
         # 槓するかどうか決める
         tile, ankan, kakan = self._decide_to_kan()
-        if ankan or kakan : return tile, ankan, kakan, ready, exchanged
+        if ankan or kakan : return tile, exchanged, ready, ankan, kakan, kyushu
 
         # 切る牌を決める．赤は(0, 10, 20)．
-        tile = self.deside_which_tile_to_discard()
+        tile, exchanged = self._deside_which_tile_to_discard()
 
         # 立直するかどうか決める
-        ready = self.decide_to_declare_ready(tile)
+        ready = self._decide_to_declare_ready(tile)
 
-        return tile, ankan, kakan, ready, exchanged
+        # 九種九牌で流局するかどうか決める
+        if game.is_first_turn : kyusyu = self._decide_to_declare_nine_orphans()
+        else : kyusyu = False
+
+        return tile, exchanged, ready, ankan, kakan, kyushu
