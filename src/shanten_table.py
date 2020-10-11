@@ -37,8 +37,7 @@ class ShantenTable :
         self.hand = hand
         self.opened_sets_num = opened_sets_num
 
-        key = hash(tuple(hand))
-        shanten_num = self.shanten_table.get(key)
+        shanten_num = self.shanten_table.get(tuple(hand))
         if (shanten_num is None) :
             shanten_num = self._calc_shanten_num()
             self.shanten_table[key] = shanten_num
