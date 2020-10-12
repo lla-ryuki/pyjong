@@ -7,11 +7,19 @@ from typing import List
 from tile_type import TileType
 
 
-class ShantenTable :
-
-    def __init__(self, file_path:str = "", record_mode:bool = False) :
+class ShantenNumCalculator :
+    def __init__(self, file_path:str = "../data/shanten_table.pickle", record_mode:bool = False) :
         self.file_path = file_path
         self.record_mode = record_mode
+
+        # 向聴数を記録するハッシュテーブルをロード
+        if (os.path.exists(self.file_path)) :
+            with open(self.file_path, "rb") as f :
+                self.shanten_table = pickle.load(f)
+        else :
+            self.shanten_table = {}
+            with open(self.file_path, "wb") as f :
+                pickle.dump(self.shanten_table, f)
 
         # normal handの向聴数計算用．複数の関数をまたいで使うのでここで定義．
         self.shanten_num = 8
@@ -21,12 +29,6 @@ class ShantenTable :
         self.pairs_num = 0
         self.tahtsu_num = 0
         self.sets_num = 0
-
-        # 向聴数を記録するハッシュテーブル
-        if (os.path.exists(file_path)) :
-            self.shanten_table = pickle.load(file_path)
-        else :
-            self.shanten_table = {}
 
 
     # 手牌をハッシュして得られるキーを用いて向聴テーブルに登録された向聴数を返す
@@ -39,16 +41,20 @@ class ShantenTable :
 
         shanten_num = self.shanten_table.get(tuple(hand))
         if (shanten_num is None) :
+            print("not hit")
             shanten_num = self._calc_shanten_num()
             self.shanten_table[key] = shanten_num
-            if self.record_mode : self.dump()
+            if self.record_mode :
+                with open(self.file_path, "wb") as f :
+                    pickle.dump(self.shanten_table, f)
 
         return shanten_num
 
 
     # 向聴テーブルをダンプ
     def dump_table() -> None :
-        pickle.dump(self.shanten_table, self.file_path)
+        with open(self.file_path, "wb") as f :
+            pickle.dump(self.shanten_table, f)
 
 
     # handの向聴数を計算
