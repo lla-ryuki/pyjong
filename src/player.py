@@ -654,8 +654,6 @@ class Player :
                 hand[i+2] += 1
 
 
-
-
     def proc_ankan(self) -> None :
         tile = self.action[0]
         if tile in [0,10,20] : tile += 5
