@@ -13,26 +13,6 @@ from logger import Logger
 from yaku import *
 from yakuman import *
 
-"""
-TODO
-
-四風連打で立直宣言時のリー棒の処理どうなる？
-
-appearing_red_tilesの登録処理
-
-
-ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open_flagとかにする？
-加槓ドラめくり
- - 加槓 -> 暗槓
- - 加槓 -> 加槓 （2回目の加槓で槍槓になると1回目の加槓の分は開かれるが2回目の分は開かれない）
- - 切った後（ロンする前）
-
-四槓散了
- 加槓，大明槓 : 切った牌が通ったら流局
- 暗槓 : 切った牌が通ったらっぽい
-
-"""
-
 
 class Game :
     def __init__(self) :
