@@ -234,16 +234,18 @@ class Game :
         return tile
 
 
-
     # 大明槓が行われた時の処理
-    def _proc_daiminkan(self, tile: int, action_players_num: int) -> None :
+    def _proc_daiminkan(self, i_ap:int, tile:int) -> None :
+        pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．1:下家, 2:対面, 3上家
+        self.players[i_ap].proc_daiminkan(tile, pos)
+        self.logger.register_daiminkan(tile, pos)
+
         if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 3
         self.is_first_turn = False
-        self.i_player = action_players_num
         self.dora_opens_flag = True
-        self.rinshan_draw_flag
-        self.i_player = (4 + action_players_num - 1) % 4
+        self.rinshan_draw_flag = True
+        self.i_player = (4 + i_ap - 1) % 4
 
 
     # ポンが行われた時の処理
@@ -730,8 +732,8 @@ class Game :
         if self.steal_flag : return
 
         # 槓した場合は嶺上牌から，そうでない場合は山からツモる
-        if self.rinshan_draw_flag : players[self.i_player].add_tile_to_hand(self.supply_next_rinshan_tile())
-        else : players[self.i_player].add_tile_to_hand(self.supply_next_tile())
+        if self.rinshan_draw_flag : players[self.i_player].get_tile(self.supply_next_rinshan_tile())
+        else : players[self.i_player].get_tile(self.supply_next_tile())
 
         # 和了の判定
         self.win_flag = players[self.i_player].decide_win(self)
@@ -767,10 +769,8 @@ class Game :
         self.open_new_dora()
         self.rinshan_draw_flag = True
         for i in range(4) : players[i].one_shot = False
-
-        players[self.i_player].proc_ankan()
-
-        return
+        players[self.i_player].proc_ankan(tile)
+        self.logger.register_ankan(self.i_player, tile)
 
 
     # 加槓が行われた時の処理
@@ -780,9 +780,8 @@ class Game :
         self.rinshan_draw_flag = True
         self.dora_opens_flag = True
         for i in range(4) : players[i].one_shot = False
-        players[self.i_player].proc_kakan(tile)
-
-        return
+        pos = players[self.i_player].proc_kakan(tile)
+        self.logger.register_kakan(self.i_player, tile, pos)
 
 
     # アクションフェーズの処理
@@ -833,7 +832,7 @@ class Game :
                 winners_num += 1
 
                 # 切られた牌を手牌に加える
-                players[i_winner].add_tile_to_hand(discarded_tile)
+                players[i_winner].get_tile(discarded_tile)
 
                 # 和了牌を記録．平和判定とかに使う．
                 self.set_winning_tile(tile)
@@ -890,7 +889,6 @@ class Game :
                     players[i_ap].proc_pon(self, discarded_tile)
                     self._proc_pon(i_ap, discarded_tile)
                 elif kan :
-                    players[i_ap].proc_daiminkan(discarded_tile)
                     self._proc_daiminkan(i_ap, discarded_tile)
                 break
 
@@ -913,7 +911,7 @@ class Game :
         for i in range(4) :
             for j in range(13) :
                 tile = self.supply_next_tile()
-                players[i].add_tile_to_hand(tile)
+                players[i].get_tile(tile)
                 logger.add_to_first_hand(i, tile)
 
         # 配牌でテンパイかどうかチェック

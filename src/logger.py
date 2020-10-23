@@ -18,14 +18,41 @@ class Logger :
         self.tiles_player_got = [[] for i in range(4)]
 
 
-    def register_kan(self, i_player:int, tile:int) -> None :
+    def register_ankan(self, i_player:int, tile:int) -> None :
         s_tile = str(tile + 10)
         self.actions[i_player].append(f"{s_tile}{s_tile}{s_tile}a{s_tile}")
 
 
-    def register_kakan(self, i_player:int, tile:int) -> None :
+    def register_kakan(self, i_player:int, tile:int, pos:int) -> None :
         s_tile = str(tile + 10)
-        self.actions[i_player].append(f"{s_tile}{s_tile}{s_tile}a{s_tile}")
+        if pos == 1 : self.actions[i_player].append(f"{s_tile}{s_tile}k{s_tile}{s_tile}")
+        elif pos == 2 : self.actions[i_player].append(f"{s_tile}k{s_tile}{s_tile}{s_tile}")
+        else : self.actions[i_player].append(f"k{s_tile}{s_tile}{s_tile}{s_tile}")
+
+
+    def register_kakan(self, i_player:int, tile:int, pos:int) -> None :
+        s_tile = str(tile + 10)
+        if pos == 1 : self.actions[i_player].append(f"{s_tile}{s_tile}k{s_tile}{s_tile}")
+        elif pos == 2 : self.actions[i_player].append(f"{s_tile}k{s_tile}{s_tile}{s_tile}")
+        else : self.actions[i_player].append(f"k{s_tile}{s_tile}{s_tile}{s_tile}")
+
+
+    def register_daiminkan(self, i_player:int, tile:int, pos:int) -> None :
+        s_tile = str(tile + 10)
+        if tile in TileType.REDS :
+            s_tile = str(tile + 15)
+            s_rtile = str(51 + (tile // 10))
+            if pos == 1 : self.actions[i_player].append(f"{s_tile}{s_tile}{s_tile}m{s_rtile}")
+            elif pos == 2 : self.actions[i_player].append(f"{s_tile}m{s_tile}{s_rtile}{s_tile}")
+            else : self.actions[i_player].append(f"m{s_rtile}{s_tile}{s_tile}{s_tile}")
+        elif tile in TileType.FIVES and self.red[tile//10] :
+            s_rtile = str(51 + (tile // 10))
+            if pos == 1 : self.actions[i_player].append(f"{s_tile}{s_tile}{s_rtile}m{s_tile}")
+            elif pos == 2 : self.actions[i_player].append(f"{s_tile}m{s_tile}{s_tile}{s_rtile}")
+            else : self.actions[i_player].append(f"m{s_tile}{s_rtile}{s_tile}{s_tile}")
+        elif pos == 1 : self.actions[i_player].append(f"{s_tile}{s_tile}{s_tile}m{s_tile}")
+        elif pos == 2 : self.actions[i_player].append(f"{s_tile}m{s_tile}{s_tile}{s_tile}")
+        else : self.actions[i_player].append(f"m{s_tile}{s_tile}{s_tile}{s_tile}")
 
 
     def register_got_tile(self, i:int, tile:int, is_starting_hand:bool = False) -> None :
