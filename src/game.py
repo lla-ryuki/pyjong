@@ -14,20 +14,6 @@ from yaku import *
 from yakuman import *
 
 """
-四風連打で立直宣言時のリー棒の処理どうなる？
-
-appearing_red_tilesの登録処理
-
-
-ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open_flagとかにする？
-加槓ドラめくり
- - 加槓 -> 暗槓
- - 加槓 -> 加槓 （2回目の加槓で槍槓になると1回目の加槓の分は開かれるが2回目の分は開かれない）
- - 切った後（ロンする前）
-"""
-
-
-"""
 TODO
 
 四風連打で立直宣言時のリー棒の処理どうなる？
@@ -44,13 +30,15 @@ ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open
 四槓散了
  加槓，大明槓 : 切った牌が通ったら流局
  暗槓 : 切った牌が通ったらっぽい
+
 """
 
 
 class Game :
-
-
     def __init__(self) :
+        self.logger = Logger(is_logging=True);
+        self.players = [Player(i) for i in range(4)]
+
         self.rounds_num = 0                            # 場 0:東場，1:南場，2:西場
         self.rotations_num = 0                         # 局 0:1局目 ... 3:4局目
         self.counters_num = 0                          # 積み棒の数
@@ -118,6 +106,10 @@ class Game :
 
     # 局開始時の初期化
     def _init_subgame(self) -> None :
+        # プレイヤが持つ局に関わるメンバ変数を初期化
+        for i in range(4) :
+            self.players[i].init_subgame()
+
         self.is_abortive_draw = False                  # 途中流局になるとTrueになる
         self.is_first_turn = True                      # Trueの間は1巡目であることを示す
 
@@ -454,9 +446,13 @@ class Game :
         return False
 
 
-    # 海底・河底かチェック
+    # 海底・河底かチェックして記録
     def _check_player_wins_by_last_tile(self) -> None :
-        if 136 - (self.i_wall + self.i_rinshan) == 14 : self.wins_by_last_tile = True
+        if self.is_last_tile() : self.wins_by_last_tile = True
+
+    # 記録はせずに海底・河底かだけ返す
+    def is_last_tile(self) -> None :
+        if 136 - (self.i_wall + self.i_rinshan) == 14 : return True
 
 
     # 和了牌をセット
@@ -771,6 +767,7 @@ class Game :
         self.open_new_dora()
         self.rinshan_draw_flag = True
         for i in range(4) : players[i].one_shot = False
+
         players[self.i_player].proc_ankan()
 
         return
@@ -783,7 +780,7 @@ class Game :
         self.rinshan_draw_flag = True
         self.dora_opens_flag = True
         for i in range(4) : players[i].one_shot = False
-        players[self.i_player].proc_kakan()
+        players[self.i_player].proc_kakan(tile)
 
         return
 
@@ -797,9 +794,7 @@ class Game :
         elif anakn : self._proc_ankan(tile, players)
         elif kakan :
             # 直前の行動が加槓だった場合このタイミングでドラが開く
-            if self.dora_opens_flag :
-                self.open_new_dora()
-                self.dora_opens_flag = False
+            if self.dora_opens_flag : self.open_new_dora()
             # 槍槓用ロンフェーズ
             self._proc_ron_phase(tile, players, True)
             if self.win_flag : return
@@ -818,15 +813,15 @@ class Game :
         # 鳴いた後に切った場合, 手出し牌に牌を記録
         if self.steal_flag : player.add_to_discard_tiles_after_stealing(discarded_tile)
         self.steal_flag = False
-        if player.is_nagashi_mangan : players[self.i_player].check_nagashi_mangan()
+        if player.is_nagashi_mangan : players[self.i_player].check_player_is_nagashi_mangan()
 
 
     # ロンフェーズ
-    def _proc_ron_phase(self, players: List[Player], discarded_tile: int, chankan: bool = False) -> None :
+    def _proc_ron_phase(self, players: List[Player], discarded_tile: int) -> None :
         winners_num = 0
         for i in range(1,4) :
             i_winner = (self.i_player + i) % 4
-            if players[i_winner].decide_win(self, discarded_tile, chankan) :
+            if players[i_winner].decide_win(self, discarded_tile) :
                 # リーチ宣言時のロンはリーチ不成立
                 if self.ready_flag :
                     self.ready_flag = False
@@ -843,11 +838,9 @@ class Game :
                 # 和了牌を記録．平和判定とかに使う．
                 self.set_winning_tile(tile)
 
-                # 槍槓があるかどうかを記録
-                if chankan : self.wins_by_chankan = True
-
-                # 河底のチェック
-                self._check_player_wins_by_last_tile()
+                # 偶然役の記録
+                if self.dora_opens_flag : self.wins_by_chankan = True # 槍槓があるかどうかを記録
+                self._check_player_wins_by_last_tile() # 河底のチェック
 
                 # ロン和了フラグを立てる
                 self.win_flag = True
@@ -904,15 +897,18 @@ class Game :
         # チー判定と処理
         if (pon and kan) is False :
             i_ap = (self.i_player + 1) % 4 #i_ap : index of action player
-            chii, tile1, tile2 = players[i_ap].decide_chii(self, players, tile)
+            chii, tile1, tile2 = players[i_ap].decide_chii(self, players, discarded_tile)
             if chii :
-                players[self.i_player].is_nagashi_mangan = False
-                players[i_ap].proc_chii(tile, tile1, tile2)
-                self.proc_chii(tile, tile1, tile2)
+                players[self.i_player].is_najsjsuashi_mangan = False
+                players[i_ap].proc_chii(discarded_tile, tile1, tile2)
+                self.proc_chii(discarded_tile, tile1, tile2)
 
 
     # 局の処理
-    def _proc_subgame(self, players: List[Player], logger: Logger) -> None :
+    def _proc_subgame(self) -> None :
+        # 局を初期化
+        self._init_subgame()
+
         # 配牌を配る
         for i in range(4) :
             for j in range(13) :
@@ -967,8 +963,8 @@ class Game :
             # 切った牌を他家のフリテン牌にセット
             for i in range(1,4) :
                 op = (self.i_player + i) % 4
-                if players[op].has_declared_ready or players[op].has_declared_double_ready : players[op].set_to_furiten_tiles(discarded_tile)
-                else : players[op].set_to_same_turn_furiten_tiles(discarded_tile)
+                if players[op].has_declared_ready or players[op].has_declared_double_ready : players[op].add_furiten_tile(discarded_tile)
+                else : players[op].add_same_turn_furiten_tile(discarded_tile)
 
             # 副露フェーズ
             self._proc_steal_phase(players)
@@ -997,14 +993,9 @@ class Game :
 
     # 半荘の処理
     def proc_game(self) -> None :
-        logger = Logger();
-        players = [Player(i) for i in range(4)]
-
         while True :
             # 局
-            self._init_subgame()
-            for i in range(4) : players[i].init_subgame()
-            self._proc_subgame(players, logger)
+            self._proc_subgame()
 
             # 半荘終了判定
             if self.is_over : break
