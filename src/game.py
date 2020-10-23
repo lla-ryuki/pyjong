@@ -35,9 +35,10 @@ ankan_flagとkakan_flagを廃止して next_tile_is_rinshan: bool と kakan_open
 
 
 class Game :
-
-
     def __init__(self) :
+        self.logger = Logger(is_logging=True);
+        self.players = [Player(i) for i in range(4)]
+
         self.rounds_num = 0                            # 場 0:東場，1:南場，2:西場
         self.rotations_num = 0                         # 局 0:1局目 ... 3:4局目
         self.counters_num = 0                          # 積み棒の数
@@ -105,6 +106,10 @@ class Game :
 
     # 局開始時の初期化
     def _init_subgame(self) -> None :
+        # プレイヤが持つ局に関わるメンバ変数を初期化
+        for i in range(4) :
+            self.players[i].init_subgame()
+
         self.is_abortive_draw = False                  # 途中流局になるとTrueになる
         self.is_first_turn = True                      # Trueの間は1巡目であることを示す
 
@@ -762,6 +767,7 @@ class Game :
         self.open_new_dora()
         self.rinshan_draw_flag = True
         for i in range(4) : players[i].one_shot = False
+
         players[self.i_player].proc_ankan()
 
         return
@@ -774,7 +780,7 @@ class Game :
         self.rinshan_draw_flag = True
         self.dora_opens_flag = True
         for i in range(4) : players[i].one_shot = False
-        players[self.i_player].proc_kakan()
+        players[self.i_player].proc_kakan(tile)
 
         return
 
@@ -899,7 +905,10 @@ class Game :
 
 
     # 局の処理
-    def _proc_subgame(self, players: List[Player], logger: Logger) -> None :
+    def _proc_subgame(self) -> None :
+        # 局を初期化
+        self._init_subgame()
+
         # 配牌を配る
         for i in range(4) :
             for j in range(13) :
@@ -984,14 +993,9 @@ class Game :
 
     # 半荘の処理
     def proc_game(self) -> None :
-        logger = Logger();
-        players = [Player(i) for i in range(4)]
-
         while True :
             # 局
-            self._init_subgame()
-            for i in range(4) : players[i].init_subgame()
-            self._proc_subgame(players, logger)
+            self._proc_subgame()
 
             # 半荘終了判定
             if self.is_over : break

@@ -14,7 +14,7 @@ from yakuman import *
 
 """
 TODO
-### 変数名とロジック書き直し
+### 名前とロジック修正
 checkなんちゃらメソッドの改名
 ツモ切りのDとd逆にしたい
 loggerの処理切り分けてく
@@ -32,7 +32,18 @@ class Player :
 
         self.hand = [0] * 38                              # 手牌
         self.reds = [False] * 3                           # 自分の手の赤があるかどうか，マンピンソウの順, reds[1] is True ==> 手の中に赤5pがある
-        self.opened_hand = [0] * 20                       # 鳴いている牌
+        self.opened_hand = [0] * 20
+        """
+            opened_hand =
+            [
+                [0+5*n]　フーロの種類（0＝フーロなし、Block.*と同期）
+                [1+5*n]　そのフーロメンツのうち最も小さい牌番号
+                [2+5*n]　そのフーロメンツのうち鳴いた牌の牌番号
+                [3+5*n]　その人から相対的に見た、鳴いた他家の番号。1＝下家、2＝対面、3＝上家
+                [4*5*n]  副露した直後に切った牌
+            ]
+        """
+
         self.discarded_tiles = []                         # 河
         self.discarded_state = []                         # D:ツモ切り，d:手出し , i:"D" ==> discarded_tiles[i]はツモ切られた牌
         self.furiten_tiles = [0] * 38                     # フリテン牌 furiten_tiles[i] > 0 ==> i番の牌は既に自分で切っているか同巡に切られた牌
@@ -412,15 +423,6 @@ class Player :
 
     # 鳴いて晒した牌を全部戻した手をreturnする
     def put_back_opened_hand(self) -> List[int] :
-        """
-        opened_hand =
-        [[0+4*n]　フーロの種類（0＝フーロなし、1＝ポン、2＝チー、3＝アンカン、4＝ミンカン　5＝カカン）
-        [1+4*n]　そのフーロメンツのうち最も小さい牌番号
-        [2+4*n]　そのフーロメンツのうち鳴いた牌の牌番号
-        [3+4*n]　その人から相対的に見た、鳴いた他家の番号。1＝下家、2＝対面、3＝上家
-        [4*4*n]  副露した直後に切った牌
-        ]
-        """
         hand = self.hand[:]
         for i in range(0,20,5) :
             if self.opened_hand[i] == 0 : break
@@ -552,7 +554,7 @@ class Player :
         if ron_tile in TileType.REDS : ron_tile += 5
         if self.has_declared_ready : return True
         if self.has_declared_double_ready : return True
-        hand = self.put_back_displayed_hand()
+        hand = self.put_back_opened_hand()
         if all_simples(hand) : return True
         if white_dragon(hand) : return True
         if green_dragon(hand) : return True
@@ -624,7 +626,7 @@ class Player :
             # インデックスが指す場所に牌がなければ次の牌を見にいく
             if hand[i] == 0 : continue
 
-            #暗刻抜き出し
+            # 暗刻抜き出し
             if hand[i] >= 3 :
                 hand[i] -= 3
                 if i == ron_tile and ron and hand[i] == 0 : self.hand_composition[self.i_hc] = Block.PON
@@ -637,7 +639,7 @@ class Player :
                 self.hand_composition[self.i_hc+1] = 0
                 hand[i] += 3
 
-            #順子抜き出し
+            # 順子抜き出し
             if i < 30 and hand[i] != 0 and hand[i+1] != 0 and hand[i+2] != 0 :
                 hand[i] = hand[i] - 1
                 hand[i+1] = hand[i+1] - 1
@@ -654,30 +656,27 @@ class Player :
                 hand[i+2] += 1
 
 
-    def proc_ankan(self) -> None :
-        tile = self.action[0]
-        if tile in [0,10,20] : tile += 5
-        self.displayed_hand[self.displayed_num * 5] = 3
-        self.displayed_hand[self.displayed_num * 5 + 1] = tile
-        self.displayed_hand[self.displayed_num * 5 + 2] = tile
-        self.displayed_hand[self.displayed_num * 5 + 3] = 0
+    # 暗槓の処理
+    def proc_ankan(self, tile:int) -> None :
+        self.opened_hand[self.opened_sets_num * 5] = 3
+        self.opened_hand[self.opened_sets_num * 5 + 1] = tile
+        self.opened_hand[self.opened_sets_num * 5 + 2] = tile
+        self.opened_hand[self.opened_sets_num * 5 + 3] = 0
         self.hand[tile] -= 4
-        self.displayed_num += 1
-        self.num_of_kan += 1
-        s = str(tile + 10)
-        self.behavior.append(s+s+s+"a"+s)
+        self.opened_sets_num += 1
+        self.kans_num += 1
 
-    def proc_kakan(self) -> None :
-        tile = self.action[0]
-        self.num_of_kan += 1
-        if tile in [0,10,20] : tile += 5
+
+    # 加槓の処理
+    def proc_kakan(self, tile:int) -> None :
+        self.kans_num += 1
         for i in range(4) :
-            if self.displayed_hand[i*5] == 1 and self.displayed_hand[(i*5)+1] == tile :
-                self.displayed_hand[i*5] = 4
+            if self.opened_hand[i*5] == Block.OPENED_TRIPLET and self.opened_hand[(i*5)+1] == tile :
+                self.opened_hand[i*5] = Block.OPENED_KAN
                 self.hand[tile] -= 1
                 s = str(tile + 10)
-                if self.displayed_hand[i*5+3] == 1 : self.behavior.append(s+s+"k"+s+s)
-                elif self.displayed_hand[i*5+3] == 1 : self.behavior.append(s+"k"+s+s+s)
+                if self.opened_hand[i*5+3] == 1 : self.behavior.append(s+s+"k"+s+s)
+                elif self.opened_hand[i*5+3] == 1 : self.behavior.append(s+"k"+s+s+s)
                 else : self.behavior.append("k"+s+s+s+s)
                 break
 
@@ -699,10 +698,10 @@ class Player :
         else : ###print("error proc_minkan")
             dummy = True
         self.hand[tile] -= 3
-        self.displayed_hand[(self.displayed_num * 5) + 0] = 4
-        self.displayed_hand[(self.displayed_num * 5) + 1] = tile
-        self.displayed_hand[(self.displayed_num * 5) + 2] = tile
-        self.displayed_hand[(self.displayed_num * 5) + 3] = place
+        self.opened_hand[(self.displayed_num * 5) + 0] = 4
+        self.opened_hand[(self.displayed_num * 5) + 1] = tile
+        self.opened_hand[(self.displayed_num * 5) + 2] = tile
+        self.opened_hand[(self.displayed_num * 5) + 3] = place
         self.displayed_num += 1
         self.displayed_tf = True
         self.num_of_kan += 1
@@ -726,10 +725,10 @@ class Player :
         else : ###print("error proc_pon")
             dummy = True
         self.hand[tile] -= 2
-        self.displayed_hand[(self.displayed_num * 5) + 0] = 1
-        self.displayed_hand[(self.displayed_num * 5) + 1] = tile
-        self.displayed_hand[(self.displayed_num * 5) + 2] = tile
-        self.displayed_hand[(self.displayed_num * 5) + 3] = place
+        self.opened_hand[(self.displayed_num * 5) + 0] = 1
+        self.opened_hand[(self.displayed_num * 5) + 1] = tile
+        self.opened_hand[(self.displayed_num * 5) + 2] = tile
+        self.opened_hand[(self.displayed_num * 5) + 3] = place
         self.displayed_num += 1
         self.displayed_tf = True
         if tile in [35, 36, 37] :
@@ -753,12 +752,12 @@ class Player :
         else : self.behavior.append("c" + str(tile + 10) + str(tile1 + 10) + str(tile2 + 10))
         self.hand[tile1] -= 1
         self.hand[tile2] -= 1
-        self.displayed_hand[(self.displayed_num * 5) + 0] = 2
+        self.opened_hand[(self.displayed_num * 5) + 0] = 2
         if tile1 > tile : min_tile = tile
         else : min_tile = tile1
-        self.displayed_hand[(self.displayed_num * 5) + 1] = min_tile
-        self.displayed_hand[(self.displayed_num * 5) + 2] = tile
-        self.displayed_hand[(self.displayed_num * 5) + 3] = 3
+        self.opened_hand[(self.displayed_num * 5) + 1] = min_tile
+        self.opened_hand[(self.displayed_num * 5) + 2] = tile
+        self.opened_hand[(self.displayed_num * 5) + 3] = 3
         self.displayed_num += 1
         self.displayed_tf = True
 
