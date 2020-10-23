@@ -12,17 +12,6 @@ from yaku import *
 from yakuman import *
 
 
-"""
-TODO
-### 名前とロジック修正
-checkなんちゃらメソッドの改名
-ツモ切りのDとd逆にしたい
-loggerの処理切り分けてく
-opend_handとかhand_compositionとかを多次元配列にした方がわかりやすい
-
-"""
-
-
 class Player :
 
     def __init__(self, player_num) :
@@ -85,6 +74,7 @@ class Player :
         self.i_hc = 0                                     # 手牌構成計算用インデックス (index of hand composition)
 
 
+    # 局の初期化
     def init_subgame(self, rotations_num: int) -> None :
         self.hand = [0] * 38                              # 手牌
         self.reds = [False] * 3                           # 自分の手に赤があるかどうか，マンピンソウの順．例）reds[1] is True ==> 手の中に赤5pがある
@@ -742,39 +732,6 @@ class Player :
         self.opened_hand[((self.opened_sets_num - 1) * 5) + 4] = tile
 
 
-    # handを標準出力に表示
-    def print_hand(self) -> None:
-        s_hand = ""
-        for i in range(1,38) :
-            if i == 10 : s_hand += "m"
-            elif i == 20 : s_hand += "p"
-            elif i == 30 : s_hand += "s"
-            for j in range(self.hand[i]) :
-                if i < 30 : s_hand += str(i%10)
-                elif i == 31 : s_hand += "東"
-                elif i == 32 : s_hand += "南"
-                elif i == 33 : s_hand += "西"
-                elif i == 34 : s_hand += "北"
-                elif i == 35 : s_hand += "白"
-                elif i == 36 : s_hand += "発"
-                else : s_hand += "中"
-        print(s_hand)
-
-
-    def add_to_starting_hand(self, tile: int) -> None :
-        if tile in [0, 10, 20] : tile = 51 + (tile // 10)
-        else : tile += 10
-        self.starting_hand.append(tile)
-
-    def set_hand(self) -> None :
-        hand = [0] * 38
-        for i in range(2) :
-            hand[21] += 1
-            hand[29] += 1
-        for i in range(21, 30) : hand[i] += 1
-        self.hand = hand
-
-
     # 暗槓できるかどうか判定，できる場合は暗槓できる牌の牌番号のリストを返す
     def _can_ankan(self, game: Game) -> List[int] :
         can_ankan_tiles = []
@@ -856,3 +813,22 @@ class Player :
         else : kyusyu = False
 
         return tile, exchanged, ready, ankan, kakan, kyushu
+
+
+    # handを標準出力に表示
+    def print_hand(self) -> None:
+        s_hand = ""
+        for i in range(1,38) :
+            if i == 10 : s_hand += "m"
+            elif i == 20 : s_hand += "p"
+            elif i == 30 : s_hand += "s"
+            for j in range(self.hand[i]) :
+                if i < 30 : s_hand += str(i%10)
+                elif i == 31 : s_hand += "東"
+                elif i == 32 : s_hand += "南"
+                elif i == 33 : s_hand += "西"
+                elif i == 34 : s_hand += "北"
+                elif i == 35 : s_hand += "白"
+                elif i == 36 : s_hand += "発"
+                else : s_hand += "中"
+        print(s_hand)
