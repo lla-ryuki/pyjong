@@ -84,14 +84,8 @@ class Player :
         self.hand_composition = [0] * 10                  # 手牌構成
         self.i_hc = 0                                     # 手牌構成計算用インデックス (index of hand composition)
 
-        # ログ用
-        self.actions = []
-        self.starting_hand = []
-        self.tiles_player_drew = []
-
 
     def init_subgame(self, rotations_num: int) -> None :
-
         self.hand = [0] * 38                              # 手牌
         self.reds = [False] * 3                           # 自分の手に赤があるかどうか，マンピンソウの順．例）reds[1] is True ==> 手の中に赤5pがある
         self.opened_hand = [0] * 20                       # 鳴いている牌
@@ -127,12 +121,6 @@ class Player :
         self.tahtsu_num = 0                               # 英語見つからなくて草
         self.composition_of_hand = [0] * 10               # 手牌構成
         self.i_hc = 0                                     # 手牌構成計算用インデックス （index of hand composition)
-
-        # ログ用
-        self.actions = []
-        self.starting_hand = []
-        self.tiles_player_drew = []
-
 
 
     # 国士無双の向聴数を返す
@@ -336,9 +324,7 @@ class Player :
 
 
     # 牌を手牌に加える．配牌取得，ツモ，ロンで使う．
-    ### get_tile()にするとgetterと紛らわしいのでこの名前になった.もうちょっといい名前ないか?
-    ### ツモる時以外にも使うのでdraw_tile()は相応しくないと判断
-    def add_tile_to_hand(self, tile: int, starting_hand: bool = False) -> None :
+    def get_tile(self, tile:int, starting_hand:bool = False) -> None :
         self.last_added_tile = tile
         if tile in TileType.REDS :
             if starting_hand is False : self.tsumo_tiles.append(51 + (tile // 10))
@@ -658,53 +644,42 @@ class Player :
 
     # 暗槓の処理
     def proc_ankan(self, tile:int) -> None :
+        self.kans_num += 1
+        self.opened_sets_num += 1
         self.opened_hand[self.opened_sets_num * 5] = 3
         self.opened_hand[self.opened_sets_num * 5 + 1] = tile
         self.opened_hand[self.opened_sets_num * 5 + 2] = tile
         self.opened_hand[self.opened_sets_num * 5 + 3] = 0
         self.hand[tile] -= 4
-        self.opened_sets_num += 1
-        self.kans_num += 1
 
 
     # 加槓の処理
-    def proc_kakan(self, tile:int) -> None :
+    def proc_kakan(self, tile:int) -> int :
         self.kans_num += 1
         for i in range(4) :
             if self.opened_hand[i*5] == Block.OPENED_TRIPLET and self.opened_hand[(i*5)+1] == tile :
                 self.opened_hand[i*5] = Block.OPENED_KAN
                 self.hand[tile] -= 1
-                s = str(tile + 10)
-                if self.opened_hand[i*5+3] == 1 : self.behavior.append(s+s+"k"+s+s)
-                elif self.opened_hand[i*5+3] == 1 : self.behavior.append(s+"k"+s+s+s)
-                else : self.behavior.append("k"+s+s+s+s)
-                break
 
-    def proc_minkan(self, tile: int, p: int) -> None :
-        place = (4 + p - self.player_num) % 4
-        if tile in [0,10,20] :
-            if place == 1 : self.behavior.append(str(tile+15) + str(tile+15) + str(tile+15) + "m" + str(51+(tile // 10)))
-            elif place == 2 : self.behavior.append(str(tile+15) + "m" + str(tile+15) + str(51+(tile // 10)) + str(tile+15))
-            else : self.behavior.append("m" + str(51+(tile // 10)) + str(tile+15) + str(tile+15) + str(tile+15))
-            self.red[tile // 10] = True
+                # ポンした相手の位置の情報がloggingに必要なので渡す
+                return self.opened_hand[(i*5)+3]
+
+
+    # 大明槓の処理
+    def proc_daiminkan(self, tile:int, pos:int) -> None :
+        if tile in TileType.REDS :
+            self.reds[tile//10] = True
             tile += 5
-        elif tile in [5,15,25] and self.red[tile // 10] :
-            if place == 1 : self.behavior.append(str(tile + 10) + str(tile + 10) + str(51 + (tile // 10)) + "m" + str(tile + 10))
-            elif place == 2 : self.behavior.append(str(tile + 10) + "m" + str(tile + 10) + str(tile + 10) + str(51 + (tile // 10)))
-            else : self.behavior.append("m" + str(tile + 10) + str(51 + (tile // 10)) + str(tile + 10) + str(tile + 10))
-        elif place == 1 : self.behavior.append(str(tile + 10) + str(tile + 10) + str(tile + 10) + "m" + str(tile + 10))
-        elif place == 2 : self.behavior.append(str(tile + 10) + "m" + str(tile + 10) + str(tile + 10) + str(tile + 10))
-        elif place == 3 : self.behavior.append("m" + str(tile + 10) + str(tile + 10) + str(tile + 10) + str(tile + 10))
-        else : ###print("error proc_minkan")
-            dummy = True
+
+        self.kans_num += 1
+        self.opened_sets_num += 1
+        self.has_stealed = True
+        self.opened_hand[(self.opened_sets_num * 5) + 0] = 4
+        self.opened_hand[(self.opened_sets_num * 5) + 1] = tile
+        self.opened_hand[(self.opened_sets_num * 5) + 2] = tile
+        self.opened_hand[(self.opened_sets_num * 5) + 3] = pos
         self.hand[tile] -= 3
-        self.opened_hand[(self.displayed_num * 5) + 0] = 4
-        self.opened_hand[(self.displayed_num * 5) + 1] = tile
-        self.opened_hand[(self.displayed_num * 5) + 2] = tile
-        self.opened_hand[(self.displayed_num * 5) + 3] = place
-        self.displayed_num += 1
-        self.displayed_tf = True
-        self.num_of_kan += 1
+
 
     def proc_pon(self, tile: int, p: int, game: Game) -> None :
         place = (4 + p - self.player_num) % 4
@@ -725,12 +700,12 @@ class Player :
         else : ###print("error proc_pon")
             dummy = True
         self.hand[tile] -= 2
-        self.opened_hand[(self.displayed_num * 5) + 0] = 1
-        self.opened_hand[(self.displayed_num * 5) + 1] = tile
-        self.opened_hand[(self.displayed_num * 5) + 2] = tile
-        self.opened_hand[(self.displayed_num * 5) + 3] = place
-        self.displayed_num += 1
-        self.displayed_tf = True
+        self.opened_hand[(self.opened_sets_num * 5) + 0] = 1
+        self.opened_hand[(self.opened_sets_num * 5) + 1] = tile
+        self.opened_hand[(self.opened_sets_num * 5) + 2] = tile
+        self.opened_hand[(self.opened_sets_num * 5) + 3] = place
+        self.opened_sets_num += 1
+        self.has_stealed = True
         if tile in [35, 36, 37] :
             self.num_of_dragon += 1
             if self.num_of_dragon == 3 : game.set_pao_of_3_dragons(self.player_num, p)
@@ -752,14 +727,14 @@ class Player :
         else : self.behavior.append("c" + str(tile + 10) + str(tile1 + 10) + str(tile2 + 10))
         self.hand[tile1] -= 1
         self.hand[tile2] -= 1
-        self.opened_hand[(self.displayed_num * 5) + 0] = 2
+        self.opened_hand[(self.opened_sets_num * 5) + 0] = 2
         if tile1 > tile : min_tile = tile
         else : min_tile = tile1
-        self.opened_hand[(self.displayed_num * 5) + 1] = min_tile
-        self.opened_hand[(self.displayed_num * 5) + 2] = tile
-        self.opened_hand[(self.displayed_num * 5) + 3] = 3
-        self.displayed_num += 1
-        self.displayed_tf = True
+        self.opened_hand[(self.opened_sets_num * 5) + 1] = min_tile
+        self.opened_hand[(self.opened_sets_num * 5) + 2] = tile
+        self.opened_hand[(self.opened_sets_num * 5) + 3] = 3
+        self.opened_sets_num += 1
+        self.has_stealed = True
 
 
     # 鳴いた後の手出し牌を登録
