@@ -231,7 +231,8 @@ class Game :
     # ポンが行われた時の処理
     def _proc_pon(self, i_ap:int, tile:int) -> None :
         pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
-        self.players[i_ap].proc_pon(self, tile, pos)
+        pao = self.players[i_ap].proc_pon(self, tile, pos)
+        if pao > -1 : self.set_pao(pao, i_ap, self.i_player)
         self.logger.register_pon(i_ap, tile, pos)
 
         if tile in TileType.REDS : tile += 5
@@ -449,16 +450,10 @@ class Game :
         else : self.winning_tile = tile
 
 
-    # 大三元のパオをセット i_ap: 3枚目の三元牌を鳴いたプレイヤ, i_dp: 鳴かせたプレイヤ
-    def set_pao_of_three_dragons(self, i_ap: int, i_dp: int) -> None :
-        self.pao_info[0] = i_ap
-        self.pao_info[1] = i_dp
-
-
-    # 大四喜のパオをセット i_ap: 3枚目の三元牌を鳴いたプレイヤ, i_dp: 鳴かせたプレイヤ
-    def set_pao_of_four_winds(self, i_ap: int, i_dp: int) -> None :
-        self.pao_info[2] = i_ap
-        self.pao_info[3] = i_dp
+    # パオをセット i_ap: 最後の牌を鳴いたプレイヤ, i_dp: 鳴かせたプレイヤ
+    def set_pao(self, pao:int, i_ap: int, i_dp: int) -> None :
+        self.pao_info[pao*2] = i_ap
+        self.pao_info[pao*2+1] = i_dp
 
 
     # i_playerを1加算
