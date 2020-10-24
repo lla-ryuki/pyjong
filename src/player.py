@@ -74,6 +74,9 @@ class Player :
         self.hand_composition = [0] * 10                  # 手牌構成
         self.i_hc = 0                                     # 手牌構成計算用インデックス (index of hand composition)
 
+        self.dragons_num = 0
+        self.winds_num = 0
+
 
     # 局の初期化
     def init_subgame(self, rotations_num: int) -> None :
@@ -102,7 +105,6 @@ class Player :
         self.last_got_tile = -1                           # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
         self.last_discarded_tile = -1                     # 最後に切った牌 赤牌は番号そのまま(10:赤5筒)
 
-        # 手牌いろいろ計算用
         self.syanten_num_of_kokushi = 13
         self.syanten_num_of_chiitoi = 6
         self.syanten_num_of_normal = 8
@@ -112,6 +114,10 @@ class Player :
         self.tahtsu_num = 0                               # 英語見つからなくて草
         self.composition_of_hand = [0] * 10               # 手牌構成
         self.i_hc = 0                                     # 手牌構成計算用インデックス （index of hand composition)
+
+        # パオ判定用
+        self.dragons_num = 0
+        self.winds_num = 0
 
 
     # 国士無双の向聴数を返す
@@ -681,7 +687,7 @@ class Player :
 
 
     # ポンの処理
-    def proc_pon(self, tile:int, pos:int) -> None :
+    def proc_pon(self, tile:int, pos:int) -> int :
         if tile in TileType.REDS :
             self.opened_reds[tile//10] = True
             tile += 5
@@ -697,13 +703,14 @@ class Player :
         self.opened_hand[(self.opened_sets_num * 5) + 3] = pos
         self.hand[tile] -= 2
 
-        # TODO fix logic
         if tile in TileType.DRAGONS :
             self.dragons_num += 1
-            if self.dragons_num == 3 : game.set_pao_of_3_dragons(self.player_num, p)
+            if self.dragons_num == 3 : return 0 # 大三元のパオであれば0を返す
         elif tile in TileType.HONORS :
             self.winds_num += 1
-            if self.winds_num == 4 : game.set_pao_of_4_winds(self.player_num, p)
+            if self.winds_num == 4 : return 1 # 大喜四のパオであれば1を返す
+
+        return -1 # パオでなければ-1を返す
 
 
     # チーの処理
