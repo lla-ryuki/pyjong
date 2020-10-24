@@ -216,9 +216,9 @@ class Game :
 
     # 大明槓が行われた時の処理
     def _proc_daiminkan(self, i_ap:int, tile:int) -> None :
-        pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．1:下家, 2:対面, 3上家
+        pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
         self.players[i_ap].proc_daiminkan(tile, pos)
-        self.logger.register_daiminkan(tile, pos)
+        self.logger.register_daiminkan(i_ap, tile, pos)
 
         if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 3
@@ -229,24 +229,30 @@ class Game :
 
 
     # ポンが行われた時の処理
-    def _proc_pon(self, tile: int, action_players_num : int) -> None :
+    def _proc_pon(self, i_ap:int, tile:int) -> None :
+        pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
+        self.players[i_ap].proc_pon(self, tile, pos)
+        self.logger.register_pon(i_ap, tile, pos)
+
         if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 2
         self.is_first_turn = False
         self.steal_flag = True
-        self.i_player = (4 + action_players_num - 1) % 4
+        self.i_player = (4 + i_ap - 1) % 4
 
 
     # チーが行われた時の処理
-    def _proc_chii(self, tile: int, tile1: int, tile2: int) -> None :
-        if tile in TileType.REDS :
-            tile += 5
-            tile1 += 5
-            tile2 += 5
+    def _proc_chii(self, tile:int, tile1:int, tile2:int) -> None :
+        self.players[i_ap].proc_chii(tile, tile1, tile2)
+        self.logger.register_chii(i_ap, tile, tile1, tile2)
+
+        if tile in TileType.REDS : tile += 5
+        elif tile1 in TileType.REDS : tile1 += 5
+        elif tile2 in TileType.REDS : tile2 += 5
         self.appearing_tiles[tile1] += 1
         self.appearing_tiles[tile2] += 1
-        self.steal_flag = True
         self.is_first_turn = False
+        self.steal_flag = True
 
 
     # 点数計算前の準備
@@ -707,21 +713,21 @@ class Game :
 
 
     # ドローフェーズの処理
-    def _proc_draw_phase(self, players: List[Player]) -> None :
+    def _proc_draw_phase(self, player:Player) -> None :
         # ポン，チーした場合はスキップ
         if self.steal_flag : return
 
         # 槓した場合は嶺上牌から，そうでない場合は山からツモる
-        if self.rinshan_draw_flag : players[self.i_player].get_tile(self.supply_next_rinshan_tile())
-        else : players[self.i_player].get_tile(self.supply_next_tile())
+        if self.rinshan_draw_flag : tile = self.supply_next_rinshan_tile()
+        else : tile = self.supply_next_tile()
+        player.get_tile(tile)
+        self.logger.register_got_tile(self.i_player, tile)
 
-        # 和了の判定
-        self.win_flag = players[self.i_player].decide_win(self)
-
-        # ツモ和了時の事前変数操作
+        # 和了の判定と和了時の事前変数操作
+        self.win_flag = player.decide_win(self)
         if self.win_flag :
-            players[self.i_player].wins = True
-            self.set_winning_tile(players[self.i_player].last_added_tile)
+            player.wins = True
+            self.set_winning_tile(player.last_got_tile)
             if self.rinshan_draw_flag : self.wins_by_rinshan_kaihou = True
             if self.wins_by_rinshan_kaihou is False : self._check_player_wins_by_last_tile() # 嶺上と河底は重複しない
 
@@ -760,8 +766,8 @@ class Game :
         self.rinshan_draw_flag = True
         self.dora_opens_flag = True
         for i in range(4) : players[i].one_shot = False
-        pos = players[self.i_player].proc_kakan(tile)
-        self.logger.register_kakan(self.i_player, tile, pos)
+        pos, red = players[self.i_player].proc_kakan(tile)
+        self.logger.register_kakan(self.i_player, tile, pos, red)
 
 
     # アクションフェーズの処理
@@ -777,18 +783,21 @@ class Game :
             # 槍槓用ロンフェーズ
             self._proc_ron_phase(tile, players, True)
             if self.win_flag : return
-            self._prock_kakan(tile, players)
+            self._proc_kakan(tile, players)
         elif kyushu : self.is_abortive_draw = True
 
         return
 
 
     # 打牌フェーズ
-    def _proc_discard_phase(self, player: Player) -> None :
+    def _proc_discard_phase(self, player:Player) -> None :
         # プレイヤが捨てる牌を決定，discarded_tile:赤は(0,10,20)表示
         discarded_tile = player.discard_tile()
+        self.logger.register_discarded_tile(self.i_player, discarded_tile)
+
         # 捨てられた牌を見えている牌に記録
         self.add_to_appearing_tiles(discarded_tile)
+
         # 鳴いた後に切った場合, 手出し牌に牌を記録
         if self.steal_flag : player.add_to_discard_tiles_after_stealing(discarded_tile)
         self.steal_flag = False
@@ -860,25 +869,21 @@ class Game :
         # ポン，カン判定と処理
         for i in range(1,4) :
             i_ap = (self.i_player + i) % 4 #i_ap : index of action player
-            pon, kan = players[i_ap].decide_pon_or_kan(self, players, discarded_tile)
+            pon, kan = self.players[i_ap].decide_pon_or_kan(self, players, discarded_tile)
             if (pon and kan) is False : continue
             else :
                 players[self.i_player].is_nagashi_mangan = False
                 for j in range(4) : players[j].one_shot = False
-                if pon :
-                    players[i_ap].proc_pon(self, discarded_tile)
-                    self._proc_pon(i_ap, discarded_tile)
-                elif kan :
-                    self._proc_daiminkan(i_ap, discarded_tile)
+                if pon : self._proc_pon(i_ap, discarded_tile)
+                elif kan : self._proc_daiminkan(i_ap, discarded_tile)
                 break
 
         # チー判定と処理
         if (pon and kan) is False :
             i_ap = (self.i_player + 1) % 4 #i_ap : index of action player
-            chii, tile1, tile2 = players[i_ap].decide_chii(self, players, discarded_tile)
+            chii, tile1, tile2 = self.players[i_ap].decide_chii(self, players, discarded_tile) # tile1, tile2が赤の時は赤番号(0,10,20)で返す
             if chii :
-                players[self.i_player].is_najsjsuashi_mangan = False
-                players[i_ap].proc_chii(discarded_tile, tile1, tile2)
+                self.players[self.i_player].is_nagashi_mangan = False
                 self.proc_chii(discarded_tile, tile1, tile2)
 
 
@@ -905,7 +910,7 @@ class Game :
             players[self.i_player].reset_same_turn_furiten()
 
             # ツモフェーズ
-            self._proc_draw_phase(players[self.i_player])
+            self._proc_draw_phase(self.players[self.i_player])
             # ツモ和了ならループから抜ける
             if self.win_flag : break
             # 一発の権利がなくなる
