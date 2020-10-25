@@ -13,10 +13,8 @@ from yakuman import *
 
 
 class Player :
-
     def __init__(self, player_num) :
-
-        self.player_num = i                               # プレイヤ番号 スタート時の席と番号の関係(0:起家, 1:南家, 2:西家, 3:北家)
+        self.player_num = player_num                      # プレイヤ番号 スタート時の席と番号の関係(0:起家, 1:南家, 2:西家, 3:北家)
         self.score = 25000                                # 点棒
 
         self.reds = [False] * 3                           # 自分の手の赤があるかどうか，マンピンソウの順, reds[1] is True ==> 手の中に赤5pがある
@@ -53,7 +51,7 @@ class Player :
         self.kans_num = 0                                 # 槓した回数
 
         self.players_wind = 31 + self.player_num          # 自風
-        self.last_got_tile = -1                         # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
+        self.last_got_tile = -1                           # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
 
         # アクションフェーズ用
         self.last_discarded_tile = -1                     # 最後に切った牌 赤牌は番号そのまま(10:赤5筒)
@@ -64,10 +62,10 @@ class Player :
         self.kyushu = False
 
         # 手牌いろいろ計算用
-        self.syanten_num_of_kokushi = 13
-        self.syanten_num_of_chiitoi = 6
-        self.syanten_num_of_normal = 8
-        self.syanten_num_of_temp = 0
+        self.shanten_num_of_kokushi = 13
+        self.shanten_num_of_chiitoi = 6
+        self.shanten_num_of_normal = 8
+        self.shanten_num_of_temp = 0
         self.sets_num = 0
         self.pairs_num = 0
         self.tahtsu_num = 0
@@ -79,7 +77,7 @@ class Player :
 
 
     # 局の初期化
-    def init_subgame(self, rotations_num: int) -> None :
+    def init_subgame(self, rotations_num:int) -> None :
         self.hand = [0] * 38                              # 手牌
         self.reds = [False] * 3                           # 自分の手に赤があるかどうか，マンピンソウの順．例）reds[1] is True ==> 手の中に赤5pがある
         self.opened_hand = [0] * 20                       # 鳴いている牌
@@ -105,10 +103,10 @@ class Player :
         self.last_got_tile = -1                           # 直近でツモった牌 赤牌は番号そのまま(10:赤5筒)
         self.last_discarded_tile = -1                     # 最後に切った牌 赤牌は番号そのまま(10:赤5筒)
 
-        self.syanten_num_of_kokushi = 13
-        self.syanten_num_of_chiitoi = 6
-        self.syanten_num_of_normal = 8
-        self.syanten_num_of_temp = 0
+        self.shanten_num_of_kokushi = 13
+        self.shanten_num_of_chiitoi = 6
+        self.shanten_num_of_normal = 8
+        self.shanten_num_of_temp = 0
         self.sets_num = 0
         self.pairs_num = 0
         self.tahtsu_num = 0                               # 英語見つからなくて草
@@ -121,7 +119,7 @@ class Player :
 
 
     # 国士無双の向聴数を返す
-    def calc_syanten_num_of_kokushi(self, tile:int = -1) -> int :
+    def calc_shanten_num_of_kokushi(self, tile:int = -1) -> int :
         hand = self.hand[:]
 
         if tile > -1 :
@@ -130,16 +128,16 @@ class Player :
             hand[tile] += 1
 
         pairs_num = 0
-        syanten_num = 13
+        shanten_num = 13
 
         for i in (TileType.TERMINALS | TileType.HONORS) :
-            if hand[i] != 0 : syanten_num -= 1
+            if hand[i] != 0 : shanten_num -= 1
             if hand[i] > 1 and pairs_num == 0 : pairs_num = 1
 
-        syanten_num -= pairs_num
-        self.syanten_num_of_kokushi = syanten_num
+        shanten_num -= pairs_num
+        self.shanten_num_of_kokushi = shanten_num
 
-        return syanten_num
+        return shanten_num
 
 
     # 国士無双の有効牌のリストを返す
@@ -147,51 +145,51 @@ class Player :
         hand = self.hand[:]
         effective_tiles = [0] * 38
 
-        syanten_num = self.calc_syanten_num_of_kokushi()
+        shanten_num = self.calc_shanten_num_of_kokushi()
         for i in (TileType.TERMINALS | TileType.HONORS) :
-            if self.calc_syanten_num_of_kokushi(i) < syanten_num : effective_tiles[i] = 1
+            if self.calc_shanten_num_of_kokushi(i) < shanten_num : effective_tiles[i] = 1
 
         return effective_tiles
 
 
     # 七対子の向聴数を返す
-    def calc_syanten_num_of_chiitoi(self, tile: int = -1) -> int :
+    def calc_shanten_num_of_chiitoi(self, tile:int = -1) -> int :
         hand = self.hand[:]
 
         if tile > -1 :
             if tile in TileType.REDS : tile += 5
             hand[tile] += 1
 
-        syanten_num = 6
+        shanten_num = 6
         kind = 0 # 6対子あっても孤立牌がないと聴牌にならないのでそれのチェック用
         for i in range(1,38) :
             if hand[i] >= 1 :
                 kind += 1
             if hand[i] >= 2 :
-                syanten_num -= 1
+                shanten_num -= 1
         if kind < 7 :
-            syanten_num += 7 - kind
+            shanten_num += 7 - kind
 
-        self.syanten_num_of_chiitoi = syanten_num
+        self.shanten_num_of_chiitoi = shanten_num
 
-        return syanten_num
+        return shanten_num
 
 
     # 七対子の有効牌のリストを返す
     def effective_tiles_of_chiitoi(self) -> list :
         effective_tiles = [0] * 38
-        syanten_num = self.calc_syanten_num_of_chiitoi()
+        shanten_num = self.calc_shanten_num_of_chiitoi()
         for i in range(38) :
             if i % 10 == 0 : continue
-            if self.calc_syanten_num_of_chiitoi(i) < syanten_num : effective_tiles[i] = 1
+            if self.calc_shanten_num_of_chiitoi(i) < shanten_num : effective_tiles[i] = 1
 
         return effective_tiles
 
 
     # 通常手の向聴数を返す
-    def calc_syanten_num_of_normal(self, tile: int = -1) -> int :
+    def calc_shanten_num_of_normal(self, tile:int = -1) -> int :
         hand = self.hand[:]
-        self.syanten_num_of_normal = 8
+        self.shanten_num_of_normal = 8
         self.sets_num = self.opened_sets_num
         self.pairs_num = 0
         self.tahtsu_num = 0
@@ -209,11 +207,11 @@ class Player :
                 self.n_pair -= 1
         self._pick_out_mentsu(1, hand)
 
-        return self.syanten_num_of_normal
+        return self.shanten_num_of_normal
 
 
     # 面子を抜き出す
-    def _pick_out_mentsu(self, i:int , hand: List[int]) -> None :
+    def _pick_out_mentsu(self, i:int , hand:List[int]) -> None :
         while i < 38 and hand[i] == 0 : i += 1
         if i > 37 :
             self._pick_out_tahtsu(1, hand)
@@ -237,13 +235,13 @@ class Player :
         self._pick_out_mentsu(i+1, hand)
 
 
-    # 塔子を抜き出す
-    def _pick_out_tahtsu(self, i: int, hand: List[int]) -> None :
+    # 塔子を抜き出
+    def _pick_out_tahtsu(self, i:int, hand:List[int]) -> None :
         while i < 38 and hand[i] == 0 : i += 1
         if i > 37 :
-            self.syanten_num_of_temp = 8 - self.mentsu_num * 2 - self.n_tahtsu - self.n_pair
-            if self.syanten_num_of_temp < self.syanten_num_of_normal :
-                self.syanten_num_of_normal = self.syanten_num_of_temp
+            self.shanten_num_of_temp = 8 - self.mentsu_num * 2 - self.n_tahtsu - self.n_pair
+            if self.shanten_num_of_temp < self.shanten_num_of_normal :
+                self.shanten_num_of_normal = self.shanten_num_of_temp
             return
         if self.mentsu_num + self.n_tahtsu < 4 :
             if hand[i] == 2 :
@@ -275,11 +273,11 @@ class Player :
     def effective_tiles_of_normal(self) -> list :
         effective_tiles = [0] * 38
         not_alone_tiles = self._is_not_alone_tiles()
-        syanten_num = self.calc_syanten_num_of_normal()
+        shanten_num = self.calc_shanten_num_of_normal()
 
         for i in range(1, 38) :
             if not_alone_tiles[i] == 0 : continue
-            if self.calc_syanten_num_of_normal(i) < syanten_num : effective_tiles[i] = 1
+            if self.calc_shanten_num_of_normal(i) < shanten_num : effective_tiles[i] = 1
         return effective_tiles
 
 
@@ -308,12 +306,12 @@ class Player :
 
 
     # 点棒の授受
-    def score_points(self, points: int) -> None :
+    def score_points(self, points:int) -> None :
         self.score += points
 
 
     # 立直宣言
-    def declare_ready(self, is_first_turn: bool) -> None :
+    def declare_ready(self, is_first_turn:bool) -> None :
         if is_first_turn : self.has_declared_double_ready = True
         else : self.has_declared_ready = True
         self.has_right_to_one_shot = True
@@ -354,9 +352,9 @@ class Player :
 
     # 聴牌かどうかを判定
     def check_is_ready(self) -> bool :
-        if (self.calc_syanten_num_of_normal() == 0) and self.has_used_up_winning_tile() or \
-           self.calc_syanten_num_of_chiitoi() == 0 or \
-           self.calc_syanten_num_of_kokushi() == 0 : self.is_ready = True
+        if (self.calc_shanten_num_of_normal() == 0) and self.has_used_up_winning_tile() or \
+           self.calc_shanten_num_of_chiitoi() == 0 or \
+           self.calc_shanten_num_of_kokushi() == 0 : self.is_ready = True
         else : self.is_ready = False
 
         return self.is_ready
@@ -386,11 +384,11 @@ class Player :
 
 
     # フリテン牌を追加
-    def add_furiten_tile(self, tile) -> None : self.furiten_tiles[tile] += 1
+    def add_furiten_tile(self, tile:int) -> None : self.furiten_tiles[tile] += 1
 
 
     # 同巡フリテン牌を追加
-    def add_same_turn_furiten_tile(self, tile: int) -> None :
+    def add_same_turn_furiten_tile(self, tile:int) -> None :
         self.same_turn_furiten_tiles += [tile]
         self.furiten_tiles[tile] += 1
 
@@ -417,7 +415,7 @@ class Player :
 
 
     # 和了するかどうかの判定
-    def decide_win(self, game: Game, ron_tile: int = -1) -> bool :
+    def decide_win(self, game:Game, ron_tile:int = -1) -> bool :
         # そもそも和了れるかどうかの判定
         # TODO ここじゃなくてgame.pyの中でやった方がいい気がするよね...
         if not(self.can_win(game, ron_tile)) : return False
@@ -429,7 +427,7 @@ class Player :
 
 
     # ポン or 大明槓するかどうかの判断
-    def decide_pon_or_kan(self, tile: int) -> int :
+    def decide_pon_or_kan(self, tile:int) -> int :
         red = False
         if tile in TileType.REDS :
             tile += 5
@@ -446,7 +444,7 @@ class Player :
 
 
     # チーするかどうかの判断
-    def decide_chii(self, tile: int) -> (bool, int, int) :
+    def decide_chii(self, tile:int) -> (bool, int, int) :
         if tile in TileType.REDS : tile += 5
 
         # チーできるかどうかの判定
@@ -495,9 +493,9 @@ class Player :
         ron, is_chiitoi, is_kokushi, is_normal = False, False, False, False
 
         # 向聴数的に和了っているかどうか確認
-        if self.calc_syanten_num_of_normal(ron_tile) == -1 : is_normal = True
-        elif self.calc_syanten_num_of_chiitoi(ron_tile) == -1 : is_chiitoi = True
-        elif self.calc_syanten_num_of_kokushi(ron_tile) == -1 : is_kokushi = True
+        if self.calc_shanten_num_of_normal(ron_tile) == -1 : is_normal = True
+        elif self.calc_shanten_num_of_chiitoi(ron_tile) == -1 : is_chiitoi = True
+        elif self.calc_shanten_num_of_kokushi(ron_tile) == -1 : is_kokushi = True
         if not(is_chiitoi or is_kokushi or is_normal) : return False
 
         # ロンの時の処理
@@ -532,7 +530,7 @@ class Player :
 
 
     # 役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    def _has_yaku(self, game: Game, ron: bool, ron_tile: int) -> bool:
+    def _has_yaku(self, game:Game, ron:bool, ron_tile:int) -> bool:
         if ron_tile in TileType.REDS : ron_tile += 5
         if self.has_declared_ready : return True
         if self.has_declared_double_ready : return True
@@ -549,13 +547,13 @@ class Player :
         if game.is_last_tile() : return True # 海底・河底
         if game.rinshan_draw_flag : return True # 嶺上
         if game.dora_opens_flag : return True # 槍槓
-        if self._has_yaku_based_on_tiles(round_wind, seat_wind, ron, ron_tile) : return True
+        if self._has_yaku_based_on_tiles(game.prevailing_wind, self.players_wind, ron, ron_tile) : return True
 
         return False
 
 
     # 手牌構成による役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    def _has_yaku_based_on_tiles(self, prevailing_wind: int, ron: bool, ron_tile: int) -> bool :
+    def _has_yaku_based_on_tiles(self, prevailing_wind:int, ron:bool, ron_tile:int) -> bool :
         hand = self.hand[:]
         if ron : hand[ron_tile] += 1
         self.hand_composition = [0] * 10
@@ -577,7 +575,7 @@ class Player :
                 self.hand_composition[self.i_hc] = Block.PAIR
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                there_is_yaku = self._pick_out_mentsu_for_composition_hand(hand, round_wind, seat_wind, ron, ron_tile);
+                there_is_yaku = self._pick_out_mentsu_for_composition_hand(hand, prevailing_wind, self.players_wind, ron, ron_tile);
                 if there_is_yaku : return True
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc] = 0
@@ -588,12 +586,12 @@ class Player :
 
 
     # 面子を抜き出す．_pick_out_mentsu()と違い高速化のため役判定に不要な処理を省いたバージョン．
-    def _pick_out_mentsu2(self, hand: List[int], prevailing_wind: int, ron: bool, ron_tile: int) -> bool :
+    def _pick_out_mentsu2(self, hand:List[int], prevailing_wind:int, ron:bool, ron_tile:int) -> bool :
         for i in range(1,38) :
 
             # 判定する手牌構成が決まったら役があるかどか判定結果を返す
             if self.hand_composition[9] != 0 :
-                if no_points_hand(self.hand_composition, ron_tile, round_wind, seat_wind) : return True
+                if no_points_hand(self.hand_composition, ron_tile, prevailing_wind, self.players_wind) : return True
                 if one_set_of_identical_sequences(self.hand_composition) : return True
                 if terminal_or_honor_in_each_set(self.hand_composition) : return True
                 if three_color_straight(self.hand_composition) : return True
@@ -615,7 +613,7 @@ class Player :
                 else : self.hand_composition[self.i_hc] = Block.CLOSED_TRIPLET
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                self._pick_out_mentsu2(hand, round_wind, seat_wind, ron, ron_tile)
+                self._pick_out_mentsu2(hand, prevailing_wind, self.players_wind, ron, ron_tile)
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc] = 0
                 self.hand_composition[self.i_hc+1] = 0
@@ -629,7 +627,7 @@ class Player :
                 self.hand_composition[self.i_hc] = Block.CLOSED_RUN
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                self._pick_out_mentsu2(hand, round_wind, seat_wind, ron, ron_tile)
+                self._pick_out_mentsu2(hand, prevailing_wind, self.players_wind, ron, ron_tile)
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc+1] = 0
                 self.hand_composition[self.i_hc] = 0
@@ -740,12 +738,12 @@ class Player :
 
 
     # 鳴いた後の手出し牌を登録
-    def add_tile_player_discard_after_displaying(self, tile: int) -> None :
+    def add_tile_player_discard_after_displaying(self, tile:int) -> None :
         self.opened_hand[((self.opened_sets_num - 1) * 5) + 4] = tile
 
 
     # 暗槓できるかどうか判定，できる場合は暗槓できる牌の牌番号のリストを返す
-    def _can_ankan(self, game: Game) -> List[int] :
+    def _can_ankan(self, game:Game) -> List[int] :
         can_ankan_tiles = []
 
         # 手牌の中に暗槓できる牌があったらcan_ankan_tilesに牌番号を追加
@@ -766,14 +764,14 @@ class Player :
 
 
     # 槓しない or どの牌で槓するか決める
-    def _deside_which_tile_to_kan(self, game: Game, playes: List[Player]) -> int :
+    def _deside_which_tile_to_kan(self, game:Game, playes:List[Player]) -> int :
         ### 今は強制的に槓しないようにする
         ### NNの計算とかが入る
         return -1
 
 
     # 槓するかどうか決める
-    def _decide_to_kan(self, game, players) :
+    def _decide_to_kan(self, game:Game, players:List[Player]) -> (int, bool, bool):
         tile, ankan, kakan = -1, False, False
 
         # 槓できるか判定
@@ -806,7 +804,7 @@ class Player :
 
 
     # アクションフェーズでのアクションを決める
-    def decide_action(self, game, players) :
+    def decide_action(self, game:Game, players:List[Player]) -> (int, bool, bool, bool, bool, bool):
         # プレイヤの行動決定，tile:赤は(0,10,20)表示
         tile, exchanged, ready, ankan, kakan, kyushu = -1, False, False, False, False, False
 
