@@ -313,18 +313,18 @@ class Game :
                 for i in range(1,4) : self.players[(i_winner + i) % 4].score_points(-1 * (points + (100 * self.counters_num)))
                 self.players[i_winner].score_points(points * 3)
             else :
-                score_which_dealer_pay = self.basic_points * 2
-                if score_which_dealer_pay % 100 != 0 : score_which_dealer_pay += (100 - (score_which_dealer_pay % 100))
-                score_which_child_pay = self.basic_points
-                if score_which_child_pay % 100 != 0 : score_which_child_pay += (100 - (score_which_child_pay % 100))
+                points_dealer_pays = self.basic_points * 2
+                if points_dealer_pays % 100 != 0 : points_dealer_pays += (100 - (points_dealer_pays % 100))
+                points_child_pays = self.basic_points
+                if points_child_pays % 100 != 0 : points_child_pays += (100 - (points_child_pays % 100))
                 for i in range(1,4) :
                     i_payer = (i_winner + i) % 4
                     if i_payer != self.rotations_num :
-                        self.players[i_payer].score_points(-1 * (score_which_child_pay + (100 * self.counters_num)))
-                        self.players[i_winner].score_points(score_which_child_pay)
+                        self.players[i_payer].score_points(-1 * (points_child_pays + (100 * self.counters_num)))
+                        self.players[i_winner].score_points(points_child_pays)
                     else :
-                        self.players[i_payer].score_points(-1 * (score_which_dealer_pay + (100 * self.counters_num)))
-                        self.players[self.i_player].score_points(score_which_dealer_pay)
+                        self.players[i_payer].score_points(-1 * (points_dealer_pays + (100 * self.counters_num)))
+                        self.players[self.i_player].score_points(points_dealer_pays)
 
 
     # 和了時の処理
