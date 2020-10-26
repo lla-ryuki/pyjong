@@ -1,14 +1,13 @@
+# TODO list
 
-TODO
-
-# Common
+### Common
 * decide_...メソッドだけオーバーライドする形式に変える？
 * ファイル切り分け（多重継承？）
 * checkなんちゃらメソッドの改名
 
-# Game
+### Game
 * appearing_red_tilesの登録処理
  
-# Player
+### Player
 * ツモ切りのDとd逆にしたい
 
