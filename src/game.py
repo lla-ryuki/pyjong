@@ -6,8 +6,7 @@ from typing import List
 
 # ours
 from player import Player
-from block import Block
-from tile_type import TileType
+from types import TileType, BlockType
 from logger import Logger
 from yaku import *
 from yakuman import *
@@ -591,7 +590,7 @@ class Game :
             if hand[i] == 0 : continue
             if hand[i] >= 2 :
                 hand[i] -= 2
-                self.temp[self.i_temp] = Block.PAIR
+                self.temp[self.i_temp] = BlockType.PAIR
                 self.temp[self.i_temp+1] = i
                 self.i_temp += 2
                 self.pick_out_mentsu(player.has_stealed, hand);
@@ -611,8 +610,8 @@ class Game :
             if hand[i] == 0 : continue
             if hand[i] >= 3 :
                 hand[i] -= 3
-                if self.winning_tile == i and self.wins_by_ron and hand[i] == 0 : self.temp[self.i_temp] = Block.CLOSED_TRIPLET
-                else : self.temp[self.i_temp] = Block.CLOSED_TRIPLET
+                if self.winning_tile == i and self.wins_by_ron and hand[i] == 0 : self.temp[self.i_temp] = BlockType.CLOSED_TRIPLET
+                else : self.temp[self.i_temp] = BlockType.CLOSED_TRIPLET
                 self.temp[self.i_temp + 1] = i
                 self.i_temp += 2
                 self.pick_out_mentsu(has_stealed, hand)
@@ -624,7 +623,7 @@ class Game :
                 hand[i] -= 1
                 hand[i+1] -= 1
                 hand[i+2] -= 1
-                self.temp[self.i_temp] = Block.CLOSED_RUN
+                self.temp[self.i_temp] = BlockType.CLOSED_RUN
                 self.temp[self.i_temp+1] = i
                 self.i_temp += 2
                 self.pick_out_mentsu(has_stealed, hand)
@@ -676,31 +675,31 @@ class Game :
         if not(has_stealed) and self.wins_by_ron : fu += 10
         elif not(self.wins_by_ron) : fu += 2
         for i in range(0, 10, 2) :
-            if self.temp[i] == Block.CLOSED_RUN :
+            if self.temp[i] == BlockType.CLOSED_RUN :
                 if (self.temp[i+1] == self.winning_tile - 2 and self.temp[i+1] % 10 == 1) or \
                    (self.temp[i+1] == self.winning_tile and self.temp[i+1] % 10 == 7) or \
                    (self.temp[i+1] == self.winning_tile - 1) :
                     fu += 2
                     break
-            elif self.temp[i] == Block.PAIR :
+            elif self.temp[i] == BlockType.PAIR :
                 if self.temp[i+1] == self.winning_tile :
                     fu += 2
                     break
         for i in range(0, 10, 2) :
-            if self.temp[i] == Block.OPENED_TRIPLET :
+            if self.temp[i] == BlockType.OPENED_TRIPLET :
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 4
                 else : fu += 2
-            elif self.temp[i] == Block.PAIR :
+            elif self.temp[i] == BlockType.PAIR :
                 if self.temp[i+1] >= 35 or self.temp[i+1] == self.prevailing_wind : fu += 2
                 if self.temp[i+1] == self.players_wind : fu += 2
-            elif self.temp[i] in Block.RUNS : continue
-            elif self.temp[i] == Block.CLOSED_TRIPLET :
+            elif self.temp[i] in BlockType.RUNS : continue
+            elif self.temp[i] == BlockType.CLOSED_TRIPLET :
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 8
                 else : fu += 4
-            elif self.temp[i] == Block.OPENED_KAN :
+            elif self.temp[i] == BlockType.OPENED_KAN :
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 16
                 else : fu += 8
-            elif self.temp[i] == Block.CLOSED_KAN :
+            elif self.temp[i] == BlockType.CLOSED_KAN :
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 32
                 else : fu += 16
         if fu == 20 : fu = 30
