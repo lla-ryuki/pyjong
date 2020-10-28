@@ -11,3 +11,6 @@
 ### Player
 * ツモ切りのDとd逆にしたい
 
+### types.py
+* types.pyはbuilt-inらしいので改名する？
+

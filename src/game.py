@@ -6,7 +6,7 @@ from typing import List
 
 # ours
 from player import Player
-from types import TileType, BlockType
+from mytypes import TileType, BlockType
 from logger import Logger
 from yaku import *
 from yakuman import *
