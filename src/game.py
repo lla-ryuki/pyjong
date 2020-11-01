@@ -6,25 +6,35 @@ from typing import List
 
 # ours
 from player import Player
-from mytypes import TileType, BlockType
+from shanten import ShantenNumCalculator
 from logger import Logger
+from mytypes import TileType, BlockType
 from yaku import *
 from yakuman import *
 
 
 class Game :
     def _init__(self) :
-        self.logger = Logger(is_logging=True);
         self.players = [Player(i) for i in range(4)]
-
+        self.logger = Logger(is_logging=True);
+        self.shanten_calculator = ShantenNumCalculator()
         self.rounds_num = 0                            # 場 0:東場，1:南場，2:西場
         self.rotations_num = 0                         # 局 0:1局目 ... 3:4局目
         self.counters_num = 0                          # 積み棒の数
         self.deposits_num = 0                          # 供託の数
+        self.is_over = False                           # Trueになると半荘終了
+
+
+
+    # 局開始時の初期化
+    def init_subgame(self) -> None :
+        # プレイヤが持つ局に関わるメンバ変数を初期化
+        for i in range(4) :
+            self.players[i].init_subgame()
+
         self.prevailing_wind = 31 + self.rounds_num    # 場風にあたる牌番号
         self.is_abortive_draw = False                  # 途中流局になるとTrueになる
         self.is_first_turn = True                      # Trueの間は1巡目であることを示す
-        self.is_over = False                           # Trueになると半荘終了
         self.pao_info = [-1] * 4
         """
         pao_info : [i1, j1, i2, j2]
@@ -37,67 +47,7 @@ class Game :
           pao_info:[-1, -1, 3, 0] -> 0番のプレイヤが3番のプレイヤに4枚目の風牌を鳴かせ大四喜のパオが確定している状態
         """
 
-        # 牌の状態
-        self.doras = [0] * 5                           # ドラ
-        self.dora_indicators = [0] * 5                 # ドラ表示牌
-        self.uras = [0] * 5                            # 裏
-        self.ura_indicators = [0] * 5                  # 裏表示牌
-        self.dora_has_opened = [False] * 5             # ドラの状態, i番目がTrue → dora_indicators[i]がめくれている状態
-        self.rinshan_tiles = [0] * 4                   # 嶺上牌
-        self.appearing_tiles = [0] * 38                # プレイヤ全員に見えている牌， appearing_tiles[i] が j → i番の牌がj枚見えている
-        self.appearing_red_tiles = [False] * 3         # プレイヤ全員に見えている赤牌． 萬子，筒子，索子の順．
-        self.wall = [0] * 136                          # 山
-
-        # インデックス
-        self.i_player = 0                              # 次のループで行動するプレイヤの番号
-        self.i_wall = 0                                # 山用のインデックス
-        self.i_rinshan = 0                             # 嶺上牌用のインデックス
-        self.i_first_turn = 0                          # 最初の1巡目かどうかを判定するために使うインデックス
-
-        # 和了，点数計算関連
-        self.winning_tile = -1                         # 和了牌の牌番号
-        self.basic_points = 0                          # 和了の基本点
-        self.dealer_wins = False
-        self.wins_by_ron = False
-        self.wins_by_tenhou = False
-        self.wins_by_chiihou = False
-        self.wins_by_last_tile = False
-        self.wins_by_chankan = False
-        self.wins_by_rinshan_kaihou = False
-        self.wins_by_pao= False
-        self.liability_player = -1
-        self.players_wind = -1
-        self.temp = [0] * 10                           # 向聴数計算に使う配列
-        self.fu = 0                                    # 符の数
-        self.han = 0                                   # 翻の数
-        self.i_temp = 0                                # temp[]用のindex
-        self.fu_temp = 0                               # 符の数（仮）
-        self.han_temp = 0                              # 翻の数（仮）
-        self.yakuman = 0                               # 役満の数
-
-        # 分岐処理用flag
-        self.win_flag = False                          # 局終了判定処理用
-        self.ready_flag = False                        # リーチ宣言時の放銃処理用
-        self.steal_flag = False                        # 鳴き処理用
-        self.dora_opens_flag = False                   # 加槓，大明槓による開槓flag．trueのままゲームが終わらず所定の処理までくるとドラを開けてfalseに戻る
-        self.rinshan_draw_flag = False                 # 次のツモが嶺上牌であることを示すflag．trueのままドローフェーズまで来ると嶺上牌をツモってfalseに戻る
-
-
-    # 局開始時の初期化
-    def init_subgame(self) -> None :
-        # プレイヤが持つ局に関わるメンバ変数を初期化
-        for i in range(4) :
-            self.players[i].init_subgame()
-
-        self.is_abortive_draw = False                  # 途中流局になるとTrueになる
-        self.is_first_turn = True                      # Trueの間は1巡目であることを示す
-
-        self.prevailing_wind = 31 + self.rounds_num    # 場風にあたる牌番号
-        self.is_abortive_draw = False                  # 途中流局になるとTrueになる
-        self.is_first_turn = True                      # Trueの間は1巡目であることを示す
-        self.pao_info = [-1] * 4
-
-        # 牌の状態
+        # 牌関連
         self.doras = [0] * 5                           # ドラ
         self.dora_indicators = [0] * 5                 # ドラ表示牌
         self.uras = [0] * 5                            # 裏
@@ -139,15 +89,17 @@ class Game :
         self.win_flag = False                          # 局終了判定処理用
         self.ready_flag = False                        # リーチ宣言時の放銃処理用
         self.steal_flag = False                        # 鳴き処理用
-        self.rinshan_draw_flag = False
-        self.dora_opens_flag = False
+        self.dora_opens_flag = False                   # 加槓，大明槓による開槓flag．trueのままゲームが終わらず所定の処理までくるとドラを開けてfalseに戻る
+        self.rinshan_draw_flag = False                 # 次のツモが嶺上牌であることを示すflag．trueのままドローフェーズまで来ると嶺上牌をツモってfalseに戻る
 
+        # 牌山をセット
         self.set_doras()
         self.set_rinshan_tiles()
+        self.set_wall()
 
 
     # 赤有りの牌山を生成
-    def set_wall_containing_red(self) -> None :
+    def set_wall(self) -> None :
         i, red = 0, False
         for j in range(1,38) :
             if j in TileType.BLANKS : continue
@@ -160,6 +112,15 @@ class Game :
                     self.wall[i] = j
                 i += 1
         random.shuffle(self.wall)
+
+
+    # 新しいドラを開く
+    def open_new_dora(self) -> None :
+        for i in range(5) :
+            if self.dora_has_opened[i] is False :
+                self.dora_has_opened[i] = True
+                self.appearing_tiles[self.dora_indicators[i]] += 1
+                break
 
 
     #ドラと裏ドラをセット
@@ -185,19 +146,12 @@ class Game :
             elif ura_indicator == 37 : self.uras[i] = 35
             else : self.uras[i] = ura_indicator + 1
 
+        self.open_new_dora()
+
 
     # 嶺上牌をセット
     def set_rinshan_tiles(self) -> None :
         self.rinshan_tiles = [self.wall[134], self.wall[135], self.wall[132], self.wall[133]]
-
-
-    # 新しいドラを開く
-    def open_new_dora(self) -> None :
-        for i in range(5) :
-            if self.dora_has_opened[i] is False :
-                self.dora_has_opened[i] = True
-                self.appearing_tiles[self.dora_indicators[i]] += 1
-                break
 
 
     # 次のツモ牌を返す
@@ -278,7 +232,6 @@ class Game :
             if not(self.wins_by_ron) :
                 if self.dealer_wins : self.wins_by_tenhou = True
                 else : self.wins_by_chiihou = True
-
 
 
     # ロン和了の処理
@@ -550,14 +503,10 @@ class Game :
         self.han = 0
         if self.wins_by_tenhou : self.yakuman += 1
         if self.wins_by_chiihou : self.yakuman += 1
-        player.calculate_shanten_num_of_kokushi()
-        player.calculate_shanten_num_of_chiitoi()
-        player.calculate_shanten_num_of_normal()
-        if player.shanten_num_of_normal == -1 : self.count_han_of_normal_hand(player)
-        elif player.shanten_num_of_chiitoi == -1 : self.count_han_of_seven_pairs_hand(player)
-        elif player.shanten_num_of_kokushi == -1 : self.yakuman += 1
-        else :
-            print("error : Game._calculate_basic_points")
+        shanten_nums = self.shanten_calculator.get_shanten_nums(player.hand)
+        if shanten_nums[0] == -1 : self.count_han_of_normal_hand(player)
+        elif shanten_nums[1] == -1 : self.count_han_of_seven_pairs_hand(player)
+        elif shanten_nums[2] == -1 : self.yakuman += 1
 
         basic_points = self.fu * (2 ** (self.han + 2))
         if self.yakuman > 0 : basic_points = self.yakuman * 8000
@@ -846,9 +795,9 @@ class Game :
 
         #  四家立直の判定
         if (self.players[0].has_declared_ready or self.players[0].has_declared_double_ready) and \
-            (self.players[1].has_declared_ready or self.players[1].has_declared_double_ready) and \
-            (self.players[2].has_declared_ready or self.players[2].has_declared_double_ready) and \
-            (self.players[3].has_declared_ready or self.players[3].has_declared_double_ready) :
+           (self.players[1].has_declared_ready or self.players[1].has_declared_double_ready) and \
+           (self.players[2].has_declared_ready or self.players[2].has_declared_double_ready) and \
+           (self.players[3].has_declared_ready or self.players[3].has_declared_double_ready) :
             self.is_abortive_draw = True
 
         # 四槓散了判定．四槓散了は暗槓，加槓，大明槓どの場合でも牌がきられて通ったタイミングで判定される
