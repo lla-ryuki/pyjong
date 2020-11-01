@@ -4,7 +4,7 @@ import pickle
 from typing import List
 
 # ours
-from tile_type import TileType
+from mytypes import TileType
 
 
 class ShantenNumCalculator :
@@ -21,7 +21,7 @@ class ShantenNumCalculator :
             with open(self.file_path, "wb") as f :
                 pickle.dump(self.shanten_table, f)
 
-        # normal handの向聴数計算用．複数の関数をまたいで使うのでここで定義．
+        # normal handの向聴数計算用．複数のメソッドをまたいで使うのでここで定義．
         self.shanten_num = 8
         self.shanten_temp = 8
         self.opened_sets_num = 0
@@ -31,34 +31,35 @@ class ShantenNumCalculator :
         self.sets_num = 0
 
 
-    # 手牌をハッシュして得られるキーを用いて向聴テーブルに登録された向聴数を返す
-    # キーが登録されていなかった場合向聴数を計算してテーブルに登録
-    # ※ handは直接の参照を渡すのではなくコピーを渡す
-    # ※ ロン和了の場合は和了牌もhandに加えて渡す
-    def get_shanten_num(self, hand:List[int], opened_sets_num:int) -> int :
-        self.hand = hand
+    """
+    tuple化した手牌をキーとして用いて向聴テーブルに登録された向聴数を返す
+    キーが登録されていなかった場合向聴数を計算してテーブルに登録
+    ロン和了の場合は和了牌もhand[]に加えてこのメソッドに渡す
+    """
+    def get_shanten_nums(self, hand:List[int], opened_sets_num:int) -> (int, int, int) :
+        self.hand = hand[:]
         self.opened_sets_num = opened_sets_num
 
-        shanten_num = self.shanten_table.get(tuple(hand))
+        shanten_nums = self.shanten_table.get(tuple(hand))
         if (shanten_num is None) :
             print("not hit")
-            shanten_num = self._calc_shanten_num()
-            self.shanten_table[key] = shanten_num
+            shanten_nums = self._calc_shanten_nums()
+            self.shanten_table[key] = shanten_nums
             if self.record_mode :
                 with open(self.file_path, "wb") as f :
                     pickle.dump(self.shanten_table, f)
 
-        return shanten_num
+        return shanten_nums
 
 
     # 向聴テーブルをダンプ
-    def dump_table() -> None :
+    def dump_table(self) -> None :
         with open(self.file_path, "wb") as f :
             pickle.dump(self.shanten_table, f)
 
 
     # handの向聴数を計算
-    def _calc_shanten_num(self) -> int :
+    def _calc_shanten_nums(self) -> (int, int, int) :
         if self.opened_sets_num > 0 :
             kokushi = 13
             chiitoi = 6
@@ -67,7 +68,7 @@ class ShantenNumCalculator :
             chiitoi = self._calc_shanten_num_of_chiitoi()
         normal = self._calc_shanten_num_of_normal()
 
-        return min((kokushi, chiitoi, normal))
+        return (normal, chiitoi, kokushi)
 
 
     # 国士無双の向聴数を返す
