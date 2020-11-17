@@ -1,9 +1,7 @@
 from typing import List
 import datetime
 
-from game import Game
-from player import Player
-from tile_type import TileType
+from mytypes import TileType
 
 
 class Logger :
@@ -11,7 +9,7 @@ class Logger :
     def __init__(self, is_logging:bool) :
         now = datetime.datetime.now().isoformat()
         self.save_path = f"../data/log/{now}.log"
-        self.is_logging = logging
+        self.is_logging = is_logging
         self.scores = [0] * 4
         self.actions = [[] for i in range(4)]
         self.starting_hands = [[] for i in range(4)]
@@ -103,7 +101,7 @@ class Logger :
         self.actions[i_player].append(log_text + s_discarded)
 
 
-    def save(game: Game) -> None :
+    def save(game) -> None :
         text = "{\"title\":[\"\",\"\"],\"name\":[\"\",\"\",\"\",\"\"],\"rule\":{\"aka\":1},\"log\":[["
         temp = []
         temp.append(game.rounds_num * 4 + game.rotations_num)

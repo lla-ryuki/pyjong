@@ -1,6 +1,5 @@
 from typing import List
-from tile_type import TileType
-from block import Block
+from mytypes import TileType, BlockType
 
 # 九連宝燈
 def nine_gates(hand: List[int]) -> bool :
@@ -105,7 +104,7 @@ def all_terminals(hand: List[int]) :
 def four_kans(opened_hand: List[int]) :
     kan_num = 0
     for i in range(0,20,5) :
-        if opened_hand[i] in Block.KANS : kan_num += 1
+        if opened_hand[i] in BlockType.KANS : kan_num += 1
     if kan_num == 4 : return True
     return False
 

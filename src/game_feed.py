@@ -1,20 +1,22 @@
 #std
 import random
+import sys
 from typing import List
 
 # 3rd
 
 # ours
-from player import Player
+from player_feed import Player
 from shanten import ShantenNumCalculator
 from logger import Logger
-from mytypes import TileType, BlockType
+from mytypes import TileType, BlockType, ActionType
 from yaku import *
 from yakuman import *
 
 
 class Game :
-    def _init__(self) :
+    def __init__(self, xml_root) :
+        self.xml_root = xml_root
         self.players = [Player(i) for i in range(4)]
         self.logger = Logger(is_logging=True);
         self.shanten_calculator = ShantenNumCalculator()
@@ -28,9 +30,14 @@ class Game :
 
     # 局開始時の初期化
     def init_subgame(self) -> None :
+        # log用index
+        self.i_log = 0
+        # ツモ番号保存用
+        self.org_got_tile = -1
+
         # プレイヤが持つ局に関わるメンバ変数を初期化
         for i in range(4) :
-            self.players[i].init_subgame()
+            self.players[i].init_subgame(self.rotations_num)
 
         self.prevailing_wind = 31 + self.rounds_num    # 場風にあたる牌番号
         self.is_abortive_draw = False                  # 途中流局になるとTrueになる
@@ -156,8 +163,9 @@ class Game :
 
     # 次のツモ牌を返す
     def supply_next_tile(self) -> int :
-        tile = self.wall[self.i_wall]
-        self.i_wall += 1
+        self.org_got_tile = int(self.xml_root[self.i_log].tag[1:])
+        tile = self.cast_tile(self.org_got_tile)
+        self.i_log += 1
         return tile
 
 
@@ -664,16 +672,18 @@ class Game :
         # 槓した場合は嶺上牌から，そうでない場合は山からツモる
         if self.rinshan_draw_flag : tile = self.supply_next_rinshan_tile()
         else : tile = self.supply_next_tile()
+        print(tile)
         player.get_tile(tile)
-        self.logger.register_got_tile(self.i_player, tile)
+        player.print_hand()
+        # self.logger.register_got_tile(self.i_player, tile)
 
         # 和了の判定と和了時の事前変数操作
-        self.win_flag = player.decide_win(self)
-        if self.win_flag :
+        if self.xml_root[self.i_log].tag == "AGARI" :
+            self.win_flag = True
             player.wins = True
             self.set_winning_tile(player.last_got_tile)
             if self.rinshan_draw_flag : self.wins_by_rinshan_kaihou = True
-            if self.wins_by_rinshan_kaihou is False : self.check_player_wins_by_last_tile() # 嶺上と河底は重複しない
+            else : self.check_player_wins_by_last_tile() # 嶺上と河底は重複しない
 
         # 嶺上flagを元に戻す
         self.rinshan_draw_flag = False
@@ -714,10 +724,42 @@ class Game :
         self.logger.register_kakan(self.i_player, tile, pos, red)
 
 
+    # 生ログのmコードでアクションを判別する
+    def analyze_mc(self, mc:int) -> int :
+        action_type = -1
+        if (mc & 0x0004) :
+            action_type = ActionType.STEAL_RUN # チー
+        elif(mc & 0x0008) :
+            action_type = ActionType.STEAL_TRIPLET # ポン
+        elif(mc & 0x0010) :
+            action_type = ActionType.STEAL_KAN # 大明槓
+        elif(mc & 0x0003) :
+            action_type = ActionType.ADDED_KAN # 加槓
+        else :
+            action_type = ActionType.CLOSED_KAN # 暗槓
+
+        return action_type
+
+
     # アクションフェーズの処理
     def proc_action_phase(self) -> None :
-        # プレイヤの行動決定，tile:赤は(0,10,20)表示
-        tile, exchanged, ready, ankan, kakan, kyushu = self.players[self.i_player].decide_action(self, self.players)
+        tile, exchanged, ready, ankan, kakan, kyushu = -1, False, False, False, False, False
+
+        if self.xml_root[self.i_log].tag[0] in {"D", "E", "F", "G"} :
+            discard_tile = int(self.xml_root[self.i_log].tag[1:])
+            if self.org_got_tile != discard_tile : exchanged = True
+            tile = self.cast_tile(discard_tile)
+        elif self.xml_root[self.i_log].tag == "REACH" :
+            ready = True
+            self.i_log += 1
+            discard_tile = int(self.xml_root[self.i_log].tag[1:])
+            if self.org_got_tile != discard_tile : exchanged = True
+            tile = self.cast_tile(discard_tile)
+        elif self.xml_root[self.i_log].tag[0] == "N" :
+            action_type = self.analyze_mc()
+            if action_type == ActionType.ADDED_KAN : kakan = True
+            elif action_type == ActionType.CLOSED_KAN : ankan = True
+        self.i_log += 1
 
         if ready : self.proc_ready(self.players[self.i_player])
         elif ankan : self.proc_ankan(tile)
@@ -749,11 +791,12 @@ class Game :
 
 
     # ロンフェーズ
-    def proc_ron_phase(self, discarded_tile:int) -> None :
+    ###
+    def proc_ron_phase(self, discarded_tile:int, wins_by_chankan:bool) -> None :
         winners_num = 0
         for i in range(1,4) :
             i_winner = (self.i_player + i) % 4
-            if self.players[i_winner].decide_win(self, discarded_tile) :
+            if self.xml_root[self.i_log].tag == "AGARI" :
                 # リーチ宣言時のロンはリーチ不成立
                 if self.ready_flag :
                     self.ready_flag = False
@@ -771,7 +814,7 @@ class Game :
                 self.set_winning_tile(discarded_tile)
 
                 # 偶然役の記録
-                if self.dora_opens_flag : self.wins_by_chankan = True # 槍槓があるかどうかを記録
+                if wins_by_chankan : self.wins_by_chankan = True # 槍槓があるかどうかを記録
                 self.check_player_wins_by_last_tile() # 河底のチェック
 
                 # ロン和了フラグを立てる
@@ -832,19 +875,38 @@ class Game :
                 self.proc_chii(i_ap, discarded_tile, tile1, tile2)
 
 
+    # 牌をこのプログラムで扱えるようにcast
+    def cast_tile(self, org_tile:int) -> int:
+        if org_tile in {16, 52, 88} : tile = (org_tile // 40) * 10
+        else :
+            tile = org_tile // 4
+            if tile >= 27 : tile += 4
+            elif tile >= 18 : tile += 3
+            elif tile >= 9 : tile += 2
+            else : tile += 1
+
+        return tile
+
+
+    # 配牌を配る
+    def deal_starting_hand(self) :
+        for i in range(4) :
+            starting_hand = [self.cast_tile(int(tile)) for tile in self.xml_root[4].attrib[f"hai{i}"].split(",")]
+            for tile in starting_hand :
+                self.players[self.i_player].get_tile(tile)
+            self.increment_i_player()
+
+
     # 局の処理
     def play_subgame(self) -> None :
         # 局を初期化
         self.init_subgame()
 
         # 配牌を配る
-        for i in range(4) :
-            for j in range(13) :
-                tile = self.supply_next_tile()
-                self.players[i].get_tile(tile)
-                self.logger.add_to_first_hand(i, tile)
+        self.deal_starting_hand()
 
         # ツモループ {
+        self.i_log = 5
         while True :
 
             # 同順フリテン解消
@@ -860,6 +922,7 @@ class Game :
             # アクションフェーズ
             self.proc_action_phase()
 
+            #####
             # 槍槓ロンならループから抜ける
             if self.win_flag : break
             # 暗槓，加槓の場合，次のツモにスキップ
@@ -925,5 +988,11 @@ class Game :
             self.play_subgame()
             # 半荘終了判定
             if self.is_over : break
+
+
+    # xmlの子要素を全て表示
+    def show_children(self) -> None :
+        for child in self.xml_root :
+            print(child)
 
 

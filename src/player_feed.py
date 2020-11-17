@@ -5,9 +5,7 @@ from typing import List
 # 3rd
 
 # ours
-from game import Game
-from block import Block
-from tile_type import TileType
+from mytypes import TileType, BlockType
 from yaku import *
 from yakuman import *
 
@@ -24,7 +22,7 @@ class Player :
         """
             opened_hand =
             [
-                [0+5*n]　フーロの種類（0＝フーロなし、Block.*と同期）
+                [0+5*n]　フーロの種類（0＝フーロなし、BlockType.*と同期）
                 [1+5*n]　そのフーロメンツのうち最も小さい牌番号
                 [2+5*n]　そのフーロメンツのうち鳴いた牌の牌番号
                 [3+5*n]　その人から相対的に見た、鳴いた他家の番号。1＝下家、2＝対面、3＝上家
@@ -404,8 +402,8 @@ class Player :
         hand = self.hand[:]
         for i in range(0,20,5) :
             if self.opened_hand[i] == 0 : break
-            elif self.opened_hand[i] == Block.OPENED_TRIPLET : hand[self.opened_hand[i+1]] += 3
-            elif self.opened_hand[i] == Block.OPENED_RUN :
+            elif self.opened_hand[i] == BlockType.OPENED_TRIPLET : hand[self.opened_hand[i+1]] += 3
+            elif self.opened_hand[i] == BlockType.OPENED_RUN :
                 n = self.opened_hand[i+1]
                 hand[n] += 1
                 hand[n+1] += 1
@@ -415,7 +413,7 @@ class Player :
 
 
     # 和了するかどうかの判定
-    def decide_win(self, game:Game, ron_tile:int = -1) -> bool :
+    def decide_win(self, game, ron_tile:int = -1) -> bool :
         # そもそも和了れるかどうかの判定
         # TODO ここじゃなくてgame.pyの中でやった方がいい気がするよね...
         if not(self.can_win(game, ron_tile)) : return False
@@ -475,7 +473,7 @@ class Player :
 
 
     # チーできるかどうか
-    def can_chii(self, tile) -> bool :
+    def can_chii(self, tile:int) -> bool :
         # 字牌はチーできない
         if tile > 30 : return False
 
@@ -489,7 +487,7 @@ class Player :
 
 
     # 和了れるかどうか
-    def can_win(self, game: Game, ron_tile: int = -1) -> bool :
+    def can_win(self, game, ron_tile:int = -1) -> bool :
         ron, is_chiitoi, is_kokushi, is_normal = False, False, False, False
 
         # 向聴数的に和了っているかどうか確認
@@ -511,7 +509,7 @@ class Player :
 
 
     # フリテンかどうか
-    def is_furiten(self, is_chiitoi: bool, is_kokushi: bool, is_normal: bool, ron_tile: tile) -> bool :
+    def is_furiten(self, is_chiitoi:bool, is_kokushi:bool, is_normal:bool, ron_tile:int) -> bool :
         if ron_tile in TileType.REDS : ron_tile += 5
         hand = self.hand[:]
         if is_normal :
@@ -530,7 +528,7 @@ class Player :
 
 
     # 役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    def _has_yaku(self, game:Game, ron:bool, ron_tile:int) -> bool:
+    def _has_yaku(self, game, ron:bool, ron_tile:int) -> bool:
         if ron_tile in TileType.REDS : ron_tile += 5
         if self.has_declared_ready : return True
         if self.has_declared_double_ready : return True
@@ -572,7 +570,7 @@ class Player :
             if hand[i] == 0 : continue
             if hand[i] >= 2 :
                 hand[i] = hand[i] - 2
-                self.hand_composition[self.i_hc] = Block.PAIR
+                self.hand_composition[self.i_hc] = BlockType.PAIR
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
                 there_is_yaku = self._pick_out_mentsu_for_composition_hand(hand, prevailing_wind, self.players_wind, ron, ron_tile);
@@ -609,8 +607,8 @@ class Player :
             # 暗刻抜き出し
             if hand[i] >= 3 :
                 hand[i] -= 3
-                if i == ron_tile and ron and hand[i] == 0 : self.hand_composition[self.i_hc] = Block.OPENED_TRIPLET
-                else : self.hand_composition[self.i_hc] = Block.CLOSED_TRIPLET
+                if i == ron_tile and ron and hand[i] == 0 : self.hand_composition[self.i_hc] = BlockType.OPENED_TRIPLET
+                else : self.hand_composition[self.i_hc] = BlockType.CLOSED_TRIPLET
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
                 self._pick_out_mentsu2(hand, prevailing_wind, self.players_wind, ron, ron_tile)
@@ -624,7 +622,7 @@ class Player :
                 hand[i] = hand[i] - 1
                 hand[i+1] = hand[i+1] - 1
                 hand[i+2] = hand[i+2] - 1
-                self.hand_composition[self.i_hc] = Block.CLOSED_RUN
+                self.hand_composition[self.i_hc] = BlockType.CLOSED_RUN
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
                 self._pick_out_mentsu2(hand, prevailing_wind, self.players_wind, ron, ron_tile)
@@ -640,7 +638,7 @@ class Player :
     def proc_ankan(self, tile:int) -> None :
         self.kans_num += 1
         self.opened_sets_num += 1
-        self.opened_hand[self.opened_sets_num * 5] = Block.CLOSED_KAN
+        self.opened_hand[self.opened_sets_num * 5] = BlockType.CLOSED_KAN
         self.opened_hand[self.opened_sets_num * 5 + 1] = tile
         self.opened_hand[self.opened_sets_num * 5 + 2] = tile
         self.opened_hand[self.opened_sets_num * 5 + 3] = 0
@@ -654,8 +652,8 @@ class Player :
     def proc_kakan(self, tile:int) -> int :
         self.kans_num += 1
         for i in range(4) :
-            if self.opened_hand[i*5] == Block.OPENED_TRIPLET and self.opened_hand[(i*5)+1] == tile :
-                self.opened_hand[i*5] = Block.OPENED_KAN
+            if self.opened_hand[i*5] == BlockType.OPENED_TRIPLET and self.opened_hand[(i*5)+1] == tile :
+                self.opened_hand[i*5] = BlockType.OPENED_KAN
                 self.hand[tile] -= 1
                 if tile in TileType.FIVES and self.reds[tile//10]:
                     self.reds[tile//10]= False
@@ -677,7 +675,7 @@ class Player :
         self.kans_num += 1
         self.opened_sets_num += 1
         self.has_stealed = True
-        self.opened_hand[(self.opened_sets_num * 5) + 0] = Block.OPENED_KAN
+        self.opened_hand[(self.opened_sets_num * 5) + 0] = BlockType.OPENED_KAN
         self.opened_hand[(self.opened_sets_num * 5) + 1] = tile
         self.opened_hand[(self.opened_sets_num * 5) + 2] = tile
         self.opened_hand[(self.opened_sets_num * 5) + 3] = pos
@@ -695,7 +693,7 @@ class Player :
 
         self.opened_sets_num += 1
         self.has_stealed = True
-        self.opened_hand[(self.opened_sets_num * 5) + 0] = Block.OPENED_TRIPLET
+        self.opened_hand[(self.opened_sets_num * 5) + 0] = BlockType.OPENED_TRIPLET
         self.opened_hand[(self.opened_sets_num * 5) + 1] = tile
         self.opened_hand[(self.opened_sets_num * 5) + 2] = tile
         self.opened_hand[(self.opened_sets_num * 5) + 3] = pos
@@ -727,7 +725,7 @@ class Player :
 
         self.opened_sets_num += 1
         self.has_stealed = True
-        self.opened_hand[(self.opened_sets_num * 5) + 0] = Block.OPENED_RUN
+        self.opened_hand[(self.opened_sets_num * 5) + 0] = BlockType.OPENED_RUN
         if tile1 > tile : min_tile = tile
         else : min_tile = tile1
         self.opened_hand[(self.opened_sets_num * 5) + 1] = min_tile
@@ -743,7 +741,7 @@ class Player :
 
 
     # 暗槓できるかどうか判定，できる場合は暗槓できる牌の牌番号のリストを返す
-    def _can_ankan(self, game:Game) -> List[int] :
+    def _can_ankan(self, game) -> List[int] :
         can_ankan_tiles = []
 
         # 手牌の中に暗槓できる牌があったらcan_ankan_tilesに牌番号を追加
@@ -764,14 +762,14 @@ class Player :
 
 
     # 槓しない or どの牌で槓するか決める
-    def _deside_which_tile_to_kan(self, game:Game, playes:List[Player]) -> int :
+    def _deside_which_tile_to_kan(self, game, playes:List) -> int :
         ### 今は強制的に槓しないようにする
         ### NNの計算とかが入る
         return -1
 
 
     # 槓するかどうか決める
-    def _decide_to_kan(self, game:Game, players:List[Player]) -> (int, bool, bool):
+    def _decide_to_kan(self, game, players:List) -> (int, bool, bool):
         tile, ankan, kakan = -1, False, False
 
         # 槓できるか判定
@@ -804,7 +802,7 @@ class Player :
 
 
     # アクションフェーズでのアクションを決める
-    def decide_action(self, game:Game, players:List[Player]) -> (int, bool, bool, bool, bool, bool):
+    def decide_action(self, game, players:List) -> (int, bool, bool, bool, bool, bool):
         # プレイヤの行動決定，tile:赤は(0,10,20)表示
         tile, exchanged, ready, ankan, kakan, kyushu = -1, False, False, False, False, False
 
