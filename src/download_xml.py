@@ -3,8 +3,12 @@ import urllib.request
 
 from mytools import fntime
 
+
+"""
+TODO Ubuntu Desctopの方で修正入れた気がする...要確認
+"""
 @fntime
-def generate_log(year:str, path:str) -> None :
+def download_xml(year:str, path:str) -> None :
     dir_components = os.listdir(path)
     files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
     file_count = 0
@@ -32,5 +36,5 @@ if __name__ == "__main__" :
     year = "2019"
     path = f"../data/tenhou/{year}/"
 
-    generate_log(year, path)
+    download_xml(year, path)
 
