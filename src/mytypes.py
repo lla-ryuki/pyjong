@@ -14,6 +14,7 @@ class TileType(metaclass=ConstMeta) :
     DRAGONS   = frozenset({35, 36, 37})                  # 白, 發, 中
     HONORS    = frozenset({31, 32, 33, 34, 35, 36, 37})  # 字牌
 
+
 class BlockType(metaclass=ConstMeta) :
     OPENED_RUN = 1        # チー
     CLOSED_RUN = 2        # 順子
@@ -27,3 +28,10 @@ class BlockType(metaclass=ConstMeta) :
     TRIPLETS  = frozenset({OPENED_TRIPLET, CLOSED_TRIPLET})
     KANS      = frozenset({OPENED_KAN, CLOSED_KAN})
 
+
+class ActionType(metaclass=ConstMeta) :
+    STEAL_RUN = 1        # チー
+    STEAL_TRIPLET = 2    # ポン
+    STEAL_KAN = 3        # 明槓
+    ADDED_KAN = 4        # 加槓
+    CLOSED_KAN = 5       # 暗槓

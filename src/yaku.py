@@ -1,14 +1,13 @@
 from typing import List
-from tile_type import TileType
-from block import Block
+from mytypes import TileType, BlockType
 
 # 平和 pinfu
 def no_points_hand(temp: List[int], winning_tile: int , prevailing_wind: int, players_wind: int) -> bool :
     runs_num = 0
     for i in range(0,10,2) :
-        if temp[i] == Block.PAIR :
+        if temp[i] == BlockType.PAIR :
             if temp[i+1] == prevailing_wind or temp[i+1] == players_wind or temp[i+1] >= 35 : return False
-        elif temp[i] != Block.CLOSED_RUN : return False
+        elif temp[i] != BlockType.CLOSED_RUN : return False
         else :
             runs_num += 1
             if (temp[i+1] == winning_tile - 2 and temp[i+1] % 10 >= 2) or (temp[i+1] == winning_tile and temp[i+1] % 10 < 7) : both_sides = True
@@ -29,7 +28,7 @@ def one_set_of_identical_sequences(temp: List[int]) -> bool :
     if two_sets_of_identical_sequences(temp) : return False
     check = [0] * 30
     for i in range(0,10,2) :
-        if temp[i] == Block.CLOSED_RUN : check[temp[i+1]] += 1
+        if temp[i] == BlockType.CLOSED_RUN : check[temp[i+1]] += 1
     for i in range(1,30) :
         if check[i] == 0 : continue
         elif check[i] >= 2 : return True
@@ -70,13 +69,13 @@ def red_dragon(hand: List[int]) -> bool :
 def terminal_or_honor_in_each_set(temp: List[int]) -> bool :
     honor, run = False, False
     for i in range(0,10,2) :
-        if temp[i] == Block.PAIR :
+        if temp[i] == BlockType.PAIR :
             if not((temp[i+1] % 10) in {1, 9} or temp[i+1] > 30) : return False
             if temp[i+1] > 30 : honor = True
-        elif temp[i] in Block.RUNS :
+        elif temp[i] in BlockType.RUNS :
             if not((temp[i+1] % 10) in {1, 7}) : return False
             run = True
-        elif temp[i] in (Block.TRIPLETS | Block.KANS) :
+        elif temp[i] in (BlockType.TRIPLETS | BlockType.KANS) :
             if not((temp[i+1] % 10) in [1,9] or temp[i+1] > 30) : return False
             if temp[i+1] > 30 : honor = True
     return honor and run
@@ -86,7 +85,7 @@ def terminal_or_honor_in_each_set(temp: List[int]) -> bool :
 def three_color_straight(temp: List[int]) -> bool :
     check = [0] * 30
     for i in range(0,10,2) :
-        if temp[i] in Block.RUNS : check[temp[i+1]] += 1
+        if temp[i] in BlockType.RUNS : check[temp[i+1]] += 1
     for i in range(1,10) :
         if check[i] != 0 and check[i+10] != 0 and check[i+20] != 0 : return True
     return False
@@ -96,7 +95,7 @@ def three_color_straight(temp: List[int]) -> bool :
 def straight(temp: List[int]) -> bool :
     check = [False] * 9
     for i in range(0,10,2) :
-        if temp[i] == Block.CLOSED_RUN or temp[i] == Block.OPENED_RUN :
+        if temp[i] == BlockType.CLOSED_RUN or temp[i] == BlockType.OPENED_RUN :
             if temp[i+1] in {1, 4, 7, 11, 14, 17, 21, 24, 27} : check[i] = True
     if (check[0] and check[1] and check[2]) or \
        (check[3] and check[4] and check[5]) or \
@@ -108,7 +107,7 @@ def straight(temp: List[int]) -> bool :
 # 対々和 toitoi
 def all_triplet_hand(temp: List[int]) -> bool :
     for i in range(0,10,2) :
-        if temp[i] == Block.CLOSED_RUN or temp[i] == Block.OPENED_RUN : return False
+        if temp[i] == BlockType.CLOSED_RUN or temp[i] == BlockType.OPENED_RUN : return False
     return True
 
 
@@ -116,7 +115,7 @@ def all_triplet_hand(temp: List[int]) -> bool :
 def three_color_triplets(temp: List[int]) -> bool :
     check = [False] * 30
     for i in range(0,10,2) :
-        if temp[i] in (Block.TRIPLETS | Block.KANS) and i < 30 : check[temp[i+1]] = True
+        if temp[i] in (BlockType.TRIPLETS | BlockType.KANS) and i < 30 : check[temp[i+1]] = True
     for i in range(1,10) :
         if check[i] and check[i+10] and check[i+20] : return True
     return False
@@ -138,7 +137,7 @@ def all_terminals_and_honors(hand: List[int]) -> bool :
 def three_kans(temp: List[int]) -> bool :
     kans_num = 0
     for i in range(0,10,2) :
-        if temp[i] in Block.KANS : kans_num += 1
+        if temp[i] in BlockType.KANS : kans_num += 1
     if kans_num == 3 : return True
     return False
 
@@ -147,19 +146,19 @@ def three_kans(temp: List[int]) -> bool :
 def three_closed_triplets(temp: List[int]) -> bool :
     closed_triprets_num = 0
     for i in range(0,10,2) :
-        if temp[i] in {Block.CLOSED_TRIPLET, Block.CLOSED_KAN} : closed_triprets_num += 1
+        if temp[i] in {BlockType.CLOSED_TRIPLET, BlockType.CLOSED_KAN} : closed_triprets_num += 1
     if closed_triprets_num >= 3 : return True
     return False
 
 
 # 小三元 syousangen
 def little_three_dragons(hand: List[int]) -> bool :
-    dradon_pair = False
+    dragon_pair = False
     dragons_num = 0
     for i in TileType.DRAGONS :
-        if hand[i] == 2 and pair is False : pair = True
-        elif hand[i] >= 3  : n_dragon += 1
-    if n_dragon == 2 and pair : return True
+        if hand[i] == 2 and dragon_pair is False : dragon_pair = True
+        elif hand[i] >= 3  : dragons_num += 1
+    if dragons_num == 2 and dragon_pair : return True
     return False
 
 
@@ -168,12 +167,12 @@ def two_sets_of_identical_sequences(temp: List[int]) -> bool :
     check = [0] * 30
     identical_sequence_num = 0
     for i in range(0,10,2) :
-        if temp[i] == Block.CLOSED_RUN : check[temp[i+1]] += 1
+        if temp[i] == BlockType.CLOSED_RUN : check[temp[i+1]] += 1
     for i in range(1,30) :
         if check[i] == 0 : continue
-        elif check[i] >= 2 and check[i] < 4 : identical_sequence += 1
-        elif check[i] == 4 : identical_sequence += 2
-    if identical_sequence >= 2 : return True
+        elif check[i] >= 2 and check[i] < 4 : identical_sequence_num += 1
+        elif check[i] == 4 : identical_sequence_num += 2
+    if identical_sequence_num >= 2 : return True
     return False
 
 
@@ -199,12 +198,12 @@ def half_flush(hand: List[int]) -> bool :
 def terminal_in_each_set(temp: List[int]) -> bool :
     run = False
     for i in range(0,10,2) :
-        if temp[i] == Block.PAIR :
+        if temp[i] == BlockType.PAIR :
             if not(temp[i+1] % 10 in [1,9] and temp[i+1] < 30): return False
-        elif temp[i] in Block.RUNS :
+        elif temp[i] in BlockType.RUNS :
             if not((temp[i+1] % 10) in [1, 7]) : return False
             run = True
-        elif temp[i] in (Block.TRIPLETS | Block.KANS) :
+        elif temp[i] in (BlockType.TRIPLETS | BlockType.KANS) :
             if not(temp[i+1] % 10 in [1,9] and temp[i+1] < 30) : return False
     return run
 
