@@ -28,4 +28,5 @@ if __name__ == "__main__" :
         path = f"../data/xml/{year}/{month:02}/"
         dir_components = os.listdir(path)
         files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
+        print(f"year:{year}, month:{month}")
         proc_month(files)
