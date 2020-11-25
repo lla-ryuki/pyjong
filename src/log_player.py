@@ -123,13 +123,13 @@ class Player :
 
     # 暗槓の処理
     def proc_ankan(self, tile:int) -> None :
-        self.kans_num += 1
-        self.opened_sets_num += 1
         self.opened_hand[self.opened_sets_num * 5] = BlockType.CLOSED_KAN
         self.opened_hand[self.opened_sets_num * 5 + 1] = tile
         self.opened_hand[self.opened_sets_num * 5 + 2] = tile
         self.opened_hand[self.opened_sets_num * 5 + 3] = 0
         self.hand[tile] -= 4
+        self.kans_num += 1
+        self.opened_sets_num += 1
         if tile in TileType.FIVES :
             self.reds[tile//10] = False
             self.opened_reds[tile//10] = True
