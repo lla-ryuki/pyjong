@@ -10,7 +10,7 @@ from mytypes import BlockType
 class Feed :
 
     VERSION       = "v0.0.1"
-    SAVE_PATH     = "../data/feed/test/"
+    SAVE_PATH     = "../data/feed/2019/"
     BATCH_SIZE    = 5000
     LIMIT_N_BATCH = 1000
     N_ROW_MPS     = 9
@@ -36,7 +36,6 @@ class Feed :
     def save_feed(self) :
         # ファイルを保存
         np.savez(self.SAVE_PATH + "feed_%04d" % self.i_feed, m=self.feed_x_m, p=self.feed_x_p, s=self.feed_x_s, h=self.feed_x_h, y=self.feed_y)
-        print(f"save {self.i_feed}")
         self.i_feed += 1
 
         # データ初期化
