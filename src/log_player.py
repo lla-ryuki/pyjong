@@ -156,14 +156,15 @@ class Player :
             self.reds[tile//10]= False
             self.opened_reds[tile//10] = True
 
-        self.kans_num += 1
-        self.opened_sets_num += 1
-        self.has_stealed = True
         self.opened_hand[(self.opened_sets_num * 5) + 0] = BlockType.OPENED_KAN
         self.opened_hand[(self.opened_sets_num * 5) + 1] = tile
         self.opened_hand[(self.opened_sets_num * 5) + 2] = tile
         self.opened_hand[(self.opened_sets_num * 5) + 3] = pos
         self.hand[tile] -= 3
+
+        self.kans_num += 1
+        self.opened_sets_num += 1
+        self.has_stealed = True
 
 
     # ポンの処理
