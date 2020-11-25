@@ -19,7 +19,7 @@ def proc_month(files) :
             tree = et.parse(path + file_name)
         except :
             print(file_name)
-            os.remove(path + file_name)
+            continue
 
         root = tree.getroot()
         # game = Game(root, file_name, feed_mode=False, feed=None) # feedは作らない時
