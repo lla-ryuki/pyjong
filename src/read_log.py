@@ -12,7 +12,7 @@ from mytools import fntime
 
 
 @fntime
-def proc_month() :
+def proc_month(files) :
     for file_name in files :
         tree = et.parse(path + file_name)
         root = tree.getroot()
@@ -28,3 +28,4 @@ if __name__ == "__main__" :
         path = f"../data/xml/{year}/{month:02}/"
         dir_components = os.listdir(path)
         files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
+        proc_month(files)
