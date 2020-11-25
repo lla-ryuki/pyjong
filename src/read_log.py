@@ -22,8 +22,9 @@ def proc_month() :
 
 
 if __name__ == "__main__" :
+    year = int(input("Input year : "))
     feed = Feed()
     for month in range(1, 13) :
-        path = f"../data/2019/{month}/"
+        path = f"../data/{year}/{month:02}/"
         dir_components = os.listdir(path)
         files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
