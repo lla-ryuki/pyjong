@@ -1,5 +1,6 @@
 # std
 import os
+import sys
 import xml.etree.ElementTree as et
 
 # 3rd
@@ -14,7 +15,12 @@ from mytools import fntime
 @fntime
 def proc_month(files) :
     for file_name in files :
-        tree = et.parse(path + file_name)
+        try :
+            tree = et.parse(path + file_name)
+        except :
+            print(file_name)
+            sys.exit()
+
         root = tree.getroot()
         # game = Game(root, file_name, feed_mode=False, feed=None) # feedは作らない時
         game = Game(root, file_name, feed_mode=True, feed=feed) # feedを作りたい時
