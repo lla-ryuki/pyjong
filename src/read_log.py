@@ -25,6 +25,6 @@ if __name__ == "__main__" :
     year = int(input("Input year : "))
     feed = Feed()
     for month in range(1, 13) :
-        path = f"../data/{year}/{month:02}/"
+        path = f"../data/xml/{year}/{month:02}/"
         dir_components = os.listdir(path)
         files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
