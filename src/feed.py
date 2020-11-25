@@ -32,14 +32,10 @@ class Feed :
         self.feed_x_mps = [self.feed_x_m, self.feed_x_p, self.feed_x_s]
 
 
-    # feedを書き切ったらをnpyファイルとして吐き出す
+    # feedを書き切ったらをnpzファイルとして吐き出す
     def save_feed(self) :
         # ファイルを保存
-        np.save(self.SAVE_PATH + "m_x_%04d" % self.i_feed, self.feed_x_m)
-        np.save(self.SAVE_PATH + "p_x_%04d" % self.i_feed, self.feed_x_p)
-        np.save(self.SAVE_PATH + "s_x_%04d" % self.i_feed, self.feed_x_s)
-        np.save(self.SAVE_PATH + "h_x_%04d" % self.i_feed, self.feed_x_h)
-        np.save(self.SAVE_PATH + "y_%04d"   % self.i_feed, self.feed_y)
+        np.savez(self.SAVE_PATH + "feed_%04d" % self.i_feed, m=self.feed_x_m, p=self.feed_x_p, s=self.feed_x_s, h=self.feed_x_h, y=self.feed_y)
         print(f"save {self.i_feed}")
         self.i_feed += 1
 
