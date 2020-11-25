@@ -8,19 +8,22 @@ import xml.etree.ElementTree as et
 from log_game import Game
 from log_player import Player
 from feed import Feed
+from mytools import fntime
 
 
-if __name__ == "__main__" :
-    path = f"../data/test/"
-
-    dir_components = os.listdir(path)
-    files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
-
-    feed = Feed()
-
+@fntime
+def proc_month() :
     for file_name in files :
         tree = et.parse(path + file_name)
         root = tree.getroot()
         # game = Game(root, file_name, feed_mode=False, feed=None) # feedは作らない時
         game = Game(root, file_name, feed_mode=True, feed=feed) # feedを作りたい時
         game.read_log()
+
+
+if __name__ == "__main__" :
+    feed = Feed()
+    for month in range(1, 13) :
+        path = f"../data/2019/{month}/"
+        dir_components = os.listdir(path)
+        files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
