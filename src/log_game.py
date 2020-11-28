@@ -63,6 +63,7 @@ class Game :
         self.appearing_red_tiles = [False] * 3                  # プレイヤ全員に見えている赤牌． 萬子，筒子，索子の順．
         self.pao_info = [-1] * 4                                # パオ記録用
         self.steal_flag = False                                 # 手出し記録用
+        self.has_someone_ready = False                          # 立直者がいるかどうか
         self.is_first_turn = False                              # 1巡目かどうか
 
         # Player関係のメンバ変数を初期化
@@ -262,7 +263,7 @@ class Game :
     def proc_REACH(self, attr) :
         if attr["step"] == "2" :
             player_num, step = int(attr["who"]), attr["step"]
-            self.ready_flag = True
+            self.has_someone_ready = True
             self.deposits_num += 1
             self.players[player_num].declare_ready(self.is_first_turn)
 
