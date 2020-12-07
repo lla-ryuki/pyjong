@@ -14,8 +14,9 @@ from pymod.yakuman import *
 
 
 class Game :
-    def __init__(self) :
+    def __init__(self, action=None) :
         self.players = [Player(i) for i in range(4)]
+        self.action = action
         self.logger = Logger(is_logging=True);
         self.shanten_calculator = ShantenNumCalculator()
         self.rounds_num = 0                            # 場 0:東場，1:南場，2:西場

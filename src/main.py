@@ -4,9 +4,11 @@
 
 # ours
 from pymod.game import Game
+from player.action import Action
 
 
 if __name__ == "__main__" :
+    action = Action()
     # ゲーム処理
-    game = Game()
+    game = Game(action=action)
     game.play_game()

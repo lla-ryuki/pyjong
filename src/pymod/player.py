@@ -831,7 +831,7 @@ class Player :
         if ankan or kakan : return tile, exchanged, ready, ankan, kakan, kyushu
 
         # 切る牌を決める．赤は(0, 10, 20)．
-        tile, exchanged = self.decide_which_tile_to_discard()
+        tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
 
         # 立直するかどうか決める
         ready = self.decide_to_declare_ready(tile)
