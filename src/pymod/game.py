@@ -58,6 +58,7 @@ class Game :
         self.appearing_tiles = [0] * 38                # プレイヤ全員に見えている牌， appearing_tiles[i] が j → i番の牌がj枚見えている
         self.appearing_red_tiles = [False] * 3         # プレイヤ全員に見えている赤牌． 萬子，筒子，索子の順．
         self.wall = [0] * 136                          # 山
+        self.remain_tiles_num = 136                    # 山の残り枚数
 
         # インデックス
         self.i_player = self.rotations_num             # 次のループで行動するプレイヤの番号
@@ -159,6 +160,7 @@ class Game :
     def supply_next_tile(self) -> int :
         tile = self.wall[self.i_wall]
         self.i_wall += 1
+        self.remain_tiles_num -= 1
         return tile
 
 
