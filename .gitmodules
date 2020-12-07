@@ -1,0 +1,3 @@
+[submodule "ryujin"]
+	path = ryujin
+	url = git@github.com:neuzen-ryuki/ryujin.git

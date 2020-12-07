@@ -1,5 +1,5 @@
 from typing import List
-from mytypes import TileType, BlockType
+from pymod.mytypes import TileType, BlockType
 
 # 九連宝燈
 def nine_gates(hand: List[int]) -> bool :

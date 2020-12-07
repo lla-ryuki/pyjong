@@ -1,16 +1,14 @@
 from typing import List
 import datetime
 
-from mytypes import TileType
+from pymod.mytypes import TileType
 
 
 class Logger :
-
     def __init__(self, is_logging:bool) :
         now = datetime.datetime.now().isoformat()
         self.save_path = f"../data/log/{now}.log"
         self.is_logging = is_logging
-        self.scores = [0] * 4
         self.actions = [[] for i in range(4)]
         self.starting_hands = [[] for i in range(4)]
         self.tiles_player_got = [[] for i in range(4)]
@@ -89,8 +87,8 @@ class Logger :
     def register_got_tile(self, i_player:int, tile:int, is_starting_hand:bool = False) -> None :
         if tile in TileType.REDS : s_tile = str(51 + (tile // 10))
         else : s_tile = str(10 + tile)
-        if is_starting_hand : self.starting_hands[i] .append(s_tile)
-        else : self.tiles_player_got[i].append(s_tile)
+        if is_starting_hand : self.starting_hands[i_player] .append(s_tile)
+        else : self.tiles_player_got[i_player].append(s_tile)
 
 
     def register_discarded_tile(self, i_player:int, discarded_tile: int, ready: bool) -> None :
@@ -98,10 +96,10 @@ class Logger :
         if ready : log_text = "r"
         if discarded_tile in TileType.REDS : s_discarded_tile = str(51 + (discarded_tile // 10))
         else : s_discarded_tile = str(10 + discarded_tile)
-        self.actions[i_player].append(log_text + s_discarded)
+        self.actions[i_player].append(log_text + s_discarded_tile)
 
 
-    def save(game) -> None :
+    def save(self, game) -> None :
         text = "{\"title\":[\"\",\"\"],\"name\":[\"\",\"\",\"\",\"\"],\"rule\":{\"aka\":1},\"log\":[["
         temp = []
         temp.append(game.rounds_num * 4 + game.rotations_num)
@@ -109,7 +107,7 @@ class Logger :
         temp.append(game.deposits_num)
         text += str(temp) + ","
         scores = []
-        for i in range(4) : scores += [scores[i]]
+        for i in range(4) : scores += [game.players[i].score]
         text += str(scores) + ","
         dora_indicators = []
         ura_indicators = []
@@ -122,13 +120,10 @@ class Logger :
         text += str(ura_indicators) + ","
 
         for i in range (4) :
-            text += str(self.starting_hands[i]) + ","
-            temp = str(self.tiles_player_got[i])
-            temp = temp.replace('\'','\"')
-            text += temp + ","
-            temp = str(self.actions[i])
-            temp = temp.replace('\'','\"')
-            text += temp + ","
+            print(str(self.actions[i]))
+            text += str(self.starting_hands[i]).replace("\'","")   + ","
+            text += str(self.tiles_player_got[i]).replace("\'","") + ","
+            text += str(self.actions[i]).replace("\'","")          + ","
 
         text += "[\"不明\"]]]}\n"
 

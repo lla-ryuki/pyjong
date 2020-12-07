@@ -1,5 +1,5 @@
 from typing import List
-from mytypes import TileType, BlockType
+from pymod.mytypes import TileType, BlockType
 
 # 平和 pinfu
 def no_points_hand(temp: List[int], winning_tile: int , prevailing_wind: int, players_wind: int) -> bool :

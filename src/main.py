@@ -3,12 +3,10 @@
 # 3rd
 
 # ours
-from game import Game
-from player import Player
+from pymod.game import Game
 
 
 if __name__ == "__main__" :
-
     # ゲーム処理
     game = Game()
-    game.proc_game()
+    game.play_game()

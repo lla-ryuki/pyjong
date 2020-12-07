@@ -4,7 +4,7 @@ import pickle
 from typing import List
 
 # ours
-from mytypes import TileType
+from pymod.mytypes import TileType
 
 
 class ShantenNumCalculator :
@@ -41,9 +41,10 @@ class ShantenNumCalculator :
         self.opened_sets_num = opened_sets_num
 
         shanten_nums = self.shanten_table.get(tuple(hand))
-        if (shanten_num is None) :
+        if (shanten_nums is None) :
             print("not hit")
             shanten_nums = self._calc_shanten_nums()
+            key = tuple(hand)
             self.shanten_table[key] = shanten_nums
             if self.record_mode :
                 with open(self.file_path, "wb") as f :
