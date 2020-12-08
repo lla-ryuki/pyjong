@@ -327,8 +327,9 @@ class Player :
 
 
     # 牌を捨てる
-    def discard_tile(self) -> int :
-        discarded_tile = self.last_discarded_tile
+    def discard_tile(self, game, players) -> int :
+        discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
+        self.last_discarded_tile = discarded_tile
 
         # 河への記録
         self.discarded_state += [self.exchanged]
@@ -829,9 +830,6 @@ class Player :
         # 槓するかどうか決める
         tile, ankan, kakan = self.decide_to_kan(game, players)
         if ankan or kakan : return tile, exchanged, ready, ankan, kakan, kyushu
-
-        # 切る牌を決める．赤は(0, 10, 20)．
-        tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
 
         # 立直するかどうか決める
         ready = self.decide_to_declare_ready(tile)

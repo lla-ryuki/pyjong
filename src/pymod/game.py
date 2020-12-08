@@ -740,7 +740,7 @@ class Game :
     # 打牌フェーズ
     def proc_discard_phase(self, player:Player, ready:bool) -> None :
         # プレイヤが捨てる牌を決定，discarded_tile:赤は(0,10,20)表示
-        discarded_tile = player.discard_tile()
+        discarded_tile = player.discard_tile(self, self.players)
         self.logger.register_discarded_tile(self.i_player, discarded_tile, ready)
 
         # 捨てられた牌を見えている牌に記録
