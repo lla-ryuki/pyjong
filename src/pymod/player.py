@@ -328,6 +328,7 @@ class Player :
 
     # 牌を捨てる
     def discard_tile(self, game, players) -> int :
+        # 切る牌を決める
         discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
         self.last_discarded_tile = discarded_tile
 
@@ -474,18 +475,23 @@ class Player :
         return chii, tile1, tile2
 
 
-    # チーできるかどうか
-    def can_chii(self, tile) -> bool :
-        # 字牌はチーできない
-        if tile > 30 : return False
+    # 鳴けるかどうか
+    def can_steal(self, tile, i) -> (bool, bool, bool, bool, bool) :
+        can_pon, can_kan, can_chii1, can_chii2, can_chii3 = False, False, False, False, False
+        if tile in TileType.REDS : tile += 5
 
-        # 判定．順に下チー，嵌張チー，上チーの判定をorで繋いでる
+        # ポン判定
+        if self.hand[tile] >= 2 : can_pon = True
+        # 大明槓判定
+        if self.hand[tile] >= 3 : can_kan = True
+        # チー判定
+        if i >= 2 or tile > 30 : return can_pon, can_kan, can_chii1, can_chii2, can_chii3
         can_chii = False
-        if (tile % 10 >= 3 and self.hand[tile-2] > 0 and self.hand[tile-1] > 0) or \
-           (tile % 10 >= 2 and tile % 10 <= 8 and self.hand[tile-1] > 0 and self.hand[tile+1] > 0) or \
-           (tile % 10 >= 3 and self.hand[tile-2] > 0 and self.hand[tile-1] > 0) : can_chii = True
+        if self.hand[tile-2] > 0 and self.hand[tile-1] > 0 and tile % 10 >= 3                    : can_chii1 = True
+        if self.hand[tile-1] > 0 and self.hand[tile+1] > 0 and tile % 10 >= 2 and tile % 10 <= 8 : can_chii2 = True
+        if self.hand[tile+2] > 0 and self.hand[tile+1] > 0 and tile % 10 <= 7                    : can_chii3 = True
 
-        return can_chii
+        return can_pon, can_kan, can_chii1, can_chii2, can_chii3
 
 
     # 和了れるかどうか
@@ -793,11 +799,6 @@ class Player :
         return tile, ankan, kakan
 
 
-    # 立直宣言するかどうか決める
-    # TODO リーチ判断．ちゃんと書く
-    def decide_to_declare_ready(self, tile) -> bool :
-        return False
-
 
     # 九種九牌を宣言するかどうか決める
     def decide_to_declare_nine_orphans(self) -> bool :
@@ -815,24 +816,17 @@ class Player :
         return False
 
 
-    # 切る牌を決める
-    # TODO 今は強制ツモ切り．ちゃんと書く．
-    def decide_which_tile_to_discard(self) :
-        self.last_discarded_tile = self.last_got_tile
-        return (self.last_got_tile, False)
-
-
     # アクションフェーズでのアクションを決める
     def decide_action(self, game:"Game", players:List["Player"]) -> (int, bool, bool, bool, bool, bool):
         # プレイヤの行動決定，tile:赤は(0,10,20)表示
         tile, exchanged, ready, ankan, kakan, kyushu = -1, False, False, False, False, False
 
         # 槓するかどうか決める
-        tile, ankan, kakan = self.decide_to_kan(game, players)
+        tile, ankan, kakan = self.decide_to_kan(game, players, self.player_num)
         if ankan or kakan : return tile, exchanged, ready, ankan, kakan, kyushu
 
         # 立直するかどうか決める
-        ready = self.decide_to_declare_ready(tile)
+        ready = game.action.decide_to_declare_ready(game, players)
 
         # 九種九牌で流局するかどうか決める
         if game.is_first_turn : kyusyu = self.decide_to_declare_nine_orphans()

@@ -178,6 +178,8 @@ class Game :
         self.logger.register_daiminkan(i_ap, tile, pos)
 
         if tile in TileType.REDS : tile += 5
+        for i in range(4) : self.players[i].has_right_to_one_shot = False
+        self.players[self.i_player].is_nagashi_mangan = False
         self.appearing_tiles[tile] += 3
         self.is_first_turn = False
         self.dora_opens_flag = True
@@ -191,8 +193,9 @@ class Game :
         pao = self.players[i_ap].proc_pon(self, tile, pos)
         if pao > -1 : self.set_pao(pao, i_ap, self.i_player)
         self.logger.register_pon(i_ap, tile, pos)
-
         if tile in TileType.REDS : tile += 5
+        for i in range(4) : self.players[i].has_right_to_one_shot = False
+        self.players[self.i_player].is_nagashi_mangan = False
         self.appearing_tiles[tile] += 2
         self.is_first_turn = False
         self.steal_flag = True
@@ -203,7 +206,8 @@ class Game :
     def proc_chii(self, i_ap:int, tile:int, tile1:int, tile2:int) -> None :
         self.players[i_ap].proc_chii(tile, tile1, tile2)
         self.logger.register_chii(i_ap, tile, tile1, tile2)
-
+        for i in range(4) : self.players[i].has_right_to_one_shot = False
+        self.players[self.i_player].is_nagashi_mangan = False
         if tile in TileType.REDS : tile += 5
         elif tile1 in TileType.REDS : tile1 += 5
         elif tile2 in TileType.REDS : tile2 += 5
@@ -817,26 +821,20 @@ class Game :
 
     # 副露フェーズ
     def proc_steal_phase(self, discarded_tile:int) -> None :
-        # ポン，カン判定と処理
-        for i in range(1,4) :
+        for i in (3,2,1) :
+            if self.steal_flag : break
             i_ap = (self.i_player + i) % 4 #i_ap : index of action player
-            pon, kan = False, False
-            pon, kan = self.players[i_ap].decide_pon_or_kan(self, self.players, discarded_tile)
-            if (pon and kan) is False : continue
-            else :
-                self.players[self.i_player].is_nagashi_mangan = False
-                for j in range(4) : self.players[j].has_right_to_one_shot = False
-                if pon : self.proc_pon(i_ap, discarded_tile)
-                elif kan : self.proc_daiminkan(i_ap, discarded_tile)
-                break
+            player = self.players[i_ap]
+            pon , kan , chii1 , chii2 , chii3 = player.can_steal(discarded_tile, i)
+            if pon or kan or chii1 or chii2 or chii3 : indexes = self.action.decide_to_steal(self, self.players, discarded_tile, i_ap)
+            for j in indexes :
+                if   j == 0           : break
+                elif j == 1 and pon   : self.proc_pon(i_ap, discarded_tile)
+                elif j == 4 and chii2 : self.proc_chii(i_ap, discarded_tile, discarded_tile-1, discarded_tile+1)
+                elif j == 3 and chii1 : self.proc_chii(i_ap, discarded_tile, discarded_tile-1, discarded_tile-2)
+                elif j == 5 and chii3 : self.proc_chii(i_ap, discarded_tile, discarded_tile+1, discarded_tile+2)
+                elif j == 2 and kan   : self.proc_daiminkan(i_ap, discarded_tile)
 
-        # チー判定と処理
-        if (pon and kan) is False :
-            i_ap = (self.i_player + 1) % 4 #i_ap : index of action player
-            chii, tile1, tile2 = self.players[i_ap].decide_chii(self, self.players, discarded_tile) # tile1, tile2が赤の時は赤番号(0,10,20)で返す
-            if chii :
-                self.players[self.i_player].is_nagashi_mangan = False
-                self.proc_chii(i_ap, discarded_tile, tile1, tile2)
 
 
     # 局の処理

@@ -150,3 +150,6 @@ class Logger :
         f.flush()
         f.close()
 
+        self.actions = [[] for i in range(4)]
+        self.starting_hands = [[] for i in range(4)]
+        self.tiles_player_got = [[] for i in range(4)]
