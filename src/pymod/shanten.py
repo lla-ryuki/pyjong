@@ -42,7 +42,6 @@ class ShantenNumCalculator :
 
         shanten_nums = self.shanten_table.get(tuple(hand))
         if (shanten_nums is None) :
-            print("not hit")
             shanten_nums = self._calc_shanten_nums()
             key = tuple(hand)
             self.shanten_table[key] = shanten_nums

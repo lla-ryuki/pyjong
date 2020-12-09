@@ -4,6 +4,7 @@ from pymod.mytypes import TileType, BlockType
 # 平和 pinfu
 def no_points_hand(temp: List[int], winning_tile: int , prevailing_wind: int, players_wind: int) -> bool :
     runs_num = 0
+    both_sides = False
     for i in range(0,10,2) :
         if temp[i] == BlockType.PAIR :
             if temp[i+1] == prevailing_wind or temp[i+1] == players_wind or temp[i+1] >= 35 : return False
@@ -115,7 +116,7 @@ def all_triplet_hand(temp: List[int]) -> bool :
 def three_color_triplets(temp: List[int]) -> bool :
     check = [False] * 30
     for i in range(0,10,2) :
-        if temp[i] in (BlockType.TRIPLETS | BlockType.KANS) and i < 30 : check[temp[i+1]] = True
+        if temp[i+1] < 30 and temp[i] in (BlockType.TRIPLETS | BlockType.KANS) : check[temp[i+1]] = True
     for i in range(1,10) :
         if check[i] and check[i+10] and check[i+20] : return True
     return False

@@ -1,4 +1,6 @@
-#std
+# std
+import os
+import sys
 import random
 from typing import List
 
@@ -294,7 +296,7 @@ class Game :
             i_winner = (self.i_player + i) % 4
             if self.players[i_winner].wins :
                 self.preproc_calculating_basic_points(i_winner)
-                self.basic_points = self.calculate_basic_points(self.players[self.i_player])
+                self.basic_points = self.calculate_basic_points(self.players[i_winner])
                 if self.wins_by_ron : self.proc_ron(i_winner)
                 else : self.proc_tsumo(i_winner)
                 self.players[i_winner].score_points(300 * self.counters_num)
@@ -314,17 +316,16 @@ class Game :
 
 
     # 流局時の処理
-    ####
     def proc_drawn_game(self) -> None :
         tenpai_players_num = 0
         for i in range(4) :
             if self.players[i].is_ready : tenpai_players_num += 1
         if tenpai_players_num != 0 and tenpai_players_num != 4 :
-            penalty = 3000 // tenpai_players_num
-            reward = -3000 // (4 - tenpai_players_num)
+            penalty = -3000 // tenpai_players_num
+            reward = 3000 // (4 - tenpai_players_num)
         else :
             penalty = 0
-            reaward = 0
+            reward = 0
         for i in range(4) :
             if self.players[i].is_ready : self.players[i].score_points(reward)
             else : self.players[i].score_points(penalty)
@@ -902,7 +903,7 @@ class Game :
             self.increment_i_player()
 
             # 1巡目かどうかの状態を更新
-            if self.is_first_turn and self.i_player == 4 : self.is_first_turn = False
+            if self.is_first_turn and self.remain_tiles_num < 81 : self.is_first_turn = False
 
             # 通常流局判定
             if 136 - (self.i_wall + self.i_rinshan) == 14 : break

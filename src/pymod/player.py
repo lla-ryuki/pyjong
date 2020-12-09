@@ -371,7 +371,7 @@ class Player :
         for i in range(38) :
             if effective_tiles[i] == 0 : continue
             num_of_winning_tile += 4
-            num_of_winning_tile -= hand[i]
+            num_of_winning_tile -= self.hand[i]
         if num_of_winning_tile == 0 : return False
         return True
 
@@ -494,6 +494,14 @@ class Player :
         return can_pon, can_kan, can_chii1, can_chii2, can_chii3
 
 
+    # リーチできるかどうか
+    def can_declare_ready(self, game:"Game") -> bool :
+        if self.has_stealed and game.remain_tiles_num < 4 : False
+        shanten_nums = game.shanten_calculator(self.hand, 0)
+        for s in shanten_nums :
+            if s < 0 : return True
+
+
     # 和了れるかどうか
     def can_win(self, game: "Game", ron_tile: int = -1) -> bool :
         ron, is_chiitoi, is_kokushi, is_normal = False, False, False, False
@@ -581,7 +589,7 @@ class Player :
                 self.hand_composition[self.i_hc] = BlockType.PAIR
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                there_is_yaku = self.pick_out_mentsu_for_composition_hand(hand, prevailing_wind, self.players_wind, ron, ron_tile);
+                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile);
                 if there_is_yaku : return True
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc] = 0
@@ -595,7 +603,7 @@ class Player :
     def pick_out_mentsu2(self, hand:List[int], prevailing_wind:int, ron:bool, ron_tile:int) -> bool :
         for i in range(1,38) :
 
-            # 判定する手牌構成が決まったら役があるかどか判定結果を返す
+            # 判定する手牌構成が決まったら役があるかどうか判定結果を返す
             if self.hand_composition[9] != 0 :
                 if no_points_hand(self.hand_composition, ron_tile, prevailing_wind, self.players_wind) : return True
                 if one_set_of_identical_sequences(self.hand_composition) : return True
@@ -619,7 +627,7 @@ class Player :
                 else : self.hand_composition[self.i_hc] = BlockType.CLOSED_TRIPLET
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                self.pick_out_mentsu2(hand, prevailing_wind, self.players_wind, ron, ron_tile)
+                self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile)
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc] = 0
                 self.hand_composition[self.i_hc+1] = 0
@@ -633,7 +641,7 @@ class Player :
                 self.hand_composition[self.i_hc] = BlockType.CLOSED_RUN
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                self.pick_out_mentsu2(hand, prevailing_wind, self.players_wind, ron, ron_tile)
+                self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile)
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc+1] = 0
                 self.hand_composition[self.i_hc] = 0
@@ -826,7 +834,7 @@ class Player :
         if ankan or kakan : return tile, exchanged, ready, ankan, kakan, kyushu
 
         # 立直するかどうか決める
-        ready = game.action.decide_to_declare_ready(game, players)
+        if self.can_declare_ready(game.remain_tiles_num) : ready = game.action.decide_to_declare_ready(game, players)
 
         # 九種九牌で流局するかどうか決める
         if game.is_first_turn : kyusyu = self.decide_to_declare_nine_orphans()
