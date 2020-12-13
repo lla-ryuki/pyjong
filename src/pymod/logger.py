@@ -108,11 +108,10 @@ class Logger :
 
 
     def register_discarded_tile(self, i_player:int, discarded_tile: int, ready: bool) -> None :
-        log_text = ""
-        if ready : log_text = "r"
         if discarded_tile in TileType.REDS : s_discarded_tile = str(51 + (discarded_tile // 10))
         else : s_discarded_tile = str(10 + discarded_tile)
-        self.actions[i_player].append(log_text + s_discarded_tile)
+        if ready : self.actions[i_player].append(f"\"r{s_discarded_tile}\"")
+        self.actions[i_player].append(s_discarded_tile)
 
 
     def save(self, game) -> None :

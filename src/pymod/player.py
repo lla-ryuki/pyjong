@@ -312,7 +312,7 @@ class Player :
     # 立直宣言
     def declare_ready(self, is_first_turn:bool) -> None :
         if is_first_turn : self.has_declared_double_ready = True
-        else : self.has_declared_ready = True
+        self.has_declared_ready = True
         self.has_right_to_one_shot = True
         self.score -= 1000
 
@@ -329,7 +329,8 @@ class Player :
     # 牌を捨てる
     def discard_tile(self, game, players) -> int :
         # 切る牌を決める
-        discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
+        if self.has_declared_ready and not(self.has_right_to_one_shot) : discarded_tile, exchanged = self.last_got_tile, False
+        else : discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
         self.last_discarded_tile = discarded_tile
 
         # 河への記録
@@ -496,10 +497,10 @@ class Player :
 
     # リーチできるかどうか
     def can_declare_ready(self, game:"Game") -> bool :
-        if self.has_stealed and game.remain_tiles_num < 4 : False
-        shanten_nums = game.shanten_calculator(self.hand, 0)
+        if self.has_stealed and game.remain_tiles_num < 4 : return False
+        shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, 0)
         for s in shanten_nums :
-            if s < 0 : return True
+            if s <= 0 : return True
 
 
     # 和了れるかどうか
@@ -561,7 +562,7 @@ class Player :
         if game.is_last_tile() : return True # 海底・河底
         if game.rinshan_draw_flag : return True # 嶺上
         if game.dora_opens_flag : return True # 槍槓
-        if self.has_yaku_based_on_tiles(game.prevailing_wind, self.players_wind, ron, ron_tile) : return True
+        if self.has_yaku_based_on_tiles(game.prevailing_wind, ron, ron_tile) : return True
 
         return False
 
@@ -830,18 +831,18 @@ class Player :
         tile, exchanged, ready, ankan, kakan, kyushu = -1, False, False, False, False, False
 
         # 槓するかどうか決める
-        tile, ankan, kakan = self.decide_to_kan(game, players, self.player_num)
+        tile, ankan, kakan = self.decide_to_kan(game, players)
         if ankan or kakan : return tile, exchanged, ready, ankan, kakan, kyushu
 
         # 立直するかどうか決める
-        if self.can_declare_ready(game.remain_tiles_num) : ready = game.action.decide_to_declare_ready(game, players)
+        if self.can_declare_ready(game) : ready = game.action.decide_to_declare_ready(game, players, self.player_num)
 
         # 九種九牌で流局するかどうか決める
         if game.is_first_turn : kyusyu = self.decide_to_declare_nine_orphans()
         else : kyusyu = False
 
         # return tile, exchanged, ready, ankan, kakan, kyushu
-        return tile, False, False, False, False, False
+        return tile, exchanged, ready, False, False, False
 
 
     # handを標準出力に表示
