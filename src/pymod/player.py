@@ -487,7 +487,6 @@ class Player :
         if self.hand[tile] >= 3 : can_kan = True
         # チー判定
         if i >= 2 or tile > 30 : return can_pon, can_kan, can_chii1, can_chii2, can_chii3
-        can_chii = False
         if self.hand[tile-2] > 0 and self.hand[tile-1] > 0 and tile % 10 >= 3                    : can_chii1 = True
         if self.hand[tile-1] > 0 and self.hand[tile+1] > 0 and tile % 10 >= 2 and tile % 10 <= 8 : can_chii2 = True
         if self.hand[tile+2] > 0 and self.hand[tile+1] > 0 and tile % 10 <= 7                    : can_chii3 = True
@@ -497,7 +496,7 @@ class Player :
 
     # リーチできるかどうか
     def can_declare_ready(self, game:"Game") -> bool :
-        if self.has_stealed and game.remain_tiles_num < 4 : return False
+        if self.has_stealed or self.has_declared_ready or game.remain_tiles_num < 4 : return False
         shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, 0)
         for s in shanten_nums :
             if s <= 0 : return True
@@ -740,20 +739,20 @@ class Player :
             self.opened_reds[tile2//10] = True
             tile2 += 5
 
-        self.opened_sets_num += 1
-        self.has_stealed = True
         self.opened_hand[(self.opened_sets_num * 5) + 0] = BlockType.OPENED_RUN
         if tile1 > tile : min_tile = tile
         else : min_tile = tile1
         self.opened_hand[(self.opened_sets_num * 5) + 1] = min_tile
         self.opened_hand[(self.opened_sets_num * 5) + 2] = tile
         self.opened_hand[(self.opened_sets_num * 5) + 3] = 3
+        self.opened_sets_num += 1
+        self.has_stealed = True
         self.hand[tile1] -= 1
         self.hand[tile2] -= 1
 
 
     # 鳴いた後の手出し牌を登録
-    def add_tile_player_discard_after_displaying(self, tile:int) -> None :
+    def add_to_discard_tiles_after_stealing(self, tile:int) -> None :
         self.opened_hand[((self.opened_sets_num - 1) * 5) + 4] = tile
 
 

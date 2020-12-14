@@ -59,7 +59,7 @@ class Logger :
             if pos == 1 : text = f"{s_tile}{s_tile}{s_tile}m{s_rtile}"
             elif pos == 2 : text = f"{s_tile}m{s_rtile}{s_tile}{s_tile}"
             else : text = f"m{s_rtile}{s_tile}{s_tile}{s_tile}"
-        elif tile in TileType.FIVES and self.red[tile//10] :
+        elif tile in TileType.FIVES :
             s_rtile = str(51 + (tile // 10))
             if pos == 1 : text = f"{s_tile}{s_tile}{s_rtile}k{s_tile}"
             elif pos == 2 : text = f"{s_tile}m{s_tile}{s_tile}{s_rtile}"
@@ -68,7 +68,7 @@ class Logger :
         elif pos == 2 : text = f"{s_tile}m{s_tile}{s_tile}{s_tile}"
         else : text = f"m{s_tile}{s_tile}{s_tile}{s_tile}"
 
-        self.actions[i_player].append(f"\"{text}\"")
+        self.tiles_player_got[i_player].append(f"\"{text}\"")
 
 
 
@@ -80,7 +80,7 @@ class Logger :
             if pos == 1 : text = f"{s_tile}{s_tile}p{s_rtile}"
             elif pos == 2 : text = f"{s_tile}p{s_rtile}{s_tile}"
             else : text = f"p{s_rtile}{s_tile}{s_tile}"
-        elif tile in TileType.FIVES and self.red[tile//10] :
+        elif tile in TileType.FIVES :
             s_rtile = str(51 + (tile // 10))
             if pos == 1 : text = f"{s_tile}{s_rtile}p{s_tile}"
             elif pos == 2 : text = f"{s_tile}p{s_tile}{s_rtile}"
@@ -89,7 +89,7 @@ class Logger :
         elif pos == 2 : text = f"{s_tile}p{s_tile}{s_tile}"
         else : text = f"p{s_tile}{s_tile}{s_tile}"
 
-        self.actions[i_player].append(f"\"{text}\"")
+        self.tiles_player_got[i_player].append(f"\"{text}\"")
 
 
     def register_chii(self, i_player:int, tile:int, tile1:int, tile2:int) -> None :
@@ -97,7 +97,7 @@ class Logger :
         if tile in TileType.REDS : s_tile = str(51 + (tile // 10))
         elif tile1 in TileType.REDS : s_tile1 = str(51 + (tile1 // 10))
         elif tile2 in TileType.REDS : s_tile2 = str(51 + (tile2 // 10))
-        self.actions[i_player].append(f"\"c{s_tile}{s_tile1}{s_tile2}\"")
+        self.tiles_player_got[i_player].append(f"\"c{s_tile}{s_tile1}{s_tile2}\"")
 
 
     def register_got_tile(self, i_player:int, tile:int, is_starting_hand:bool = False) -> None :
@@ -111,7 +111,7 @@ class Logger :
         if discarded_tile in TileType.REDS : s_discarded_tile = str(51 + (discarded_tile // 10))
         else : s_discarded_tile = str(10 + discarded_tile)
         if ready : self.actions[i_player].append(f"\"r{s_discarded_tile}\"")
-        self.actions[i_player].append(s_discarded_tile)
+        else : self.actions[i_player].append(s_discarded_tile)
 
 
     def save(self, game) -> None :
@@ -141,9 +141,9 @@ class Logger :
 
         text += "[\"不明\"]]]}\n"
 
-        if   game.rounds_num == 0 : caption = f"東{game.rounds_num}局{game.counters_num:02}本場"
-        elif game.rounds_num == 1 : caption = f"南{game.rounds_num}局{game.counters_num:02}本場"
-        elif game.rounds_num == 2 : caption = f"西{game.rounds_num}局{game.counters_num:02}本場"
+        if   game.rounds_num == 0 : caption = f"東{game.rounds_num+1}局{game.counters_num:02}本場"
+        elif game.rounds_num == 1 : caption = f"南{game.rounds_num+1}局{game.counters_num:02}本場"
+        elif game.rounds_num == 2 : caption = f"西{game.rounds_num+1}局{game.counters_num:02}本場"
         f = open(f"{self.dir_path}/{game.rounds_num+1}-{game.rotations_num+1}-{game.counters_num:02}_{caption}.log", mode="w")
         f.write(text)
         f.flush()

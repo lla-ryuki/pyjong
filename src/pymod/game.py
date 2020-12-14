@@ -192,7 +192,7 @@ class Game :
     # ポンが行われた時の処理
     def proc_pon(self, i_ap:int, tile:int) -> None :
         pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
-        pao = self.players[i_ap].proc_pon(self, tile, pos)
+        pao = self.players[i_ap].proc_pon(tile, pos)
         if pao > -1 : self.set_pao(pao, i_ap, self.i_player)
         self.logger.register_pon(i_ap, tile, pos)
         if tile in TileType.REDS : tile += 5
