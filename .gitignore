@@ -2,7 +2,13 @@
 data/
 test/
 test.py
+cprof.py
 scratch.py
+*pure.py
+*.cpp
+*.c
+*.pkl
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
