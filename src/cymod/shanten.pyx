@@ -48,13 +48,13 @@ cdef class ShantenNumCalculator :
     """
     tuple化した手牌をキーとして用いて向聴テーブルに登録された向聴数を返す
     キーが登録されていなかった場合向聴数を計算してテーブルに登録
-    ロン和了判定の場合は和了牌もhand[]に加えてこのメソッドに渡す
     """
-    cpdef tuple get_shanten_nums(self, list hand, int opened_sets_num) :
+    cpdef tuple get_shanten_nums(self, list hand, int opened_sets_num, int ron_tile=-1) :
         cdef tuple key
 
         self.hand = hand[:]
         self.opened_sets_num = opened_sets_num
+        if tile > 1 : self.hand[ron_tile] += 1
 
         shanten_nums = self.shanten_table.get(tuple(hand))
         if (shanten_nums is None) :

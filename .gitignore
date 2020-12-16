@@ -3,7 +3,7 @@ data/
 test/
 test.py
 cprof.py
-scratch.py
+scratch.*
 *pure.py
 *.cpp
 *.c
