@@ -33,7 +33,7 @@ cdef bool all_simples(int[38] hand) :
 
 
 # 一盃口 iipeikou
-cdef bool one_set_of_identical_sequences(int[38] hand) :
+cdef bool one_set_of_identical_sequences(int[10] temp) :
     cdef int i
     cdef int[30] check
 
@@ -196,7 +196,7 @@ cdef bool little_three_dragons(int[38] hand) :
 
 
 # 二盃口 ryanpeikou
-cdef bool two_sets_of_identical_sequences(int[10] temp:) :
+cdef bool two_sets_of_identical_sequences(int[10] temp) :
     cdef int i, identical_sequence_num
     cdef bool[30] check
 

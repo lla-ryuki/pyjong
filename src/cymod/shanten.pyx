@@ -54,7 +54,7 @@ cdef class ShantenNumCalculator :
 
         self.hand = hand[:]
         self.opened_sets_num = opened_sets_num
-        if tile > 1 : self.hand[ron_tile] += 1
+        if ron_tile > 0 : self.hand[ron_tile] += 1
 
         shanten_nums = self.shanten_table.get(tuple(hand))
         if (shanten_nums is None) :

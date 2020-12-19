@@ -38,10 +38,10 @@ cdef class Game :
     cdef public int[5] dora_indicators
     cdef public int[5] uras
     cdef public int[5] ura_indicators
-    cdef public bool[5] dora_has_opened
+    cdef public list dora_has_opened
     cdef public int[4] rinshan_tiles
     cdef public int[38] appearing_tiles
-    cdef public bool[3] appearing_red_tiles
+    cdef public list appearing_red_tiles
     cdef public int[136] wall
     cdef public int remain_tiles_num
 
@@ -516,7 +516,7 @@ cdef class Game :
 
 
     # 通常の手の翻数の計算
-    cdef void count_han_of_normal_hand(self, Player player) :
+    cdef void count_han_of_normal_hand(self, player) :
         cdef int[38] hand
 
         hand = player.put_back_opened_hand()
@@ -566,7 +566,7 @@ cdef class Game :
 
 
     # 七対子手の翻数計算
-    cdef void count_han_of_seven_pairs_hand(self, Player player) :
+    cpdef void count_han_of_seven_pairs_hand(self, player) :
         cdef int[38] hand
 
         hand = player.hand[:]
@@ -596,7 +596,7 @@ cdef class Game :
 
 
     # 基本点の計算
-    cdef int calculate_basic_points(self, Player player) :
+    cpdef int calculate_basic_points(self, player) :
         cdef int basic_points
         cdef tuple shanten_nums
 
@@ -622,7 +622,7 @@ cdef class Game :
 
 
     # 一番点数が高くなるような手牌構成を探す
-    cdef void analyze_best_composition(self, Player player) :
+    cpdef void analyze_best_composition(self, player) :
         cdef int i
         cdef int[38] hand
         cdef int[20] opened_hand
@@ -763,7 +763,7 @@ cdef class Game :
 
 
     # ドローフェーズの処理
-    cdef void proc_draw_phase(self, Player player) :
+    cpdef void proc_draw_phase(self, player) :
         cdef int tile
 
         # ポン，チーした場合はスキップ
@@ -788,7 +788,7 @@ cdef class Game :
 
 
     # 立直の処理
-    cdef void proc_ready(self, Player player) :
+    cpdef void proc_ready(self, player) :
         self.ready_flag = True
         self.deposits_num += 1
         player.declare_ready(self.is_first_turn)
@@ -839,15 +839,15 @@ cdef class Game :
             # 直前の行動が加槓だった場合このタイミングでドラが開く
             if self.dora_opens_flag : self.open_new_dora()
             # 槍槓用ロンフェーズ
-            self.proc_ron_phase(tile, True)
-            if self.win_flag : return
+            self.proc_ron_phase(tile)
+            if self.win_flag : return False
             self.proc_kakan(tile)
         elif kyushu : self.is_abortive_draw = True
         return ready
 
 
     # 打牌フェーズ
-    cdef void proc_discard_phase(self, Player player, bool ready) :
+    cpdef int proc_discard_phase(self, player, bool ready) :
         cdef int discarded_tile
 
         # プレイヤが捨てる牌を決定，discarded_tile:赤は(0,10,20)表示
@@ -922,17 +922,16 @@ cdef class Game :
         # 四槓散了判定．四槓散了は暗槓，加槓，大明槓どの場合でも牌がきられて通ったタイミングで判定される
         kans_num = 0
         for i in range(4) :
-            if self.players[i].kans_num == 4 : return False # 一人で4回槓しているのは流局にならない
+            if self.players[i].kans_num == 4 : return # 一人で4回槓しているのは流局にならない
             kans_num += self.players[i].kans_num
         if kans_num == 4 :
             self.is_abortive_draw = True
 
 
     # 副露フェーズ
-    cdef void proc_steal_phase(self, int discarded_tile) :
+    cpdef void proc_steal_phase(self, int discarded_tile) :
         cdef int i, j, i_ap, pos
         cdef bool pon, kan, chii1, chii2, chii3
-        cdef Player player
 
         for i in (3,2,1) :
             if self.steal_flag : break

@@ -11,13 +11,16 @@ from mytypes import BlockType, TileType
 from yaku import *
 from yakuman import *
 
+# cython
+from libcpp cimport bool
+
 
 cdef class Player :
     cdef public int player_num
     cdef public int score
 
-    cdef public bool[3] reds
-    cdef public bool[3] opened_reds
+    cdef public list reds
+    cdef public list opened_reds
     cdef public int[38] hand
     cdef public int[20] opened_hand
     cdef public list discarded_tiles
@@ -57,8 +60,8 @@ cdef class Player :
 
 
     # 局の初期化
-    def init_subgame(self, rotations_num:int) -> None :
-        self.reds = [False] * 3                           # 自分の手の赤があるかどうか，マンピンソウの順, reds[1] is True ==> 手の中に赤5pがある
+    cdef void init_subgame(self, int rotations_num) :
+        self.reds = [False, False, False]                           # 自分の手の赤があるかどうか，マンピンソウの順, reds[1] is True ==> 手の中に赤5pがある
         self.opened_reds = [False] * 3                    # 自分が晒している手の中に赤があるかどうか
         self.hand = [0] * 38                              # 手牌
         self.opened_hand = [0] * 20
@@ -105,22 +108,22 @@ cdef class Player :
 
 
     # 通常手の有効牌のリストを返す．フリテン判定に使う．
-    cdef int[38] effective_tiles_of_normal(self) :
+    cdef list effective_tiles_of_normal(self) :
         cdef effective_tiles
         cdef int tile, shanten_num
 
         effective_tiles = [0] * 38
         not_alone_tiles = self.is_not_alone_tiles()
-        shanten_num = self.calc_shanten_num_of_normal(hand)
+        shanten_num = self.calc_shanten_num_of_normal()
 
         for tile in range(1, 38) :
             if not_alone_tiles[tile] == 0 : continue
-            if self.calc_shanten_num_of_normal(hand, tile) < shanten_num : effective_tiles[tile] = 1
+            if self.calc_shanten_num_of_normal(tile) < shanten_num : effective_tiles[tile] = 1
         return effective_tiles
 
 
     # 通常手の向聴数を返す
-    cdef int calc_shanten_num_of_normal(self, int[38] hand, int tile=-1) :
+    cdef int calc_shanten_num_of_normal(self, int tile=-1) :
         cdef int[38] hand
 
         hand = self.hand[:]
@@ -146,7 +149,7 @@ cdef class Player :
 
 
     # 面子を抜き出す
-    cdef void pick_out_mentsu(self, int i , int[38] hand) -> None :
+    cdef void pick_out_mentsu(self, int i , int[38] hand) :
         while i < 38 and hand[i] == 0 : i += 1
         if i > 37 :
             self.pick_out_tahtsu(1, hand)
@@ -207,7 +210,7 @@ cdef class Player :
     # ある牌を引いた時孤立牌になるかどうかの情報が入ったリストを返す
     ## i番の牌を引いた時に孤立牌になる　　 : not_alone_tiles[i] = 0
     ## i番の牌を引いた時に孤立牌にならない : not_alone_tiles[i] = 1
-    cdef int[38] is_not_alone_tiles(self) :
+    cdef list is_not_alone_tiles(self) :
         cdef int[38] not_alone_tiles
         cdef int i
 
@@ -244,7 +247,6 @@ cdef class Player :
 
     # 牌を手牌に加える．配牌取得，ツモ，ロンで使う．
     cdef void get_tile(self, int tile) :
-        cdef int tile
         self.last_got_tile = tile
         if tile in TileType.REDS :
             self.reds[tile//10] = True
@@ -282,7 +284,7 @@ cdef class Player :
 
 
     # 聴牌かどうかを判定
-    cpdef bool check_hand_is_ready(self, shanten_calcurator) -> bool :
+    cpdef bool check_hand_is_ready(self, shanten_calcurator) :
         cdef tuple shanten_nums
         shanten_nums = shanten_calcurator.get_shanten_nums(self.hand)
 
@@ -344,7 +346,7 @@ cdef class Player :
 
 
     # 鳴いて晒した牌を全部戻した手をreturnする
-    cpdef int[38] put_back_opened_hand(self) :
+    cpdef list put_back_opened_hand(self) :
         cdef int[38] hand
         cdef int i, min_tile
 
@@ -448,7 +450,7 @@ cdef class Player :
 
 
     # 役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    cpdef bool has_yaku(self, game, bool ron, int ron_tile) -> bool:
+    cpdef bool has_yaku(self, game, bool ron, int ron_tile) :
         cdef int[38] hand
 
         if ron_tile in TileType.REDS : ron_tile += 5
@@ -593,7 +595,7 @@ cdef class Player :
 
 
     # 大明槓の処理
-    cpdef void proc_daiminkan(self, int tile, int pos) -> None :
+    cpdef void proc_daiminkan(self, int tile, int pos) :
         if tile in TileType.REDS :
             self.opened_reds[tile//10] = True
             tile += 5
@@ -613,7 +615,7 @@ cdef class Player :
 
 
     # ポンの処理
-    def proc_pon(self, tile:int, pos:int) -> int :
+    cpdef int proc_pon(self, int tile, int pos) :
         if tile in TileType.REDS :
             self.opened_reds[tile//10] = True
             tile += 5
