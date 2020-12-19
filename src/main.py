@@ -3,7 +3,7 @@
 # 3rd
 
 # ours
-from pymod.game import Game
+from cymod.game import Game
 from player.action import Action
 
 

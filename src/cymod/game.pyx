@@ -7,12 +7,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), './'))
 # 3rd
 
 # ours
-from player import Player
-from shanten import ShantenNumCalculator
-from logger import Logger
-from mytypes import TileType, BlockType
-from yaku import *
-from yakuman import *
+from .player import Player
+from .shanten import ShantenNumCalculator
+from .logger import Logger
+from .mytypes import TileType, BlockType
+from .yaku import *
+from .yakuman import *
 
 # cython
 from libcpp cimport bool
