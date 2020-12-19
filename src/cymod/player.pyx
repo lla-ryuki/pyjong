@@ -2,14 +2,14 @@
 import os
 import sys
 import random
-sys.path.append(os.path.join(os.path.dirname(__file__), '../pymod'))
+sys.path.append(os.path.join(os.path.dirname(__file__), './'))
 
 # 3rd
 
 # ours
-from pymod.mytypes import BlockType, TileType
-from pymod.yaku import *
-from pymod.yakuman import *
+from mytypes import BlockType, TileType
+from yaku import *
+from yakuman import *
 
 
 cdef class Player :

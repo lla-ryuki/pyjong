@@ -2,21 +2,84 @@
 import os
 import sys
 import random
-from typing import List
+sys.path.append(os.path.join(os.path.dirname(__file__), './'))
 
 # 3rd
 
 # ours
-from pymod.player import Player
-from pymod.shanten import ShantenNumCalculator
-from pymod.logger import Logger
-from pymod.mytypes import TileType, BlockType
-from pymod.yaku import *
-from pymod.yakuman import *
+from player import Player
+from shanten import ShantenNumCalculator
+from logger import Logger
+from mytypes import TileType, BlockType
+from yaku import *
+from yakuman import *
+
+# cython
+from libcpp cimport bool
 
 
-class Game :
-    def __init__(self, action=None) :
+cdef class Game :
+    cdef public players
+    cdef public action
+    cdef public logger
+    cdef public shanten_calculator
+    cdef public int rounds_num
+    cdef public int rounds_num = 0
+    cdef public int rotations_num = 0
+    cdef public int counters_num = 0
+    cdef public int deposits_num = 0
+    cdef public bool is_over = False
+
+    cdef public int prevailing_wind = 31 + self.rounds_num
+    cdef public bool is_abortive_draw = False
+    cdef public bool is_first_turn = True
+    cdef public int[4] pao_info = [-1] * 4
+    cdef public int[5] doras = [0] * 5
+    cdef public int[5] dora_indicators = [0] * 5
+    cdef public int[5] uras = [0] * 5
+    cdef public int[5] ura_indicators = [0] * 5
+    cdef public bool[5] dora_has_opened = [False] * 5
+    cdef public int[4] rinshan_tiles = [0] * 4
+    cdef public int[38] appearing_tiles = [0] * 38
+    cdef public bool[3] appearing_red_tiles = [False] * 3
+    cdef public int[136] wall = [0] * 136
+    cdef public int remain_tiles_num = 136
+
+    cdef public int i_player = self.rotations_num
+    cdef public int i_wall = 0
+    cdef public int i_rinshan = 0
+    cdef public int i_first_turn = 0
+
+    cdef public int winning_tile = -1
+    cdef public int basic_points = 0
+    cdef public bool dealer_wins = False
+    cdef public bool wins_by_ron = False
+    cdef public bool wins_by_tenhou = False
+    cdef public bool wins_by_chiihou = False
+    cdef public bool wins_by_last_tile = False
+    cdef public bool wins_by_chankan = False
+    cdef public bool wins_by_rinshan_kaihou = False
+    cdef public bool wins_by_pao= False
+    cdef public int liability_player = -1
+
+    cdef int players_wind = -1
+    cdef int[10] temp = [0] * 10
+    cdef int fu = 0
+    cdef int han = 0
+    cdef int i_temp = 0
+    cdef int fu_temp = 0
+    cdef int han_temp = 0
+    cdef int yakuman = 0
+
+    cdef bool win_flag = False
+    cdef bool ready_flag = False
+    cdef bool steal_flag = False
+    cdef bool dora_opens_flag = False
+    cdef bool rinshan_draw_flag = False
+
+
+
+    def __init__(self, action) :
         self.players = [Player(i) for i in range(4)]
         self.action = action
         self.logger = Logger(is_logging=True);
@@ -29,7 +92,9 @@ class Game :
 
 
     # 局開始時の初期化
-    def init_subgame(self) -> None :
+    cdef bool init_subgame(self) :
+        cdef int i
+
         # プレイヤが持つ局に関わるメンバ変数を初期化
         for i in range(4) :
             self.players[i].init_subgame(self.rotations_num)
@@ -102,7 +167,10 @@ class Game :
 
 
     # 赤有りの牌山を生成
-    def set_wall(self) -> None :
+    cdef void set_wall(self) :
+        cdef int i, j, k
+        cdef bool red
+
         i, red = 0, False
         for j in range(1,38) :
             if j in TileType.BLANKS : continue
@@ -118,7 +186,8 @@ class Game :
 
 
     # 新しいドラを開く
-    def open_new_dora(self) -> None :
+    cdef void open_new_dora(self) :
+        cdef int i
         for i in range(5) :
             if self.dora_has_opened[i] is False :
                 self.dora_has_opened[i] = True
@@ -127,7 +196,8 @@ class Game :
 
 
     #ドラと裏ドラをセット
-    def set_doras(self) -> None :
+    cdef void set_doras(self) :
+        cdef int i
         # ドラ表示牌, 裏ドラ表示牌をセット
         self.dora_indicators = [self.wall[i] for i in range(130, 121, -2)]
         self.ura_indicators = [self.wall[i] for i in range(131, 122, -2)]
@@ -153,12 +223,12 @@ class Game :
 
 
     # 嶺上牌をセット
-    def set_rinshan_tiles(self) -> None :
+    cdef void set_rinshan_tiles(self) :
         self.rinshan_tiles = [self.wall[134], self.wall[135], self.wall[132], self.wall[133]]
 
 
     # 次のツモ牌を返す
-    def supply_next_tile(self) -> int :
+    cdef int supply_next_tile(self) :
         tile = self.wall[self.i_wall]
         self.i_wall += 1
         self.remain_tiles_num -= 1
@@ -166,30 +236,18 @@ class Game :
 
 
     # 次の嶺上牌を返す
-    def supply_next_rinshan_tile(self) -> int :
+    cdef int supply_next_rinshan_tile(self) :
+        cdef int tile
         tile = self.rinshan_tiles[self.i_rinshan]
         self.i_rinshan += 1
         return tile
 
 
-    # 大明槓が行われた時の処理
-    def proc_daiminkan(self, i_ap:int, tile:int) -> None :
-        pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
-        self.players[i_ap].proc_daiminkan(tile, pos)
-        self.logger.register_daiminkan(i_ap, tile, pos)
-
-        if tile in TileType.REDS : tile += 5
-        for i in range(4) : self.players[i].has_right_to_one_shot = False
-        self.players[self.i_player].is_nagashi_mangan = False
-        self.appearing_tiles[tile] += 3
-        self.is_first_turn = False
-        self.dora_opens_flag = True
-        self.rinshan_draw_flag = True
-        self.i_player = (4 + i_ap - 1) % 4
-
-
     # ポンが行われた時の処理
-    def proc_pon(self, i_ap:int, tile:int) -> None :
+    cdef void proc_pon(self, int i_ap, int tile) :
+        cdef int i, pos
+        cdef bool pao
+
         pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
         pao = self.players[i_ap].proc_pon(tile, pos)
         if pao > -1 : self.set_pao(pao, i_ap, self.i_player)
@@ -203,8 +261,25 @@ class Game :
         self.i_player = (4 + i_ap - 1) % 4
 
 
+    # 大明槓が行われた時の処理
+    cdef void proc_daiminkan(self, int i_ap, int tile) :
+        cdef int i, pos
+        pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
+        self.players[i_ap].proc_daiminkan(tile, pos)
+        self.logger.register_daiminkan(i_ap, tile, pos)
+        if tile in TileType.REDS : tile += 5
+        for i in range(4) : self.players[i].has_right_to_one_shot = False
+        self.players[self.i_player].is_nagashi_mangan = False
+        self.appearing_tiles[tile] += 3
+        self.is_first_turn = False
+        self.dora_opens_flag = True
+        self.rinshan_draw_flag = True
+        self.i_player = (4 + i_ap - 1) % 4
+
+
     # チーが行われた時の処理
-    def proc_chii(self, i_ap:int, tile:int, tile1:int, tile2:int) -> None :
+    cdef void proc_chii(self, int i_ap, int tile, int tile1, int tile2) :
+        cdef int i
         self.players[i_ap].proc_chii(tile, tile1, tile2)
         self.logger.register_chii(i_ap, tile, tile1, tile2)
         for i in range(4) : self.players[i].has_right_to_one_shot = False
@@ -219,7 +294,7 @@ class Game :
 
 
     # 点数計算前の準備
-    def preproc_calculating_basic_points(self, i_winner:int) -> None :
+    cdef void preproc_calculating_basic_points(self, int i_winner) :
         # プレイヤの風牌を記録
         self.players_wind = 31 + (((i_winner + 4) - self.rounds_num) % 4)
         # 親かどうかを確認
@@ -243,7 +318,9 @@ class Game :
 
 
     # ロン和了の処理
-    def proc_ron(self, i_winner:int) -> int :
+    cdef int proc_ron(self, int i_winner) :
+        cdef int i, points
+
         # 基本点から得点を算出
         if self.dealer_wins : points = self.basic_points * 6
         else : points = self.basic_points * 4
@@ -260,7 +337,9 @@ class Game :
 
 
     # ツモ和了の処理
-    def proc_tsumo(self, i_winner:int) -> int :
+    cdef int proc_tsumo(self, int i_winner) :
+        cdef int i, i_player, points, points_dealer_pays, points_child_pays
+
         if self.wins_by_pao:
             if not(self.dealer_wins) : points = self.basic_points * 4
             else : points = self.basic_points * 6
@@ -288,7 +367,8 @@ class Game :
 
 
     # 和了時の処理
-    def proc_win(self) -> None :
+    cdef void proc_win(self) :
+        cdef int i, i_winner, counters_num_temp
         counters_num_temp = self.counters_num
         # ツモった人，最後に牌を切った人から順に和了を見ていく．※ 複数人の和了の可能性があるので全員順番にチェックする必要がある．
         for i in range(4) :
@@ -315,7 +395,9 @@ class Game :
 
 
     # 流局時の処理
-    def proc_drawn_game(self) -> None :
+    cdef void proc_drawn_game(self) :
+        cdef int i, tenpai_players_num, penalty, reward
+
         tenpai_players_num = 0
         for i in range(4) :
             if self.players[i].is_ready : tenpai_players_num += 1
@@ -340,7 +422,8 @@ class Game :
 
 
     # 流し満貫時の処理
-    def proc_nagashi_mangan(self) -> None :
+    cdef void proc_nagashi_mangan(self) :
+        cdef int i, j
         for i in range(4) :
             if self.players[i].is_nagashi_mangan :
                 if self.rotations_num == i :
@@ -363,7 +446,10 @@ class Game :
 
 
     # ゲーム終了判定
-    def check_game_is_over(self, dealer_wins:bool) -> bool :
+    cdef bool check_game_is_over(self, bool dealer_wins) :
+        cdef int i
+        cdef bool top
+
         # トビ終了判定
         for i in range(4) :
             if self.players[i].score < 0 : return True
@@ -397,33 +483,33 @@ class Game :
 
 
     # 海底・河底かチェックして記録
-    def check_player_wins_by_last_tile(self) -> None :
+    cdef void check_player_wins_by_last_tile(self) :
         if self.is_last_tile() : self.wins_by_last_tile = True
 
     # 記録はせずに海底・河底かだけ返す
-    def is_last_tile(self) -> None :
+    cdef bool is_last_tile(self) :
         if 136 - (self.i_wall + self.i_rinshan) == 14 : return True
 
 
     # 和了牌をセット
-    def set_winning_tile(self, tile:int) -> None:
+    cdef void set_winning_tile(self, int tile):
         if tile in TileType.REDS : self.winning_tile = tile + 5
         else : self.winning_tile = tile
 
 
     # パオをセット i_ap: 最後の牌を鳴いたプレイヤ, i_dp: 鳴かせたプレイヤ
-    def set_pao(self, pao:int, i_ap:int, i_dp:int) -> None :
+    cdef void set_pao(self, int pao, int i_ap, int i_dp) :
         self.pao_info[pao*2] = i_ap
         self.pao_info[pao*2+1] = i_dp
 
 
     # i_playerを1加算
-    def increment_i_player(self) -> None :
+    cdef void increment_i_player(self) :
         self.i_player = (self.i_player + 1) % 4
 
 
     # 全員に公開されている牌を追加
-    def add_to_appearing_tiles(self, tile:int) -> None :
+    cdef void add_to_appearing_tiles(self, int tile) :
         if tile in TileType.REDS :
             self.appearing_red_tiles[tile // 10] = True
             self.appearing_tiles[tile + 5] += 1
@@ -431,7 +517,9 @@ class Game :
 
 
     # 通常の手の翻数の計算
-    def count_han_of_normal_hand(self, player:Player) -> None :
+    cdef void count_han_of_normal_hand(self, Player player) :
+        cdef int[38] hand
+
         hand = player.put_back_opened_hand()
         if four_closed_triplets(player.has_stealed, self.wins_by_ron, hand, self.winning_tile) : self.yakuman += 1
         if four_closed_triplets_of_single_tile_wait(player.has_stealed, self.winning_tile, hand) : self.yakuman += 1
@@ -479,7 +567,9 @@ class Game :
 
 
     # 七対子手の翻数計算
-    def count_han_of_seven_pairs_hand(self, player:Player) -> None :
+    cdef void count_han_of_seven_pairs_hand(self, Player player) :
+        cdef int[38] hand
+
         hand = player.hand[:]
         if all_honors(hand) : self.han += 13
         if self.han < 13 :
@@ -507,7 +597,10 @@ class Game :
 
 
     # 基本点の計算
-    def calculate_basic_points(self, player:Player) -> int :
+    cdef int calculate_basic_points(self, Player player) :
+        cdef int basic_points
+        cdef tuple shanten_nums
+
         self.han = 0
         if self.wins_by_tenhou : self.yakuman += 1
         if self.wins_by_chiihou : self.yakuman += 1
@@ -530,12 +623,16 @@ class Game :
 
 
     # 一番点数が高くなるような手牌構成を探す
-    def analyze_best_composition(self, player:Player) -> None :
+    cdef void analyze_best_composition(self, Player player) :
+        cdef int i
+        cdef int[38] hand
+        cdef int[20] opened_hand
+
         self.temp = [0] * 10
         self.i_temp = 0
         self.fu = 0
         self.han_temp = self.han
-        hand = player.hand
+        hand = player.hand[:]
         opened_hand = player.opened_hand
         for i in range(4) :
             if opened_hand[i*5] != 0 :
@@ -559,7 +656,7 @@ class Game :
 
     # 面子を抜き出す
     ## 和了が確定してからしか呼ばれないので高速化のためにPlayer._pick_out_mentsu()でやらなくていい部分を省いている．別物.
-    def pick_out_mentsu(self, has_stealed:bool, hand:List[int]) -> None:
+    cdef void pick_out_mentsu(self, bool has_stealed, int[38] hand) :
         for i in range(1,38) :
             if self.temp[9] != 0 :
                 self.count_han(has_stealed)
@@ -593,7 +690,8 @@ class Game :
 
 
     # 翻数を数える
-    def count_han(self, has_stealed:bool) -> None :
+    cdef void count_han(self, bool has_stealed) :
+        cdef int han_temp, fu_temp
         han_temp = self.han_temp
         if no_points_hand(self.temp, self.winning_tile, self.prevailing_wind, self.players_wind) : han_temp += 1
         if terminal_or_honor_in_each_set(self.temp) :
@@ -623,7 +721,8 @@ class Game :
 
 
     # 符計算
-    def calculate_fu(self, has_stealed:bool) -> int :
+    cdef int calculate_fu(self, bool has_stealed) :
+        cdef int i, fu
         fu = 0
         if no_points_hand(self.temp, self.winning_tile, self.prevailing_wind, self.players_wind) :
             if self.wins_by_ron : return 30
@@ -665,7 +764,9 @@ class Game :
 
 
     # ドローフェーズの処理
-    def proc_draw_phase(self, player:Player) -> None :
+    cdef void proc_draw_phase(self, Player player) :
+        cdef int tile
+
         # ポン，チーした場合はスキップ
         if self.steal_flag : return
 
@@ -688,14 +789,15 @@ class Game :
 
 
     # 立直の処理
-    def proc_ready(self, player:Player) -> None :
+    cdef void proc_ready(self, Player player) :
         self.ready_flag = True
         self.deposits_num += 1
         player.declare_ready(self.is_first_turn)
 
 
     # 暗槓が行われた時の処理
-    def proc_ankan(self, tile:int) -> None :
+    cdef void proc_ankan(self, int tile) :
+        cdef int i
         # 直前の行動が加槓だった場合このタイミングでドラが開く
         if self.dora_opens_flag :
             self.open_new_dora()
@@ -712,7 +814,10 @@ class Game :
 
 
     # 加槓が行われた時の処理
-    def proc_kakan(self, tile:int) -> None :
+    cdef void proc_kakan(self, int tile) :
+        cdef int i, pos
+        cdef bool red
+
         if tile in TileType.REDS : tile += 5
         self.appearing_tiles[tile] += 1
         self.rinshan_draw_flag = True
@@ -723,10 +828,12 @@ class Game :
 
 
     # アクションフェーズの処理
-    def proc_action_phase(self) -> bool :
+    cdef bool proc_action_phase(self) :
+        cdef int tile
+        cdef bool exchanged, ready, ankan, kakan, kyushu
+
         # プレイヤの行動決定，tile:赤は(0,10,20)表示
         tile, exchanged, ready, ankan, kakan, kyushu = self.players[self.i_player].decide_action(self, self.players)
-
         if ready : self.proc_ready(self.players[self.i_player])
         elif ankan : self.proc_ankan(tile)
         elif kakan :
@@ -737,12 +844,13 @@ class Game :
             if self.win_flag : return
             self.proc_kakan(tile)
         elif kyushu : self.is_abortive_draw = True
-
         return ready
 
 
     # 打牌フェーズ
-    def proc_discard_phase(self, player:Player, ready:bool) -> None :
+    cdef void proc_discard_phase(self, Player player, bool ready) :
+        cdef int discarded_tile
+
         # プレイヤが捨てる牌を決定，discarded_tile:赤は(0,10,20)表示
         discarded_tile = player.discard_tile(self, self.players)
         self.logger.register_discarded_tile(self.i_player, discarded_tile, ready)
@@ -758,7 +866,8 @@ class Game :
 
 
     # ロンフェーズ
-    def proc_ron_phase(self, discarded_tile:int) -> None :
+    cdef void proc_ron_phase(self, int discarded_tile) :
+        cdef int i, winners_num
         winners_num = 0
         for i in range(1,4) :
             i_winner = (self.i_player + i) % 4
@@ -795,7 +904,9 @@ class Game :
 
 
     # 途中流局（四風連打，四家立直，四槓散了）の判定
-    def check_game_is_abortive_draw(self, discarded_tile:int) -> None :
+    cdef void check_game_is_abortive_draw(self, int discarded_tile) :
+        cdef int i, kans_num
+
         #  四風連打の判定
         if self.is_first_turn and (4 + self.i_player - self.rotations_num) % 4 == 3 :
             if (discarded_tile in TileType.WINDS) and \
@@ -819,7 +930,11 @@ class Game :
 
 
     # 副露フェーズ
-    def proc_steal_phase(self, discarded_tile:int) -> None :
+    cdef void proc_steal_phase(self, int discarded_tile) :
+        cdef int i, j, i_ap, pos
+        cdef bool pon, kan, chii1, chii2, chii3
+        cdef Player player
+
         for i in (3,2,1) :
             if self.steal_flag : break
             i_ap = (self.i_player + i) % 4 #i_ap : index of action player
@@ -839,7 +954,10 @@ class Game :
 
 
     # 局の処理
-    def play_subgame(self) -> None :
+    cdef play_subgame(self) :
+        cdef int i, j, op, tile, discarded_tile
+        cdef bool ready
+
         # 局を初期化
         self.init_subgame()
 
