@@ -23,60 +23,59 @@ cdef class Game :
     cdef public action
     cdef public logger
     cdef public shanten_calculator
+
     cdef public int rounds_num
-    cdef public int rounds_num = 0
-    cdef public int rotations_num = 0
-    cdef public int counters_num = 0
-    cdef public int deposits_num = 0
-    cdef public bool is_over = False
+    cdef public int rotations_num
+    cdef public int counters_num
+    cdef public int deposits_num
+    cdef public bool is_over
 
-    cdef public int prevailing_wind = 31 + self.rounds_num
-    cdef public bool is_abortive_draw = False
-    cdef public bool is_first_turn = True
-    cdef public int[4] pao_info = [-1] * 4
-    cdef public int[5] doras = [0] * 5
-    cdef public int[5] dora_indicators = [0] * 5
-    cdef public int[5] uras = [0] * 5
-    cdef public int[5] ura_indicators = [0] * 5
-    cdef public bool[5] dora_has_opened = [False] * 5
-    cdef public int[4] rinshan_tiles = [0] * 4
-    cdef public int[38] appearing_tiles = [0] * 38
-    cdef public bool[3] appearing_red_tiles = [False] * 3
-    cdef public int[136] wall = [0] * 136
-    cdef public int remain_tiles_num = 136
+    cdef public int prevailing_wind
+    cdef public bool is_abortive_draw
+    cdef public bool is_first_turn
+    cdef public int[4] pao_info
+    cdef public int[5] doras
+    cdef public int[5] dora_indicators
+    cdef public int[5] uras
+    cdef public int[5] ura_indicators
+    cdef public bool[5] dora_has_opened
+    cdef public int[4] rinshan_tiles
+    cdef public int[38] appearing_tiles
+    cdef public bool[3] appearing_red_tiles
+    cdef public int[136] wall
+    cdef public int remain_tiles_num
 
-    cdef public int i_player = self.rotations_num
-    cdef public int i_wall = 0
-    cdef public int i_rinshan = 0
-    cdef public int i_first_turn = 0
+    cdef public int i_player
+    cdef public int i_wall
+    cdef public int i_rinshan
+    cdef public int i_first_turn
 
-    cdef public int winning_tile = -1
-    cdef public int basic_points = 0
-    cdef public bool dealer_wins = False
-    cdef public bool wins_by_ron = False
-    cdef public bool wins_by_tenhou = False
-    cdef public bool wins_by_chiihou = False
-    cdef public bool wins_by_last_tile = False
-    cdef public bool wins_by_chankan = False
-    cdef public bool wins_by_rinshan_kaihou = False
-    cdef public bool wins_by_pao= False
-    cdef public int liability_player = -1
+    cdef public int winning_tile
+    cdef public int basic_points
+    cdef public bool dealer_wins
+    cdef public bool wins_by_ron
+    cdef public bool wins_by_tenhou
+    cdef public bool wins_by_chiihou
+    cdef public bool wins_by_last_tile
+    cdef public bool wins_by_chankan
+    cdef public bool wins_by_rinshan_kaihou
+    cdef public bool wins_by_pao
+    cdef public int liability_player
 
-    cdef int players_wind = -1
-    cdef int[10] temp = [0] * 10
-    cdef int fu = 0
-    cdef int han = 0
-    cdef int i_temp = 0
-    cdef int fu_temp = 0
-    cdef int han_temp = 0
-    cdef int yakuman = 0
+    cdef int players_wind
+    cdef int[10] temp
+    cdef int fu
+    cdef int han
+    cdef int i_temp
+    cdef int fu_temp
+    cdef int han_temp
+    cdef int yakuman
 
-    cdef bool win_flag = False
-    cdef bool ready_flag = False
-    cdef bool steal_flag = False
-    cdef bool dora_opens_flag = False
-    cdef bool rinshan_draw_flag = False
-
+    cdef bool win_flag
+    cdef bool ready_flag
+    cdef bool steal_flag
+    cdef bool dora_opens_flag
+    cdef bool rinshan_draw_flag
 
 
     def __init__(self, action) :
