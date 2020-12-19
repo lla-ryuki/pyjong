@@ -18,8 +18,8 @@ from libcpp cimport bool
 
 
 cdef class Logger :
-    cdef public str dir_path
-    cdef public str save_path
+    cdef public dir_path
+    cdef public save_path
     cdef public bool is_logging
     cdef public list actions
     cdef public list starting_hands
@@ -39,8 +39,6 @@ cdef class Logger :
 
 
     cpdef void register_ankan(self, int i_player, int tile) :
-        cdef str s_tile, text
-
         s_tile = str(tile + 10)
         if tile in TileType.FIVES :
             s_rtile = str(51 + (tile // 10))
@@ -52,8 +50,6 @@ cdef class Logger :
 
 
     cpdef void register_kakan(self, int i_player, int tile, int pos, bool red) :
-        cdef str s_tile, s_rtile, text
-
         s_tile = str(tile + 10)
         if tile in TileType :
             s_rtile = str(51 + (tile // 10))
@@ -73,8 +69,6 @@ cdef class Logger :
 
 
     cpdef void register_daiminkan(self, int i_player, int tile, int pos) :
-        cdef str s_tile, s_rtile, text
-
         s_tile = str(tile + 10)
         if tile in TileType.REDS :
             s_tile = str(tile + 15)
@@ -96,8 +90,6 @@ cdef class Logger :
 
 
     cpdef void register_pon(self, int i_player, int tile, int pos) :
-        cdef str s_tile, s_rtile, text
-
         s_tile = str(tile + 10)
         if tile in TileType.REDS :
             s_tile = str(tile + 15)
@@ -118,7 +110,6 @@ cdef class Logger :
 
 
     cpdef void register_chii(self, int i_player, int tile, int tile1, int tile2) :
-        cdef str s_tile, s_tile1, s_tile2
         s_tile, s_tile1, s_tile2 = str(tile + 10), str(tile1 + 10), str(tile2 + 10)
         if tile in TileType.REDS : s_tile = str(51 + (tile // 10))
         elif tile1 in TileType.REDS : s_tile1 = str(51 + (tile1 // 10))
@@ -134,7 +125,6 @@ cdef class Logger :
 
 
     cpdef void register_discarded_tile(self, int i_player, int discarded_tile, bool ready) :
-        cdef str s_discarded_tile
         if discarded_tile in TileType.REDS : s_discarded_tile = str(51 + (discarded_tile // 10))
         else : s_discarded_tile = str(10 + discarded_tile)
         if ready : self.actions[i_player].append(f"\"r{s_discarded_tile}\"")
@@ -143,7 +133,6 @@ cdef class Logger :
 
     cpdef void save(self, game) :
         cdef int i
-        cdef str text, caption
         cdef list temp, scores, dora_indicators, ura_indicators
 
         text = "{\"title\":[\"\",\"\"],\"name\":[\"\",\"\",\"\",\"\"],\"rule\":{\"aka\":1},\"log\":[["
