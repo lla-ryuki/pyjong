@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), './'))
-
 from mytypes import TileType, BlockType
 from libcpp cimport bool
 
@@ -24,7 +20,7 @@ cdef bool no_points_hand(int[:] temp, int winning_tile, int prevailing_wind, int
 
 
 # 断么 tannyao
-cdef bool all_simples(int[38] hand) :
+cdef bool all_simples(int[:] hand) :
     cdef int i
     for i in range(1,38) :
         if hand[i] == 0 : continue
@@ -33,7 +29,7 @@ cdef bool all_simples(int[38] hand) :
 
 
 # 一盃口 iipeikou
-cdef bool one_set_of_identical_sequences(int[10] temp) :
+cdef bool one_set_of_identical_sequences(int[:] temp) :
     cdef int i
     cdef int[30] check
 
@@ -48,37 +44,37 @@ cdef bool one_set_of_identical_sequences(int[10] temp) :
 
 
 # 場風 bakaze
-cdef bool prevailing_wind(int[38] hand, int prevailing_wind) :
+cdef bool bakaze(int[:] hand, int prevailing_wind) :
     if hand[prevailing_wind] > 2 : return True
     else : return False
 
 
 # 自風 jikaze
-cdef bool players_wind(int[38] hand, int players_wind) :
+cdef bool jikaze(int[:] hand, int players_wind) :
     if hand[players_wind] >= 3 : return True
     return False
 
 
 # 白 haku
-cdef bool white_dragon(int[38] hand) :
+cdef bool white_dragon(int[:] hand) :
     if hand[35] >= 3 : return True
     return False
 
 
 # 發 hatsu
-cdef bool green_dragon(int[38] hand) :
+cdef bool green_dragon(int[:] hand) :
     if hand[36] >= 3 : return True
     return False
 
 
 # 中 chun
-cdef bool red_dragon(int[38] hand) :
+cdef bool red_dragon(int[:] hand) :
     if hand[37] >= 3 : return True
     return False
 
 
 # 混全帯么九 chanta
-cdef bool terminal_or_honor_in_each_set(int[38] temp) :
+cdef bool terminal_or_honor_in_each_set(int[:] temp) :
     cdef bool honor, run
     cdef int i
 
@@ -97,7 +93,7 @@ cdef bool terminal_or_honor_in_each_set(int[38] temp) :
 
 
 # 三色同順 sansyokudoujun
-cdef three_color_straight(int[38] temp) :
+cdef bool three_color_straight(int[:] temp) :
     cdef int i
     cdef int[30] check
 
@@ -110,7 +106,7 @@ cdef three_color_straight(int[38] temp) :
 
 
 # 一気通貫 ikkitsuukan
-cdef bool straight(int[38] temp) :
+cdef bool straight(int[:] temp) :
     cdef int i
     cdef bool[9] check
 
@@ -125,7 +121,7 @@ cdef bool straight(int[38] temp) :
 
 
 # 対々和 toitoi
-cdef bool all_triplet_hand(int[10] temp) :
+cdef bool all_triplet_hand(int[:] temp) :
     cdef int i
     for i in range(0,10,2) :
         if temp[i] == BlockType.CLOSED_RUN or temp[i] == BlockType.OPENED_RUN : return False
@@ -133,7 +129,7 @@ cdef bool all_triplet_hand(int[10] temp) :
 
 
 # 三色同刻 sansyokudoukou
-cdef bool three_color_triplets(int[10] temp) :
+cdef bool three_color_triplets(int[:] temp) :
     cdef int i
     cdef bool[30] check
 
@@ -146,7 +142,7 @@ cdef bool three_color_triplets(int[10] temp) :
 
 
 # 混老頭 honroutou
-cdef bool all_terminals_and_honors(int[38] hand) :
+cdef bool all_terminals_and_honors(int[:] hand) :
     cdef bool honor, terminal
     cdef int i
 
@@ -160,7 +156,7 @@ cdef bool all_terminals_and_honors(int[38] hand) :
 
 
 # 三槓子 sankantsu
-cdef bool three_kans(int[10] temp) :
+cdef bool three_kans(int[:] temp) :
     cdef int i, kans_num
 
     kans_num = 0
@@ -171,7 +167,7 @@ cdef bool three_kans(int[10] temp) :
 
 
 # 三暗刻 sannkannkou
-cdef bool three_closed_triplets(int[10] temp) :
+cdef bool three_closed_triplets(int[:] temp) :
     cdef int i, closed_triprets_num
 
     closed_triprets_num = 0
@@ -182,7 +178,7 @@ cdef bool three_closed_triplets(int[10] temp) :
 
 
 # 小三元 syousangen
-cdef bool little_three_dragons(int[38] hand) :
+cdef bool little_three_dragons(int[:] hand) :
     cdef int i, dragons_num
     cdef bool dragon_pair
 
@@ -196,7 +192,7 @@ cdef bool little_three_dragons(int[38] hand) :
 
 
 # 二盃口 ryanpeikou
-cdef bool two_sets_of_identical_sequences(int[10] temp) :
+cdef bool two_sets_of_identical_sequences(int[:] temp) :
     cdef int i, identical_sequence_num
     cdef bool[30] check
 
@@ -213,7 +209,7 @@ cdef bool two_sets_of_identical_sequences(int[10] temp) :
 
 
 # 混一色 honitsu
-cdef bool half_flush(int[38] hand) :
+cdef bool half_flush(int[:] hand) :
     cdef int i, suit
     cdef bool honor
 
@@ -234,7 +230,7 @@ cdef bool half_flush(int[38] hand) :
 
 
 # 純全帯么九 junchanta
-cdef bool terminal_in_each_set(int[10] temp) :
+cdef bool terminal_in_each_set(int[:] temp) :
     cdef int i
     cdef bool run
 
@@ -251,7 +247,7 @@ cdef bool terminal_in_each_set(int[10] temp) :
 
 
 # 清一色 chinitsu
-cdef bool flush(int[38] hand) :
+cdef bool flush(int[:] hand) :
     cdef int i, suit
 
     suit = 0
@@ -263,5 +259,4 @@ cdef bool flush(int[38] hand) :
         if hand[i] == 0 : continue
         elif (i // 10) != suit : return False
     return True
-
 

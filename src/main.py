@@ -1,10 +1,13 @@
-# std
+# built-in
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), './cymod'))
 
 # 3rd
 
 # ours
-from cymod.game import Game
-from player.action import Action
+from game import Game
+from Player.action import Action
 
 
 if __name__ == "__main__" :

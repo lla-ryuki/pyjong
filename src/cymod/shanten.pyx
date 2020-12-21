@@ -5,6 +5,7 @@ import pickle
 # 3rd
 
 # ours
+from mytypes import TileType
 
 # cython
 from libcpp cimport bool
@@ -51,12 +52,13 @@ cdef class ShantenNumCalculator :
     """
     cpdef tuple get_shanten_nums(self, list hand, int opened_sets_num, int ron_tile=-1) :
         cdef tuple key
+        if ron_tile in TileType.REDS : ron_tile += 5
 
         self.hand = hand[:]
         self.opened_sets_num = opened_sets_num
         if ron_tile > 0 : self.hand[ron_tile] += 1
 
-        shanten_nums = self.shanten_table.get(tuple(hand))
+        shanten_nums = self.shanten_table.get(tuple(self.hand))
         if (shanten_nums is None) :
             shanten_nums = self._calc_shanten_nums()
             key = tuple(hand)
@@ -197,3 +199,5 @@ cdef class ShantenNumCalculator :
                 self.hand[i+2] += 1
                 self.tahtsu_num -= 1
         self._pick_out_tahtsu(i+1)
+
+

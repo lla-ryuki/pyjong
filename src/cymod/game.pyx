@@ -1,18 +1,15 @@
-# std
-import os
-import sys
+# built-in
 import random
-sys.path.append(os.path.join(os.path.dirname(__file__), './'))
 
 # 3rd
 
 # ours
-from .player import Player
-from .shanten import ShantenNumCalculator
-from .logger import Logger
-from .mytypes import TileType, BlockType
-from .yaku import *
-from .yakuman import *
+from player import Player
+from shanten import ShantenNumCalculator
+from logger import Logger
+from mytypes import TileType, BlockType
+from yaku cimport *
+from yakuman cimport *
 
 # cython
 from libcpp cimport bool
@@ -62,20 +59,20 @@ cdef class Game :
     cdef public bool wins_by_pao
     cdef public int liability_player
 
-    cdef int players_wind
-    cdef int[10] temp
-    cdef int fu
-    cdef int han
-    cdef int i_temp
-    cdef int fu_temp
-    cdef int han_temp
-    cdef int yakuman
+    cdef public int players_wind
+    cdef public int[10] temp
+    cdef public int fu
+    cdef public int han
+    cdef public int i_temp
+    cdef public int fu_temp
+    cdef public int han_temp
+    cdef public int yakuman
 
-    cdef bool win_flag
-    cdef bool ready_flag
-    cdef bool steal_flag
-    cdef bool dora_opens_flag
-    cdef bool rinshan_draw_flag
+    cdef public bool win_flag
+    cdef public bool ready_flag
+    cdef public bool steal_flag
+    cdef public bool dora_opens_flag
+    cdef public bool rinshan_draw_flag
 
 
     def __init__(self, action) :
@@ -181,7 +178,7 @@ cdef class Game :
                 else :
                     self.wall[i] = j
                 i += 1
-        random.shuffle(self.wall)
+        self.wall = random.sample(self.wall, 136)
 
 
     # 新しいドラを開く
@@ -279,7 +276,7 @@ cdef class Game :
     # チーが行われた時の処理
     cdef void proc_chii(self, int i_ap, int tile, int tile1, int tile2) :
         cdef int i
-        self.players[i_ap].proc_chii(tile, tile1, tile2)
+        tile, tile1, tile2 = self.players[i_ap].proc_chii(tile, tile1, tile2)
         self.logger.register_chii(i_ap, tile, tile1, tile2)
         for i in range(4) : self.players[i].has_right_to_one_shot = False
         self.players[self.i_player].is_nagashi_mangan = False
@@ -327,7 +324,7 @@ cdef class Game :
         # 点数移動
         if self.wins_by_pao:
             self.players[self.i_player].score_points(-1 * (points // 2))
-            self.players[liability_player].score_points(-1 * ((points // 2) + (300 * self.counters_num)))
+            self.players[self.liability_player].score_points(-1 * ((points // 2) + (300 * self.counters_num)))
             self.players[self.i_player].score_points(points)
         else :
             if points % 100 != 0 : points += int(100 - (points % 100)) # 100の位で切り上げ
@@ -342,7 +339,7 @@ cdef class Game :
         if self.wins_by_pao:
             if not(self.dealer_wins) : points = self.basic_points * 4
             else : points = self.basic_points * 6
-            self.players[liability_player].score_points(-1 * (points + (300 * self.counters_num)))
+            self.players[self.liability_player].score_points(-1 * (points + (300 * self.counters_num)))
             self.players[self.i_player].score_points(points)
         else :
             if self.dealer_wins :
@@ -401,8 +398,8 @@ cdef class Game :
         for i in range(4) :
             if self.players[i].is_ready : tenpai_players_num += 1
         if tenpai_players_num != 0 and tenpai_players_num != 4 :
-            penalty = -3000 // tenpai_players_num
-            reward = 3000 // (4 - tenpai_players_num)
+            penalty = -3000 // (4 - tenpai_players_num)
+            reward = 3000 // tenpai_players_num
         else :
             penalty = 0
             reward = 0
@@ -486,7 +483,7 @@ cdef class Game :
         if self.is_last_tile() : self.wins_by_last_tile = True
 
     # 記録はせずに海底・河底かだけ返す
-    cdef bool is_last_tile(self) :
+    cpdef bool is_last_tile(self) :
         if 136 - (self.i_wall + self.i_rinshan) == 14 : return True
 
 
@@ -518,11 +515,13 @@ cdef class Game :
     # 通常の手の翻数の計算
     cdef void count_han_of_normal_hand(self, player) :
         cdef int[38] hand
-
+        cdef int[20] opened_hand
         hand = player.put_back_opened_hand()
+        opened_hand = player.opened_hand[:]
+
         if four_closed_triplets(player.has_stealed, self.wins_by_ron, hand, self.winning_tile) : self.yakuman += 1
         if four_closed_triplets_of_single_tile_wait(player.has_stealed, self.winning_tile, hand) : self.yakuman += 1
-        if four_kans(player.opened_hand) : self.yakuman += 1
+        if four_kans(opened_hand) : self.yakuman += 1
         if all_honors(hand) : self.yakuman += 1
         if all_green(hand) : self.yakuman += 1
         if all_terminals(hand) : self.yakuman += 1
@@ -539,8 +538,8 @@ cdef class Game :
             if self.wins_by_last_tile : self.han += 1
             if self.wins_by_chankan : self.han += 1
             if all_simples(hand) : self.han += 1
-            if prevailing_wind(hand, self.prevailing_wind) : self.han += 1
-            if players_wind(hand, self.players_wind) : self.han += 1
+            if bakaze(hand, self.prevailing_wind) : self.han += 1
+            if jikaze(hand, self.players_wind) : self.han += 1
             if white_dragon(hand) : self.han += 1
             if green_dragon(hand) : self.han += 1
             if red_dragon(hand) : self.han += 1
@@ -568,7 +567,6 @@ cdef class Game :
     # 七対子手の翻数計算
     cpdef void count_han_of_seven_pairs_hand(self, player) :
         cdef int[38] hand
-
         hand = player.hand[:]
         if all_honors(hand) : self.han += 13
         if self.han < 13 :
@@ -1035,10 +1033,10 @@ cdef class Game :
             for i in range(4) : self.players[i].check_hand_is_ready(self.shanten_calculator)
             if self.is_abortive_draw : self.counters_num += 1
             # 流し満貫判定と処理
-            elif ( self.players[0].is_nagashi_mangan() or \
-                   self.players[1].is_nagashi_mangan() or \
-                   self.players[2].is_nagashi_mangan() or \
-                   self.players[3].is_nagashi_mangan() ) : self.proc_nagashi_mangan()
+            elif ( self.players[0].check_nagashi_mangan() or \
+                   self.players[1].check_nagashi_mangan() or \
+                   self.players[2].check_nagashi_mangan() or \
+                   self.players[3].check_nagashi_mangan() ) : self.proc_nagashi_mangan()
             # 和了，途中流局，流し満貫のどれでもなければ普通の流局処理
             else : self.proc_drawn_game()
 
@@ -1053,5 +1051,4 @@ cdef class Game :
 
         # 向聴テーブルをdump
         self.shanten_calculator.dump_table()
-
 

@@ -1,3 +1,6 @@
 [submodule "src/player"]
 	path = src/player
 	url = git@github.com:neuzen-ryuki/ryujin.git
+[submodule "src/Player"]
+	path = src/Player
+	url = git@github.com:neuzen-ryuki/ryujin.git

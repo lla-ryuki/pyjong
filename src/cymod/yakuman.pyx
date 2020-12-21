@@ -1,13 +1,9 @@
-import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), './'))
-
 from mytypes import TileType, BlockType
 from libcpp cimport bool
 
 
 # 九連宝燈
-cdef bool nine_gates(int[38] hand) :
+cdef bool nine_gates(int[:] hand) :
     cdef int i, suit, n_tile
 
     suit, n_tile = 0, 0
@@ -28,7 +24,7 @@ cdef bool nine_gates(int[38] hand) :
 
 
 # 大喜四
-cdef bool big_four_winds(int[38] hand) :
+cdef bool big_four_winds(int[:] hand) :
     cdef int i
     for i in range(31, 35) :
         if hand[i] < 3 : return False
@@ -36,7 +32,7 @@ cdef bool big_four_winds(int[38] hand) :
 
 
 # 小喜四
-cdef bool small_four_winds(int[38] hand) :
+cdef bool small_four_winds(int[:] hand) :
     cdef int i, wind_triplet_num
     cdef bool pair
 
@@ -50,7 +46,7 @@ cdef bool small_four_winds(int[38] hand) :
 
 
 # 四暗刻
-cdef bool four_closed_triplets(bool player_stealed,  bool ron , int[38] hand, int winning_tile) :
+cdef bool four_closed_triplets(bool player_stealed,  bool ron , int[:] hand, int winning_tile) :
     cdef int i, closed_triplet_num
     cdef bool pair
 
@@ -68,7 +64,7 @@ cdef bool four_closed_triplets(bool player_stealed,  bool ron , int[38] hand, in
 
 
 # 四暗刻単騎
-cdef bool four_closed_triplets_of_single_tile_wait(bool player_stealed, int winning_tile, int[38] hand) :
+cdef bool four_closed_triplets_of_single_tile_wait(bool player_stealed, int winning_tile, int[:] hand) :
     cdef int i, closed_triplet_num
     cdef bool pair
 
@@ -86,7 +82,7 @@ cdef bool four_closed_triplets_of_single_tile_wait(bool player_stealed, int winn
 
 
 # 字一色
-cdef bool all_honors(int[38] hand) :
+cdef bool all_honors(int[:] hand) :
     cdef int i
     for i in range(1,38) :
         if hand[i] == 0 : continue
@@ -95,7 +91,7 @@ cdef bool all_honors(int[38] hand) :
 
 
 # 緑一色
-cdef bool all_green(int[38] hand) :
+cdef bool all_green(int[:] hand) :
     cdef int i
     for i in range(1, 38) :
         if hand[i] == 0 : continue
@@ -105,13 +101,13 @@ cdef bool all_green(int[38] hand) :
 
 
 # 大三元
-cdef bool big_three_dragons(int[38] hand) :
+cdef bool big_three_dragons(int[:] hand) :
     if hand[35] >= 3 and hand[36] >= 3 and hand[37] >= 3 : return True
     return False
 
 
 # 清老頭
-cdef bool all_terminals(int[38] hand) :
+cdef bool all_terminals(int[:] hand) :
     cdef int i
     for i in range(1,38) :
         if hand[i] == 0 : continue
@@ -121,12 +117,11 @@ cdef bool all_terminals(int[38] hand) :
 
 
 # 四槓子
-cdef bool four_kans(int[20] opened_hand) :
+cdef bool four_kans(int[:] opened_hand) :
     cdef int i, kans_num
     kans_num = 0
     for i in range(0,20,5) :
         if opened_hand[i] in BlockType.KANS : kans_num += 1
     if kans_num == 4 : return True
     return False
-
 

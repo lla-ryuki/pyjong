@@ -1,10 +1,8 @@
-# sys
+# built-in
 import os
-import sys
 import string
 import random
 import datetime
-sys.path.append(os.path.join(os.path.dirname(__file__), './'))
 
 # 3rd
 
@@ -13,8 +11,6 @@ from mytypes import TileType, BlockType
 
 # cython
 from libcpp cimport bool
-
-
 
 
 cdef class Logger :
@@ -172,3 +168,4 @@ cdef class Logger :
         self.actions = [[] for i in range(4)]
         self.starting_hands = [[] for i in range(4)]
         self.tiles_player_got = [[] for i in range(4)]
+
