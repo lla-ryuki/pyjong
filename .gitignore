@@ -1,10 +1,12 @@
 .DS_Store
 data/
-cprof.py
+cprof*
 scratch.*
 *.cpp
 *.c
+*.bak
 *.pkl
+MEMO*
 
 
 # Byte-compiled / optimized / DLL files
