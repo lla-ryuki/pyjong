@@ -75,6 +75,11 @@ class Player :
         self.winds_num = 0
 
 
+    # 半荘の初期化
+    def init_game(self) :
+        self.score = 25000                                # 点棒
+
+
     # 局の初期化
     def init_subgame(self, rotations_num:int) -> None :
         self.hand = [0] * 38                              # 手牌

@@ -54,6 +54,9 @@ cdef class Player :
 
     def __init__(self, player_num) :
         self.player_num = player_num                      # プレイヤ番号 スタート時の席と番号の関係(0:起家, 1:南家, 2:西家, 3:北家)
+
+
+    cpdef void init_game(self) :
         self.score = 25000                                # 点棒
 
 

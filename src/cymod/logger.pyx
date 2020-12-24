@@ -22,13 +22,17 @@ cdef class Logger :
     cdef public list tiles_player_got
 
     def __init__(self, bool is_logging) :
+        self.is_logging = is_logging
+
+
+    cpdef init_game(self) :
+        cdef int i
         now = datetime.datetime.now().strftime("%y-%m-%d_%H-%M-%S")
         id = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
         self.dir_path = f"../data/log/{now}_{id}"
         try : os.mkdir(self.dir_path)
         except : pass
         self.save_path = f"../data/log/{now}.log"
-        self.is_logging = is_logging
         self.actions = [[] for i in range(4)]
         self.starting_hands = [[] for i in range(4)]
         self.tiles_player_got = [[] for i in range(4)]

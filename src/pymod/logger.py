@@ -9,13 +9,15 @@ from pymod.mytypes import TileType
 
 class Logger :
     def __init__(self, is_logging:bool) :
+        self.is_logging = is_logging
+
+    def init_game(self) -> None :
         now = datetime.datetime.now().strftime("%y-%m-%d_%H-%M-%S")
         id = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
         self.dir_path = f"../data/log/{now}_{id}"
         try : os.mkdir(self.dir_path)
         except : pass
         self.save_path = f"../data/log/{now}.log"
-        self.is_logging = is_logging
         self.actions = [[] for i in range(4)]
         self.starting_hands = [[] for i in range(4)]
         self.tiles_player_got = [[] for i in range(4)]

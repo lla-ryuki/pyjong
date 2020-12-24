@@ -21,12 +21,17 @@ class Game :
         self.action = action
         self.logger = Logger(is_logging=True);
         self.shanten_calculator = ShantenNumCalculator()
+
+
+    # 半荘開始時の初期化
+    def init_game(self) -> None :
+        for i in range(4) : self.players[i].init_game()
+        self.logger.init_game()
         self.rounds_num = 0                            # 場 0:東場，1:南場，2:西場
         self.rotations_num = 0                         # 局 0:1局目 ... 3:4局目
         self.counters_num = 0                          # 積み棒の数
         self.deposits_num = 0                          # 供託の数
         self.is_over = False                           # Trueになると半荘終了
-
 
 
     # 局開始時の初期化
@@ -930,15 +935,15 @@ class Game :
 
 
     # 半荘の処理
-    def play_game(self) -> None :
-        count = 0
-        while True :
-            # 局
-            self.play_subgame()
-            # 半荘終了判定
-            if self.is_over : break
+    def play_games(self, games_num:int) -> None :
+        for i in range(games_num) :
+            self.init_game()
+            while True :
+                # 局
+                self.play_subgame()
+                # 半荘終了判定
+                if self.is_over : break
 
         # 向聴テーブルをdump
         self.shanten_calculator.dump_table()
-
 

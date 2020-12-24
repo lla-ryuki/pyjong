@@ -2,7 +2,6 @@
 import random
 
 # 3rd
-
 # ours
 from player import Player
 from shanten import ShantenNumCalculator
@@ -80,6 +79,13 @@ cdef class Game :
         self.action = action
         self.logger = Logger(is_logging=True);
         self.shanten_calculator = ShantenNumCalculator()
+
+
+    # 半荘開始時の初期化
+    cdef void init_game(self) :
+        cdef int i
+        for i in range(4) : self.players[i].init_game()
+        self.logger.init_game()
         self.rounds_num = 0                            # 場 0:東場，1:南場，2:西場
         self.rotations_num = 0                         # 局 0:1局目 ... 3:4局目
         self.counters_num = 0                          # 積み棒の数
@@ -1042,12 +1048,15 @@ cdef class Game :
 
 
     # 半荘の処理
-    cpdef void play_game(self) :
-        while True :
-            # 局
-            self.play_subgame()
-            # 半荘終了判定
-            if self.is_over : break
+    cpdef void play_games(self, int games_num) :
+        cdef int i
+        for i in range(games_num) :
+            self.init_game()
+            while True :
+                # 局
+                self.play_subgame()
+                # 半荘終了判定
+                if self.is_over : break
 
         # 向聴テーブルをdump
         self.shanten_calculator.dump_table()
