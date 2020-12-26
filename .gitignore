@@ -2,11 +2,11 @@
 data/
 cprof*
 scratch*
+MEMO*
 *.cpp
 *.c
 *.bak
 *.pkl
-MEMO*
 
 
 # Byte-compiled / optimized / DLL files
