@@ -3,12 +3,17 @@ import os
 import pickle
 from typing import List
 
+# 3rd
+
 # ours
-from pymod.mytypes import TileType
+from mytypes import TileType
+
+# cython
 
 
 class ShantenNumCalculator :
-    def __init__(self, file_path:str = "../data/shanten_table.pickle", record_mode:bool = False) :
+
+    def __init__(self, file_path:str="../data/shanten_table.pickle", record_mode:bool=False) :
         self.file_path = file_path
         self.record_mode = record_mode
 
@@ -34,13 +39,15 @@ class ShantenNumCalculator :
     """
     tuple化した手牌をキーとして用いて向聴テーブルに登録された向聴数を返す
     キーが登録されていなかった場合向聴数を計算してテーブルに登録
-    ロン和了の場合は和了牌もhand[]に加えてこのメソッドに渡す
     """
-    def get_shanten_nums(self, hand:List[int], opened_sets_num:int) -> (int, int, int) :
+    def get_shanten_nums(self, hand:List[int], opened_sets_num:int, ron_tile:int=-1) -> int :
+        if ron_tile in TileType.REDS : ron_tile += 5
+
         self.hand = hand[:]
         self.opened_sets_num = opened_sets_num
+        if ron_tile > 0 : self.hand[ron_tile] += 1
 
-        shanten_nums = self.shanten_table.get(tuple(hand))
+        shanten_nums = self.shanten_table.get(tuple(self.hand))
         if (shanten_nums is None) :
             shanten_nums = self._calc_shanten_nums()
             key = tuple(hand)
@@ -59,7 +66,7 @@ class ShantenNumCalculator :
 
 
     # handの向聴数を計算
-    def _calc_shanten_nums(self) -> (int, int, int) :
+    def _calc_shanten_nums(self) -> (int, int ,int) :
         if self.opened_sets_num > 0 :
             kokushi = 13
             chiitoi = 6
@@ -76,7 +83,7 @@ class ShantenNumCalculator :
         pairs_num = 0
         shanten_num = 13
 
-        for i in (TileType.TERMINALS | TileType.HONORS) :
+        for i in (1,9,11,19,21,29,31,32,33,34,35,36,37) :
             if self.hand[i] != 0 : shanten_num -= 1
             if self.hand[i] > 1 and pairs_num == 0 : pairs_num = 1
         shanten_num -= pairs_num
@@ -120,7 +127,7 @@ class ShantenNumCalculator :
 
 
     # 面子を抜き出す
-    def _pick_out_sets(self, i:int) -> None :
+    def _pick_out_sets(self, i) -> None :
         while i < 38 and self.hand[i] == 0 : i += 1
         if i > 37 :
             self._pick_out_tahtsu(1)
@@ -145,7 +152,7 @@ class ShantenNumCalculator :
 
 
     # 塔子を抜き出す
-    def _pick_out_tahtsu(self, i:int) -> None :
+    def _pick_out_tahtsu(self, i) -> None :
         while i < 38 and self.hand[i] == 0 : i += 1
         if i > 37 :
             self.shanten_temp = 8 - (self.sets_num + self.opened_sets_num) * 2 - self.tahtsu_num - self.pairs_num
@@ -176,3 +183,5 @@ class ShantenNumCalculator :
                 self.hand[i+2] += 1
                 self.tahtsu_num -= 1
         self._pick_out_tahtsu(i+1)
+
+

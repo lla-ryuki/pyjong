@@ -1,22 +1,23 @@
-# std
-import os
-import sys
+# built-in
 import random
 from typing import List
 
 # 3rd
 
 # ours
-from pymod.player import Player
-from pymod.shanten import ShantenNumCalculator
-from pymod.logger import Logger
-from pymod.mytypes import TileType, BlockType
-from pymod.yaku import *
-from pymod.yakuman import *
+from player import Player
+from shanten import ShantenNumCalculator
+from logger import Logger
+from mytypes import TileType, BlockType
+from yaku cimport *
+from yakuman cimport *
+
+# cython
+from libcpp cimport bool
 
 
-class Game :
-    def __init__(self, action=None) :
+def class Game :
+    def __init__(self, action) :
         self.players = [Player(i) for i in range(4)]
         self.action = action
         self.logger = Logger(is_logging=True);
@@ -120,7 +121,7 @@ class Game :
                 else :
                     self.wall[i] = j
                 i += 1
-        random.shuffle(self.wall)
+        self.wall = random.sample(self.wall, 136)
 
 
     # 新しいドラを開く
@@ -178,22 +179,6 @@ class Game :
         return tile
 
 
-    # 大明槓が行われた時の処理
-    def proc_daiminkan(self, i_ap:int, tile:int) -> None :
-        pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
-        self.players[i_ap].proc_daiminkan(tile, pos)
-        self.logger.register_daiminkan(i_ap, tile, pos)
-
-        if tile in TileType.REDS : tile += 5
-        for i in range(4) : self.players[i].has_right_to_one_shot = False
-        self.players[self.i_player].is_nagashi_mangan = False
-        self.appearing_tiles[tile] += 3
-        self.is_first_turn = False
-        self.dora_opens_flag = True
-        self.rinshan_draw_flag = True
-        self.i_player = (4 + i_ap - 1) % 4
-
-
     # ポンが行われた時の処理
     def proc_pon(self, i_ap:int, tile:int) -> None :
         pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
@@ -209,9 +194,24 @@ class Game :
         self.i_player = (4 + i_ap - 1) % 4
 
 
+    # 大明槓が行われた時の処理
+    def proc_daiminkan(self, i_ap:int, tile:int) -> None :
+        pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
+        self.players[i_ap].proc_daiminkan(tile, pos)
+        self.logger.register_daiminkan(i_ap, tile, pos)
+        if tile in TileType.REDS : tile += 5
+        for i in range(4) : self.players[i].has_right_to_one_shot = False
+        self.players[self.i_player].is_nagashi_mangan = False
+        self.appearing_tiles[tile] += 3
+        self.is_first_turn = False
+        self.dora_opens_flag = True
+        self.rinshan_draw_flag = True
+        self.i_player = (4 + i_ap - 1) % 4
+
+
     # チーが行われた時の処理
     def proc_chii(self, i_ap:int, tile:int, tile1:int, tile2:int) -> None :
-        self.players[i_ap].proc_chii(tile, tile1, tile2)
+        tile, tile1, tile2 = self.players[i_ap].proc_chii(tile, tile1, tile2)
         self.logger.register_chii(i_ap, tile, tile1, tile2)
         for i in range(4) : self.players[i].has_right_to_one_shot = False
         self.players[self.i_player].is_nagashi_mangan = False
@@ -249,7 +249,7 @@ class Game :
 
 
     # ロン和了の処理
-    def proc_ron(self, i_winner:int) -> int :
+    def proc_ron(self, i_winner:int) -> None :
         # 基本点から得点を算出
         if self.dealer_wins : points = self.basic_points * 6
         else : points = self.basic_points * 4
@@ -257,7 +257,7 @@ class Game :
         # 点数移動
         if self.wins_by_pao:
             self.players[self.i_player].score_points(-1 * (points // 2))
-            self.players[liability_player].score_points(-1 * ((points // 2) + (300 * self.counters_num)))
+            self.players[self.liability_player].score_points(-1 * ((points // 2) + (300 * self.counters_num)))
             self.players[self.i_player].score_points(points)
         else :
             if points % 100 != 0 : points += int(100 - (points % 100)) # 100の位で切り上げ
@@ -266,11 +266,11 @@ class Game :
 
 
     # ツモ和了の処理
-    def proc_tsumo(self, i_winner:int) -> int :
+    def proc_tsumo(self, i_winner:int) -> None :
         if self.wins_by_pao:
             if not(self.dealer_wins) : points = self.basic_points * 4
             else : points = self.basic_points * 6
-            self.players[liability_player].score_points(-1 * (points + (300 * self.counters_num)))
+            self.players[self.liability_player].score_points(-1 * (points + (300 * self.counters_num)))
             self.players[self.i_player].score_points(points)
         else :
             if self.dealer_wins :
@@ -326,8 +326,8 @@ class Game :
         for i in range(4) :
             if self.players[i].is_ready : tenpai_players_num += 1
         if tenpai_players_num != 0 and tenpai_players_num != 4 :
-            penalty = -3000 // tenpai_players_num
-            reward = 3000 // (4 - tenpai_players_num)
+            penalty = -3000 // (4 - tenpai_players_num)
+            reward = 3000 // tenpai_players_num
         else :
             penalty = 0
             reward = 0
@@ -407,12 +407,12 @@ class Game :
         if self.is_last_tile() : self.wins_by_last_tile = True
 
     # 記録はせずに海底・河底かだけ返す
-    def is_last_tile(self) -> None :
+    def is_last_tile(self) -> bool :
         if 136 - (self.i_wall + self.i_rinshan) == 14 : return True
 
 
     # 和了牌をセット
-    def set_winning_tile(self, tile:int) -> None:
+    def set_winning_tile(self, tile:int) -> None :
         if tile in TileType.REDS : self.winning_tile = tile + 5
         else : self.winning_tile = tile
 
@@ -437,11 +437,13 @@ class Game :
 
 
     # 通常の手の翻数の計算
-    def count_han_of_normal_hand(self, player:Player) -> None :
+    def count_han_of_normal_hand(self, player) -> None :
         hand = player.put_back_opened_hand()
+        opened_hand = player.opened_hand[:]
+
         if four_closed_triplets(player.has_stealed, self.wins_by_ron, hand, self.winning_tile) : self.yakuman += 1
         if four_closed_triplets_of_single_tile_wait(player.has_stealed, self.winning_tile, hand) : self.yakuman += 1
-        if four_kans(player.opened_hand) : self.yakuman += 1
+        if four_kans(opened_hand) : self.yakuman += 1
         if all_honors(hand) : self.yakuman += 1
         if all_green(hand) : self.yakuman += 1
         if all_terminals(hand) : self.yakuman += 1
@@ -458,8 +460,8 @@ class Game :
             if self.wins_by_last_tile : self.han += 1
             if self.wins_by_chankan : self.han += 1
             if all_simples(hand) : self.han += 1
-            if prevailing_wind(hand, self.prevailing_wind) : self.han += 1
-            if players_wind(hand, self.players_wind) : self.han += 1
+            if bakaze(hand, self.prevailing_wind) : self.han += 1
+            if jikaze(hand, self.players_wind) : self.han += 1
             if white_dragon(hand) : self.han += 1
             if green_dragon(hand) : self.han += 1
             if red_dragon(hand) : self.han += 1
@@ -485,7 +487,7 @@ class Game :
 
 
     # 七対子手の翻数計算
-    def count_han_of_seven_pairs_hand(self, player:Player) -> None :
+    def count_han_of_seven_pairs_hand(self, player) -> None :
         hand = player.hand[:]
         if all_honors(hand) : self.han += 13
         if self.han < 13 :
@@ -513,7 +515,7 @@ class Game :
 
 
     # 基本点の計算
-    def calculate_basic_points(self, player:Player) -> int :
+    def calculate_basic_points(self, player) -> int :
         self.han = 0
         if self.wins_by_tenhou : self.yakuman += 1
         if self.wins_by_chiihou : self.yakuman += 1
@@ -536,12 +538,12 @@ class Game :
 
 
     # 一番点数が高くなるような手牌構成を探す
-    def analyze_best_composition(self, player:Player) -> None :
+    def analyze_best_composition(self, player) -> None :
         self.temp = [0] * 10
         self.i_temp = 0
         self.fu = 0
         self.han_temp = self.han
-        hand = player.hand
+        hand = player.hand[:]
         opened_hand = player.opened_hand
         for i in range(4) :
             if opened_hand[i*5] != 0 :
@@ -565,7 +567,7 @@ class Game :
 
     # 面子を抜き出す
     ## 和了が確定してからしか呼ばれないので高速化のためにPlayer._pick_out_mentsu()でやらなくていい部分を省いている．別物.
-    def pick_out_mentsu(self, has_stealed:bool, hand:List[int]) -> None:
+    def pick_out_mentsu(self, has_stealed:bool, hand:List[int]) -> None :
         for i in range(1,38) :
             if self.temp[9] != 0 :
                 self.count_han(has_stealed)
@@ -629,7 +631,7 @@ class Game :
 
 
     # 符計算
-    def calculate_fu(self, has_stealed:bool) -> int :
+    def int calculate_fu(self, has_stealed:bool) -> int :
         fu = 0
         if no_points_hand(self.temp, self.winning_tile, self.prevailing_wind, self.players_wind) :
             if self.wins_by_ron : return 30
@@ -671,7 +673,7 @@ class Game :
 
 
     # ドローフェーズの処理
-    def proc_draw_phase(self, player:Player) -> None :
+    def proc_draw_phase(self, player) -> None :
         # ポン，チーした場合はスキップ
         if self.steal_flag : return
 
@@ -694,7 +696,7 @@ class Game :
 
 
     # 立直の処理
-    def proc_ready(self, player:Player) -> None :
+    def proc_ready(self, player) -> None :
         self.ready_flag = True
         self.deposits_num += 1
         player.declare_ready(self.is_first_turn)
@@ -732,23 +734,21 @@ class Game :
     def proc_action_phase(self) -> bool :
         # プレイヤの行動決定，tile:赤は(0,10,20)表示
         tile, exchanged, ready, ankan, kakan, kyushu = self.players[self.i_player].decide_action(self, self.players)
-
         if ready : self.proc_ready(self.players[self.i_player])
         elif ankan : self.proc_ankan(tile)
         elif kakan :
             # 直前の行動が加槓だった場合このタイミングでドラが開く
             if self.dora_opens_flag : self.open_new_dora()
             # 槍槓用ロンフェーズ
-            self.proc_ron_phase(tile, True)
-            if self.win_flag : return
+            self.proc_ron_phase(tile)
+            if self.win_flag : return False
             self.proc_kakan(tile)
         elif kyushu : self.is_abortive_draw = True
-
         return ready
 
 
     # 打牌フェーズ
-    def proc_discard_phase(self, player:Player, ready:bool) -> None :
+    def proc_discard_phase(self, player, ready) -> int :
         # プレイヤが捨てる牌を決定，discarded_tile:赤は(0,10,20)表示
         discarded_tile = player.discard_tile(self, self.players)
         self.logger.register_discarded_tile(self.i_player, discarded_tile, ready)
@@ -759,7 +759,6 @@ class Game :
         # 鳴いた後に切った場合, 手出し牌に牌を記録
         if self.steal_flag : player.add_to_discard_tiles_after_stealing(discarded_tile)
         self.steal_flag = False
-        if player.is_nagashi_mangan : self.players[self.i_player].check_player_is_nagashi_mangan()
 
         return discarded_tile
 
@@ -819,7 +818,7 @@ class Game :
         # 四槓散了判定．四槓散了は暗槓，加槓，大明槓どの場合でも牌がきられて通ったタイミングで判定される
         kans_num = 0
         for i in range(4) :
-            if self.players[i].kans_num == 4 : return False # 一人で4回槓しているのは流局にならない
+            if self.players[i].kans_num == 4 : return # 一人で4回槓しているのは流局にならない
             kans_num += self.players[i].kans_num
         if kans_num == 4 :
             self.is_abortive_draw = True
@@ -832,7 +831,7 @@ class Game :
             i_ap = (self.i_player + i) % 4 #i_ap : index of action player
             pos = 4 - i
             player = self.players[i_ap]
-            pon , kan , chii1 , chii2 , chii3 = player.can_steal(discarded_tile, i)
+            pon, kan, chii1, chii2, chii3 = player.can_steal(discarded_tile, i)
             if pon or kan or chii1 or chii2 or chii3 :
                 indexes = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i_ap)
                 for j in indexes :
@@ -842,7 +841,6 @@ class Game :
                     elif j == 3 and chii1 : self.proc_chii(i_ap, discarded_tile, discarded_tile-1, discarded_tile-2)
                     elif j == 5 and chii3 : self.proc_chii(i_ap, discarded_tile, discarded_tile+1, discarded_tile+2)
                     elif j == 2 and kan   : self.proc_daiminkan(i_ap, discarded_tile)
-
 
 
     # 局の処理
@@ -923,13 +921,13 @@ class Game :
         # 和了の処理
         if self.win_flag : self.proc_win()
         else :
-            for i in range(4) : self.players[i].check_hand_is_ready()
+            for i in range(4) : self.players[i].check_hand_is_ready(self.shanten_calculator)
             if self.is_abortive_draw : self.counters_num += 1
             # 流し満貫判定と処理
-            elif ( self.players[0].is_nagashi_mangan or \
-                   self.players[1].is_nagashi_mangan or \
-                   self.players[2].is_nagashi_mangan or \
-                   self.players[3].is_nagashi_mangan ) : self.proc_nagashi_mangan()
+            elif ( self.players[0].check_nagashi_mangan() or \
+                   self.players[1].check_nagashi_mangan() or \
+                   self.players[2].check_nagashi_mangan() or \
+                   self.players[3].check_nagashi_mangan() ) : self.proc_nagashi_mangan()
             # 和了，途中流局，流し満貫のどれでもなければ普通の流局処理
             else : self.proc_drawn_game()
 

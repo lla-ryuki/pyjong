@@ -62,7 +62,7 @@ cdef class Player :
 
     # 局の初期化
     cpdef void init_subgame(self, int rotations_num) :
-        self.reds = [False, False, False]                           # 自分の手の赤があるかどうか，マンピンソウの順, reds[1] is True ==> 手の中に赤5pがある
+        self.reds = [False] * 3                           # 自分の手の赤があるかどうか，マンピンソウの順, reds[1] is True ==> 手の中に赤5pがある
         self.opened_reds = [False] * 3                    # 自分が晒している手の中に赤があるかどうか
         self.hand = [0] * 38                              # 手牌
         self.opened_hand = [0] * 20
@@ -476,7 +476,7 @@ cdef class Player :
 
 
     # 手牌構成による役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    cdef bool has_yaku_based_on_tiles(self, prevailing_wind:int, ron:bool, ron_tile:int) :
+    cdef bool has_yaku_based_on_tiles(self, int prevailing_wind, bool ron, int ron_tile) :
         cdef int[38] hand
         cdef int i
 
