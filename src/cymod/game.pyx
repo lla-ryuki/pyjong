@@ -2,6 +2,7 @@
 import random
 
 # 3rd
+
 # ours
 from player import Player
 from shanten import ShantenNumCalculator
@@ -320,7 +321,7 @@ cdef class Game :
 
 
     # ロン和了の処理
-    cdef int proc_ron(self, int i_winner) :
+    cdef void proc_ron(self, int i_winner) :
         cdef int i, points
 
         # 基本点から得点を算出
@@ -339,7 +340,7 @@ cdef class Game :
 
 
     # ツモ和了の処理
-    cdef int proc_tsumo(self, int i_winner) :
+    cdef void proc_tsumo(self, int i_winner) :
         cdef int i, i_player, points, points_dealer_pays, points_child_pays
 
         if self.wins_by_pao:

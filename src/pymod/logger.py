@@ -1,17 +1,21 @@
-from typing import List
-import datetime
-import random
-import string
+# built-in
 import os
+import string
+import random
+import datetime
 
-from pymod.mytypes import TileType
+# 3rd
+
+# ours
+from mytypes import TileType, BlockType
 
 
 class Logger :
     def __init__(self, is_logging:bool) :
         self.is_logging = is_logging
 
-    def init_game(self) -> None :
+
+    def init_game(self) :
         now = datetime.datetime.now().strftime("%y-%m-%d_%H-%M-%S")
         id = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
         self.dir_path = f"../data/log/{now}_{id}"
@@ -73,8 +77,7 @@ class Logger :
         self.tiles_player_got[i_player].append(f"\"{text}\"")
 
 
-
-    def register_pon(self, i_player:int, tile:int, pos:int) -> None :
+    def register_pon(self, i_player:int, tile:int, pos:int) :
         s_tile = str(tile + 10)
         if tile in TileType.REDS :
             s_tile = str(tile + 15)
@@ -102,14 +105,14 @@ class Logger :
         self.tiles_player_got[i_player].append(f"\"c{s_tile}{s_tile1}{s_tile2}\"")
 
 
-    def register_got_tile(self, i_player:int, tile:int, is_starting_hand:bool = False) -> None :
+    def register_got_tile(self, i_player:int, tile:int, is_starting_hand:bool=False) -> None :
         if tile in TileType.REDS : s_tile = str(51 + (tile // 10))
         else : s_tile = str(10 + tile)
         if is_starting_hand : self.starting_hands[i_player] .append(s_tile)
         else : self.tiles_player_got[i_player].append(s_tile)
 
 
-    def register_discarded_tile(self, i_player:int, discarded_tile: int, ready: bool) -> None :
+    def register_discarded_tile(self, i_player:int, discarded_tile:int, ready:bool ) -> None:
         if discarded_tile in TileType.REDS : s_discarded_tile = str(51 + (discarded_tile // 10))
         else : s_discarded_tile = str(10 + discarded_tile)
         if ready : self.actions[i_player].append(f"\"r{s_discarded_tile}\"")
@@ -154,3 +157,4 @@ class Logger :
         self.actions = [[] for i in range(4)]
         self.starting_hands = [[] for i in range(4)]
         self.tiles_player_got = [[] for i in range(4)]
+
