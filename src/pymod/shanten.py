@@ -8,8 +8,6 @@ from typing import List
 # ours
 from mytypes import TileType
 
-# cython
-
 
 class ShantenNumCalculator :
 
