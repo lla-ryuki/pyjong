@@ -61,6 +61,14 @@ class Action :
         return tile
 
 
+    # 九種九牌を宣言するかどうか決める
+    def decide_to_declare_nine_orphans(self, game, players, player_num:int, hand:List[int]) -> bool :
+        if not(game.tag_name == "RYUUKYOKU" and game.attr["type"] == "yao9") : return False
+
+        game.read_next_tag()
+        return True
+
+
     # リーチするかどうか決める
     def decide_to_declare_ready(self, game, players, player_num) -> bool :
         if game.tag_name != "REACH" : return False
