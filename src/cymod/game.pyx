@@ -164,9 +164,10 @@ cdef class Game :
         self.rinshan_draw_flag = False                 # 次のツモが嶺上牌であることを示すflag．trueのままドローフェーズまで来ると嶺上牌をツモってfalseに戻る
 
         # 牌山をセット
-        self.set_rinshan_tiles()
         self.set_wall()
+        self.set_rinshan_tiles()
         self.set_doras()
+        self.open_new_dora()
 
 
     # 赤有りの牌山を生成
@@ -961,9 +962,6 @@ cdef class Game :
         cdef int i, j, op, tile, discarded_tile
         cdef bool ready
 
-        # 局を初期化
-        self.init_subgame()
-
         # 配牌を配る
         for i in range(4) :
             for j in range(13) :
@@ -1055,6 +1053,7 @@ cdef class Game :
             self.init_game()
             while True :
                 # 局
+                self.init_subgame()
                 self.play_subgame()
                 # 半荘終了判定
                 if self.is_over : break

@@ -12,6 +12,7 @@ from yakuman cimport *
 from libcpp cimport bool
 
 
+# TODO やっぱりこいつがactionインスタンスを持った方がいいと思うの...
 cdef class Player :
     cdef public int player_num
     cdef public int score
@@ -729,7 +730,6 @@ cdef class Player :
     cpdef tuple decide_to_kan(self, game, players) :
         cdef int tile
         cdef bool ankan, kakan
-
         tile, ankan, kakan = -1, False, False
 
         # 槓できるか判定
@@ -738,8 +738,7 @@ cdef class Player :
         if not(ankan_tiles or kakan_tiles) : return -1, False, False
 
         # プレイヤが槓の内容（どの牌で槓するか，しないか）を決める
-        # tile = game.action.decide_to_kan(game, players, self.player_num, ankan_tiles, kakan_tiles)
-        tile = -1
+        tile = game.action.decide_to_kan(game, players, self.player_num, ankan_tiles, kakan_tiles)
         if tile == -1 : pass
         elif tile in ankan_tiles : ankan = True
         elif tile in kakan_tiles : kakan = True
@@ -764,7 +763,7 @@ cdef class Player :
         if self.can_declare_ready(game) : ready = game.action.decide_to_declare_ready(game, players, self.player_num)
 
         # 九種九牌で流局するかどうか決める
-        if game.is_first_turn : kyusyu = game.action.decide_to_declare_nine_orphans(self.hand)
+        if game.is_first_turn : kyusyu = game.action.decide_to_declare_nine_orphans(game, players, self.player_num, self.hand)
         else : kyusyu = False
 
         # return tile, exchanged, ready, ankan, kakan, kyushu
