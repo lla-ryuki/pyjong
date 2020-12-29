@@ -28,3 +28,16 @@ class Action :
         game.read_next_tag()
         return discarded_tile, exchanged
 
+
+    # リーチするかどうか決める
+    def decide_to_declare_ready(self, game, players, player_num) -> bool :
+        if game.tag_name != "REACH" : return False
+
+        # エラーチェック
+        if player_num != int(game.attr["who"]) : game.error("Player index don't match (in decide_to_declare_ready())")
+
+        game.read_next_tag()
+        return True
+
+
+
