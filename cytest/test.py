@@ -12,5 +12,5 @@ from action import Action
 if __name__ == "__main__" :
     action = Action()
     game = TestGame(action)
-    game.test_games()
+    game.test()
 
