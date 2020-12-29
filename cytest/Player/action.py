@@ -80,6 +80,14 @@ class Action :
         return True
 
 
+    # 和了かどうかタグを見て判断
+    def decide_win(self, game, players, player_num:int) -> bool :
+        if game.tag_name != "AGARI" : return False
+
+        game.read_next_tag()
+        return True
+
+
     # Nタグについているmコードを解析してそれぞれの鳴きに対する処理をする
     def analyze_mc(self, player_num:int, mc:int) -> int :
         # チー
@@ -136,7 +144,5 @@ class Action :
                 if (self.pos == 0) : action = 7
                 elif (r == 0) : self.tile -= 5
             return action
-
-
 
 
