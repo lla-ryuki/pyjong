@@ -771,23 +771,28 @@ cdef class Player :
 
 
     # handを標準出力に表示
-    cpdef bool print_hand(self):
+    cpdef void print_hand(self):
         cdef str s_hand
         cdef int i, j
 
         s_hand = ""
         for i in range(1,38) :
-            if i == 10 : s_hand += "m"
-            elif i == 20 : s_hand += "p"
-            elif i == 30 : s_hand += "s"
-            for j in range(self.hand[i]) :
-                if i < 30 : s_hand += str(i%10)
-                elif i == 31 : s_hand += "東"
-                elif i == 32 : s_hand += "南"
-                elif i == 33 : s_hand += "西"
-                elif i == 34 : s_hand += "北"
-                elif i == 35 : s_hand += "白"
-                elif i == 36 : s_hand += "発"
-                else : s_hand += "中"
+            # blankの場合種類を示す文字を追加
+            if i % 10 == 0 :
+                if   i == 10 : s_hand += "m"
+                elif i == 20 : s_hand += "p"
+                elif i == 30 : s_hand += "s"
+                continue
+
+            # 持ってる枚数分，数字を追加
+            if   i < 30  : s_hand += str(i%10) * self.hand[i]
+            elif i == 31 : s_hand += "東" * self.hand[i]
+            elif i == 32 : s_hand += "南" * self.hand[i]
+            elif i == 33 : s_hand += "西" * self.hand[i]
+            elif i == 34 : s_hand += "北" * self.hand[i]
+            elif i == 35 : s_hand += "白" * self.hand[i]
+            elif i == 36 : s_hand += "発" * self.hand[i]
+            else         : s_hand += "中" * self.hand[i]
+
         print(s_hand)
 
