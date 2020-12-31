@@ -1,4 +1,5 @@
 # built-in
+import sys
 import random
 
 # 3rd
@@ -946,14 +947,17 @@ cdef class Game :
             player = self.players[i_ap]
             pon, kan, chii1, chii2, chii3 = player.can_steal(discarded_tile, i)
             if pon or kan or chii1 or chii2 or chii3 :
-                indexes = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i_ap)
-                for j in indexes :
+                si = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i_ap) # si : steal information
+                for j in si[:6] :
                     if   j == 0           : break
                     elif j == 1 and pon   : self.proc_pon(i_ap, discarded_tile)
-                    elif j == 4 and chii2 : self.proc_chii(i_ap, discarded_tile, discarded_tile-1, discarded_tile+1)
-                    elif j == 3 and chii1 : self.proc_chii(i_ap, discarded_tile, discarded_tile-1, discarded_tile-2)
-                    elif j == 5 and chii3 : self.proc_chii(i_ap, discarded_tile, discarded_tile+1, discarded_tile+2)
+                    elif j == 4 and chii2 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
+                    elif j == 3 and chii1 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
+                    elif j == 5 and chii3 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
                     elif j == 2 and kan   : self.proc_daiminkan(i_ap, discarded_tile)
+                    else :
+                        print("error in game.proc_steal_phase()")
+                        sys.exit()
 
 
 
