@@ -39,8 +39,17 @@ class Action :
 
 
     # 鳴くかどうか決める
-    def decide_to_steal(self, game, players, tile, pos, player_num) -> (int, int, int, int, int, int) :
-        pass
+    def decide_to_steal(self, game, players, tile, pos, player_num) -> (int, int, int, int, int, int, int, int) :
+        if game.tag_name != "N" or player_num != int(game.attr["who"]) : return 0, 0, 0, 0, 0, 0, -1, -1
+
+        # タグのmcからとるactionを判定
+        mc = int(game.attr["m"])
+        action_num = self.analyze_mc(mc)
+        tile1, tile2 = self.tile1, self.tile2
+
+        self.reset_N()
+        game.read_next_tag()
+        return action_num, 0, 0, 0, 0, 0, tile1, tile2
 
 
     # 槓するかどうか決める
