@@ -904,7 +904,7 @@ cdef class Game :
 
     # 配牌を配る
     cdef void deal_starting_hand(self) :
-        cdef int i, j
+        cdef int i, j, tile
         for i in range(4) :
             for j in range(13) :
                 tile = self.supply_next_tile()

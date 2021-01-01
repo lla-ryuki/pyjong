@@ -100,5 +100,6 @@ cdef class Game :
     cdef void proc_ron_phase(self, int discarded_tile)
     cdef void check_game_is_abortive_draw(self, int discarded_tile)
     cpdef void proc_steal_phase(self, int discarded_tile)
+    cdef void deal_starting_hand(self)
     cdef void play_subgame(self)
     cpdef void play_games(self, int games_num)
