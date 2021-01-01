@@ -27,7 +27,7 @@ cdef class TestGame(Game) :
 
     def __init__(self, action) :
         super(TestGame, self).__init__(action)
-        self.error = False
+        self.is_error = False
 
     # 半荘開始時の初期化
     @override
@@ -125,13 +125,13 @@ cdef class TestGame(Game) :
         if (self.rounds_num != int(seed[0]) // 4) or \
            (self.rotations_num != int(seed[0]) % 4) or \
            (self.counters_num != int(seed[1])) or \
-           (self.deposits_num != int(seed[2])) and not(self.error) : self.error("subgame info")
+           (self.deposits_num != int(seed[2])) and not(self.is_error) : self.error("subgame info")
 
         # プレイヤの点数に食い違いがあったらエラーとして報告
         ten = self.attr["ten"].split(",")
         error = False
         for i in range(4) :
-            if (self.players[i].score != int(ten[i]) * 100) and (not(self.error)) : error("score")
+            if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : error("score")
 
         # 配牌を配る
         for i in range(4) :
@@ -196,7 +196,7 @@ cdef class TestGame(Game) :
 
     # ログと食い違いが起こった時の処理
     cpdef void error(self, info) :
-        self.error = True
+        self.is_error = True
         print("==============================")
         print(info)
         print(f"file_name : {self.file_name} \n round:{self.rounds_num} \n rotation:{self.rotations_num} \n counter:{self.counters_num} \n ")
@@ -205,13 +205,11 @@ cdef class TestGame(Game) :
     # 半荘の処理
     cpdef void play_test_game(self) :
         cdef int i
-        for i in range(games_num) :
-            self.init_game()
-            while True :
-                # 局
-                self.play_subgame()
-                # 半荘終了判定
-                if self.is_over : break
+        while True :
+            # 局
+            self.play_subgame()
+            # 半荘終了判定
+            if self.is_over : break
 
 
     # テスト用メソッド

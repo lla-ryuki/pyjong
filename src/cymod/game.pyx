@@ -17,69 +17,10 @@ from libcpp cimport bool
 
 
 cdef class Game :
-    cdef public players
-    cdef public action
-    cdef public logger
-    cdef public shanten_calculator
-
-    cdef public int rounds_num
-    cdef public int rotations_num
-    cdef public int counters_num
-    cdef public int deposits_num
-    cdef public bool is_over
-
-    cdef public int prevailing_wind
-    cdef public bool is_abortive_draw
-    cdef public bool is_first_turn
-    cdef public int[4] pao_info
-    cdef public int[5] doras
-    cdef public int[5] dora_indicators
-    cdef public int[5] uras
-    cdef public int[5] ura_indicators
-    cdef public list dora_has_opened
-    cdef public int[4] rinshan_tiles
-    cdef public int[38] appearing_tiles
-    cdef public list appearing_red_tiles
-    cdef public int[136] wall
-    cdef public int remain_tiles_num
-
-    cdef public int i_player
-    cdef public int i_wall
-    cdef public int i_rinshan
-    cdef public int i_first_turn
-
-    cdef public int winning_tile
-    cdef public int basic_points
-    cdef public bool dealer_wins
-    cdef public bool wins_by_ron
-    cdef public bool wins_by_tenhou
-    cdef public bool wins_by_chiihou
-    cdef public bool wins_by_last_tile
-    cdef public bool wins_by_chankan
-    cdef public bool wins_by_rinshan_kaihou
-    cdef public bool wins_by_pao
-    cdef public int liability_player
-
-    cdef public int players_wind
-    cdef public int[10] temp
-    cdef public int fu
-    cdef public int han
-    cdef public int i_temp
-    cdef public int fu_temp
-    cdef public int han_temp
-    cdef public int yakuman
-
-    cdef public bool win_flag
-    cdef public bool ready_flag
-    cdef public bool steal_flag
-    cdef public bool dora_opens_flag
-    cdef public bool rinshan_draw_flag
-
-
-    def __init__(self, action) :
+    def __init__(self, action, is_logging=True) :
         self.players = [Player(i) for i in range(4)]
         self.action = action
-        self.logger = Logger(is_logging=True);
+        self.logger = Logger(is_logging=False);
         self.shanten_calculator = ShantenNumCalculator()
 
 
@@ -491,13 +432,14 @@ cdef class Game :
     cdef void check_player_wins_by_last_tile(self) :
         if self.is_last_tile() : self.wins_by_last_tile = True
 
+
     # 記録はせずに海底・河底かだけ返す
     cpdef bool is_last_tile(self) :
         if 136 - (self.i_wall + self.i_rinshan) == 14 : return True
 
 
     # 和了牌をセット
-    cdef void set_winning_tile(self, int tile):
+    cdef void set_winning_tile(self, int tile) :
         if tile in TileType.REDS : self.winning_tile = tile + 5
         else : self.winning_tile = tile
 
@@ -962,7 +904,7 @@ cdef class Game :
 
 
     # 局の処理
-    cdef play_subgame(self) :
+    cdef void play_subgame(self) :
         cdef int i, j, op, tile, discarded_tile
         cdef bool ready
 
