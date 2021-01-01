@@ -7,7 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../src/cymod'))
 
 # ours
 from test_game import TestGame
-from action import Action
+from Player.action import Action
 
 if __name__ == "__main__" :
     action = Action()
