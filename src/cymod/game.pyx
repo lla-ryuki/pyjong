@@ -902,6 +902,15 @@ cdef class Game :
                         sys.exit()
 
 
+    # 配牌を配る
+    cdef void deal_starting_hand(self) :
+        cdef int i, j
+        for i in range(4) :
+            for j in range(13) :
+                tile = self.supply_next_tile()
+                self.players[i].get_tile(tile)
+                self.logger.register_got_tile(i, tile, True)
+
 
     # 局の処理
     cdef void play_subgame(self) :
@@ -909,12 +918,7 @@ cdef class Game :
         cdef bool ready
 
         # 配牌を配る
-        for i in range(4) :
-            for j in range(13) :
-                tile = self.supply_next_tile()
-                self.players[i].get_tile(tile)
-                self.logger.register_got_tile(i, tile, True)
-
+        self.deal_starting_hand()
 
         # ツモループ {
         while True :
