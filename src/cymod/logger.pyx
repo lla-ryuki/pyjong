@@ -132,6 +132,7 @@ cdef class Logger :
 
 
     cpdef void save(self, game) :
+        if self.is_logging is False : return
         cdef int i
         cdef list temp, scores, dora_indicators, ura_indicators
 
