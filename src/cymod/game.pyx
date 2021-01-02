@@ -186,6 +186,7 @@ cdef class Game :
         cdef int tile
         tile = self.rinshan_tiles[self.i_rinshan]
         self.i_rinshan += 1
+        self.remain_tiles_num -= 1
         return tile
 
 
@@ -925,6 +926,7 @@ cdef class Game :
             # 同順フリテン解消
             self.players[self.i_player].reset_same_turn_furiten()
 
+            print("tsumo phase")
             # ツモフェーズ
             self.proc_draw_phase(self.players[self.i_player])
             # ツモ和了ならループから抜ける
@@ -933,6 +935,7 @@ cdef class Game :
             self.players[self.i_player].has_right_to_one_shot = False
 
             # アクションフェーズ
+            print("action phase")
             ready = self.proc_action_phase()
 
             # 槍槓ロンならループから抜ける
@@ -943,6 +946,8 @@ cdef class Game :
             if self.is_abortive_draw : break
 
             # 打牌フェーズ
+            print("discard phase")
+            print(self.i_player)
             discarded_tile = self.proc_discard_phase(self.players[self.i_player], ready)
 
             # 大明槓，加槓した場合牌を切った後にドラをめくる
@@ -951,6 +956,7 @@ cdef class Game :
                 self.dora_opens_flag = False
 
             # ロンフェーズ
+            print("ron phase")
             self.proc_ron_phase(discarded_tile)
             # ロン和了ならループから抜ける
             if self.win_flag : break
@@ -966,6 +972,7 @@ cdef class Game :
                 else : self.players[op].add_same_turn_furiten_tile(discarded_tile)
 
             # 副露フェーズ
+            print("steal phase")
             self.proc_steal_phase(discarded_tile)
 
             # プレイヤインデックスを加算
