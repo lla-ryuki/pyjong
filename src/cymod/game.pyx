@@ -6,6 +6,7 @@ import random
 
 # ours
 from player import Player
+from test_player import TestPlayer
 from shanten import ShantenNumCalculator
 from logger import Logger
 from mytypes import TileType, BlockType
@@ -17,10 +18,13 @@ from libcpp cimport bool
 
 
 cdef class Game :
-    def __init__(self, action, is_logging=True) :
-        self.players = [Player(i) for i in range(4)]
+    def __init__(self, action, logging=True, testing=False) :
+        if testing :
+            self.players = [Player(i) for i in range(4)]
+        else :
+            self.players = [TestPlayer(i) for i in range(4)]
         self.action = action
-        self.logger = Logger(is_logging=False);
+        self.logger = Logger(logging=False);
         self.shanten_calculator = ShantenNumCalculator()
 
 
@@ -947,7 +951,6 @@ cdef class Game :
 
             # 打牌フェーズ
             print("discard phase")
-            print(self.i_player)
             discarded_tile = self.proc_discard_phase(self.players[self.i_player], ready)
 
             # 大明槓，加槓した場合牌を切った後にドラをめくる
