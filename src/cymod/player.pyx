@@ -17,13 +17,16 @@ cdef class Player :
     cdef public int player_num
     cdef public int score
 
-    cdef public list reds
-    cdef public list opened_reds
+    cdef public bool[3] reds
+    cdef public bool[3] opened_reds
     cdef public int[38] hand
     cdef public int[20] opened_hand
-    cdef public list discarded_tiles
-    cdef public list discarded_state
-    cdef public list same_turn_furiten_tiles
+    cdef public int[30] discarded_tiles
+    cdef public int i_dt
+    cdef public int[30] discarded_state
+    cdef public int i_ds
+    cdef public int[30] same_turn_furiten_tiles
+    cdef public int i_stft
     cdef public int[38] discarded_tiles_hist
     cdef public int[38] furiten_tiles
     cdef public bool has_stealed
@@ -33,6 +36,7 @@ cdef class Player :
     cdef public bool is_ready
     cdef public bool is_nagashi_mangan
     cdef public bool wins
+
     cdef public int opened_sets_num
     cdef public int kans_num
     cdef public int players_wind
@@ -77,9 +81,12 @@ cdef class Player :
                 [4*5*n]  副露した直後に切った牌
             ]
         """
-        self.discarded_tiles = []                         # 河
-        self.discarded_state = []                         # D:ツモ切り，d:手出し , i:"D" ==> discarded_tiles[i]はツモ切られた牌
-        self.same_turn_furiten_tiles = []                 # 同巡に切られた牌
+        self.discarded_tiles = [-1] * 30                  # 河
+        self.discarded_state = [-1] * 30                  # D:ツモ切り，d:手出し , discarded_state[i]:1 ==> discarded_tiles[i]は手出しされた牌
+        self.same_turn_furiten_tiles = [-1] * 30          # 同巡に切られた牌
+        self.i_dt = 0                                     # index of discarded_tiles
+        self.i_ds = 0                                     # index of discarded_state
+        self.i_stft 0                                     # index of same_turn_furiten_tiles
         self.discarded_tiles_hist = [0] * 38              # 切られた枚数だけ記録する河
         self.furiten_tiles = [0] * 38                     # フリテン牌 furiten_tiles[i] > 0 ==> i番の牌は既に自分で切っているか同巡に切られた牌
         self.has_stealed = False                          # 1度でもポン, ダイミンカン, チーしていればTrueになる
@@ -267,8 +274,10 @@ cdef class Player :
         self.last_discarded_tile = discarded_tile
 
         # 河への記録
-        self.discarded_state += [exchanged]
-        self.discarded_tiles += [discarded_tile]
+        self.discarded_state[self.i_ds] = int(exchanged)
+        self.discarded_tiles[self.i_dt] = discarded_tile
+        self.i_ds += 1
+        self.i_dt += 1
 
         # 赤牌を番号に変換
         if discarded_tile in TileType.REDS :
@@ -323,7 +332,7 @@ cdef class Player :
         if self.is_nagashi_mangan is False : return False
 
         for tile in self.discarded_tiles :
-            if not(tile in (TileType.TERMINALS | TileType.HONORS)) :
+            if not(tile in (TileType.TERMINALS | TileType.HONORS | {-1})) :
                 self.is_nagashi_mangan = False
                 return False
 
@@ -331,20 +340,25 @@ cdef class Player :
 
 
     # フリテン牌を追加
-    cpdef void add_furiten_tile(self, int tile) : self.furiten_tiles[tile] += 1
+    cpdef void add_furiten_tile(self, int tile) :
+        if tile in TileType.REDS : tile += 5
+        self.furiten_tiles[tile] += 1
 
 
     # 同巡フリテン牌を追加
     cpdef void add_same_turn_furiten_tile(self, int tile) :
-        self.same_turn_furiten_tiles += [tile]
+        if tile in TileType.REDS : tile += 5
+        self.same_turn_furiten_tiles[self.i_stft] = tile
+        self.i_stft += 1
         self.furiten_tiles[tile] += 1
 
 
     # 同巡フリテンを解消
     cpdef void reset_same_turn_furiten(self) :
         cdef int tile
-        for tile in self.same_turn_furiten_tiles : self.furiten_tiles[tile] -= 1
-        self.same_turn_furiten_tiles = []
+        for tile in self.same_turn_furiten_tiles[:self.i_stft] : self.furiten_tiles[tile] -= 1
+        self.same_turn_furiten_tiles = [-1] * 30
+        self.i_stft = 0
 
 
     # 鳴いて晒した牌を全部戻した手をreturnする
