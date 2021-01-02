@@ -14,49 +14,6 @@ from libcpp cimport bool
 
 # TODO やっぱりこいつがactionインスタンスを持った方がいいと思うの...
 cdef class Player :
-    cdef public int player_num
-    cdef public int score
-
-    cdef public bool[3] reds
-    cdef public bool[3] opened_reds
-    cdef public int[38] hand
-    cdef public int[20] opened_hand
-    cdef public int[30] discarded_tiles
-    cdef public int i_dt
-    cdef public int[30] discarded_state
-    cdef public int i_ds
-    cdef public int[30] same_turn_furiten_tiles
-    cdef public int i_stft
-    cdef public int[38] discarded_tiles_hist
-    cdef public int[38] furiten_tiles
-    cdef public bool has_stealed
-    cdef public bool has_declared_ready
-    cdef public bool has_declared_double_ready
-    cdef public bool has_right_to_one_shot
-    cdef public bool is_ready
-    cdef public bool is_nagashi_mangan
-    cdef public bool wins
-
-    cdef public int opened_sets_num
-    cdef public int kans_num
-    cdef public int players_wind
-    cdef public int last_got_tile
-    cdef public int last_discarded_tile
-
-    cdef public int shanten_num_of_kokushi
-    cdef public int shanten_num_of_chiitoi
-    cdef public int shanten_num_of_normal
-    cdef public int shanten_num_of_temp
-    cdef public int sets_num
-    cdef public int pairs_num
-    cdef public int tahtsu_num
-    cdef public int[10] hand_composition
-    cdef public int i_hc
-    cdef public int dragons_num
-    cdef public int winds_num
-    cdef public int[38] pb_hand
-
-
     def __init__(self, player_num) :
         self.player_num = player_num                      # プレイヤ番号 スタート時の席と番号の関係(0:起家, 1:南家, 2:西家, 3:北家)
 
@@ -86,7 +43,7 @@ cdef class Player :
         self.same_turn_furiten_tiles = [-1] * 30          # 同巡に切られた牌
         self.i_dt = 0                                     # index of discarded_tiles
         self.i_ds = 0                                     # index of discarded_state
-        self.i_stft 0                                     # index of same_turn_furiten_tiles
+        self.i_stft = 0                                   # index of same_turn_furiten_tiles
         self.discarded_tiles_hist = [0] * 38              # 切られた枚数だけ記録する河
         self.furiten_tiles = [0] * 38                     # フリテン牌 furiten_tiles[i] > 0 ==> i番の牌は既に自分で切っているか同巡に切られた牌
         self.has_stealed = False                          # 1度でもポン, ダイミンカン, チーしていればTrueになる
@@ -269,8 +226,10 @@ cdef class Player :
         cdef bool exchanged
 
         # 切る牌を決める
-        if self.has_declared_ready and not(self.has_right_to_one_shot) : discarded_tile, exchanged = self.last_got_tile, False
-        else : discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
+        if self.has_declared_ready and not(self.has_right_to_one_shot) :
+            discarded_tile, exchanged = self.discard_tile_when_player_has_declared_ready(game, players, self.player_num)
+        else :
+            discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
         self.last_discarded_tile = discarded_tile
 
         # 河への記録
@@ -292,6 +251,11 @@ cdef class Player :
         self.discarded_tiles_hist[discarded_tile] += 1
 
         return self.last_discarded_tile
+
+
+    # リーチ時のツモ切る牌と手出し状態を返す
+    cpdef tuple discard_tile_when_player_has_declared_ready(self, game, players, int player_num) :
+        return self.last_got_tile, False
 
 
     # 聴牌かどうかを判定
@@ -417,6 +381,8 @@ cdef class Player :
 
         if self.has_stealed or self.has_declared_ready or game.remain_tiles_num < 4 : return False
         shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, 0)
+        self.print_hand()
+        print(shanten_nums)
         for s in shanten_nums :
             if s <= 0 : return True
 
@@ -446,7 +412,7 @@ cdef class Player :
 
 
     # フリテンかどうか
-    cdef is_furiten(self, bool is_chiitoi, bool is_kokushi, bool is_normal, int ron_tile) :
+    cdef bool is_furiten(self, bool is_chiitoi, bool is_kokushi, bool is_normal, int ron_tile) :
         cdef int[38] hand, effective_tiles
 
         if ron_tile in TileType.REDS : ron_tile += 5
@@ -579,7 +545,7 @@ cdef class Player :
 
 
     # 暗槓の処理
-    cpdef proc_ankan(self, int tile) :
+    cpdef void proc_ankan(self, int tile) :
         self.opened_hand[self.opened_sets_num * 5] = BlockType.CLOSED_KAN
         self.opened_hand[self.opened_sets_num * 5 + 1] = tile
         self.opened_hand[self.opened_sets_num * 5 + 2] = tile
@@ -785,7 +751,7 @@ cdef class Player :
 
 
     # handを標準出力に表示
-    cpdef void print_hand(self):
+    cpdef void print_hand(self) :
         cdef str s_hand
         cdef int i, j
 
