@@ -69,7 +69,7 @@ cdef class Game :
         self.appearing_tiles = [0] * 38                # プレイヤ全員に見えている牌， appearing_tiles[i] が j → i番の牌がj枚見えている
         self.appearing_red_tiles = [False] * 3         # プレイヤ全員に見えている赤牌． 萬子，筒子，索子の順．
         self.wall = [0] * 136                          # 山
-        self.remain_tiles_num = 136                    # 山の残り枚数
+        self.remain_tiles_num = 122                    # ツモ牌の残り枚数，122: 136-14(王牌の数)
 
         # インデックス
         self.i_player = self.rotations_num             # 次のループで行動するプレイヤの番号
@@ -978,11 +978,11 @@ cdef class Game :
             # プレイヤインデックスを加算
             self.increment_i_player()
 
-            # 1巡目かどうかの状態を更新
-            if self.is_first_turn and self.remain_tiles_num < 81 : self.is_first_turn = False
+            # 1巡目かどうかの状態を更新 66: 136 - 52（配牌）- 14（王牌） - 4（1巡目になくなる枚数）
+            if self.is_first_turn and self.remain_tiles_num <= 66 : self.is_first_turn = False
 
             # 通常流局判定
-            if 136 - (self.i_wall + self.i_rinshan) == 14 : break
+            if self.remain_tiles_num == 0 : break
 
         # } ツモループ
 
