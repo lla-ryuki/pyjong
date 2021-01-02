@@ -16,13 +16,13 @@ from libcpp cimport bool
 cdef class Logger :
     cdef public dir_path
     cdef public save_path
-    cdef public bool is_logging
+    cdef public bool logging
     cdef public list actions
     cdef public list starting_hands
     cdef public list tiles_player_got
 
-    def __init__(self, bool is_logging) :
-        self.is_logging = is_logging
+    def __init__(self, bool logging) :
+        self.logging = logging
 
 
     cpdef init_game(self) :
