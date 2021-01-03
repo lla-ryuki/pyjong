@@ -106,9 +106,8 @@ class Action :
 
     # リーチするかどうか決める
     def decide_to_declare_ready(self, game, players, player_num) -> bool :
+        # タグチェック
         if game.tag_name != "REACH" : return False
-
-        # エラーチェック
         if player_num != int(game.attr["who"]) : game.error("Player index don't match (in Action.decide_to_declare_ready())")
 
         action = colored(f"declare ready", "blue")
@@ -120,7 +119,8 @@ class Action :
 
     # 和了かどうかタグを見て判断
     def decide_win(self, game, players, player_num:int) -> bool :
-        if game.tag_name != "AGARI" and player_num != int(game.attr["who"]) : return False
+        # タグチェック
+        if game.tag_name != "AGARI" or player_num != int(game.attr["who"]) : return False
 
         # 裏ドラをセット
         uras_s = game.attr.get("doraHaiUra")
@@ -149,7 +149,7 @@ class Action :
             if   r == 0 : self.tile, self.tile1, self.tile2 = run[0], run[1], run[2]
             elif r == 1 : self.tile, self.tile1, self.tile2 = run[1], run[0], run[2]
             elif r == 2 : self.tile, self.tile1, self.tile2 = run[2], run[0], run[1]
-            return 3 + r
+            return 5 - r
 
         # ポン
         elif(mc & 0x0008) :
