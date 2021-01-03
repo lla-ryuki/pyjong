@@ -103,3 +103,4 @@ cdef class Game :
     cdef void deal_starting_hand(self)
     cdef void play_subgame(self)
     cpdef void play_games(self, int games_num)
+    cpdef void print_scores(self, info)
