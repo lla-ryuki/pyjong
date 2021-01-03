@@ -3,6 +3,7 @@ import sys
 import random
 
 # 3rd
+from termcolor import colored
 
 # ours
 from player import Player
@@ -320,6 +321,7 @@ cdef class Game :
     # 和了時の処理
     cdef void proc_win(self) :
         cdef int i, i_winner
+        self.print_scores("proc_win() before")
         # ツモった人，最後に牌を切った人から順に和了を見ていく．※ 複数人の和了の可能性があるので全員順番にチェックする必要がある．
         for i in range(4) :
             i_winner = (self.i_player + i) % 4
@@ -332,6 +334,7 @@ cdef class Game :
                 self.players[i_winner].score_points(1000 * self.deposits_num)
                 self.counters_num, self.deposits_num = 0, 0
                 if i == 0 : break
+        self.print_scores("proc_win() after")
         # ゲーム終了判定
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].wins)
         # 局の数等の変数操作
@@ -932,7 +935,6 @@ cdef class Game :
             # 同順フリテン解消
             self.players[self.i_player].reset_same_turn_furiten()
 
-            print("tsumo phase")
             # ツモフェーズ
             self.proc_draw_phase(self.players[self.i_player])
             # ツモ和了ならループから抜ける
@@ -941,7 +943,6 @@ cdef class Game :
             self.players[self.i_player].has_right_to_one_shot = False
 
             # アクションフェーズ
-            print("action phase")
             ready = self.proc_action_phase()
 
             # 槍槓ロンならループから抜ける
@@ -952,7 +953,6 @@ cdef class Game :
             if self.is_abortive_draw : break
 
             # 打牌フェーズ
-            print("discard phase")
             discarded_tile = self.proc_discard_phase(self.players[self.i_player], ready)
 
             # 大明槓，加槓した場合牌を切った後にドラをめくる
@@ -961,7 +961,6 @@ cdef class Game :
                 self.dora_opens_flag = False
 
             # ロンフェーズ
-            print("ron phase")
             self.proc_ron_phase(discarded_tile)
             # ロン和了ならループから抜ける
             if self.win_flag : break
@@ -977,7 +976,6 @@ cdef class Game :
                 else : self.players[op].add_same_turn_furiten_tile(discarded_tile)
 
             # 副露フェーズ
-            print("steal phase")
             self.proc_steal_phase(discarded_tile)
 
             # プレイヤインデックスを加算
@@ -1023,3 +1021,7 @@ cdef class Game :
         # 向聴テーブルをdump
         self.shanten_calculator.dump_table()
 
+
+    # テストoverride用
+    cpdef void print_scores(self, info) :
+        pass
