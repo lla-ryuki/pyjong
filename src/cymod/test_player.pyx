@@ -20,7 +20,7 @@ cdef class TestPlayer(Player) :
         print(f"player{player_num} {dis} {discarded_tile}")
         exchanged = False
         if tile != game.org_got_tile : exchanged = True
-        if discarded_tile != players[player_num].last_got_tile or exchanged : game.error("Discarded tile isn't match (in discard_tile_when_player_has_declared_ready())")
+        if discarded_tile != players[player_num].last_got_tile or exchanged : game.error("Discarded tile isn't match (in TestPlayer.discard_tile_when_player_has_declared_ready())")
 
         game.read_next_tag()
         return discarded_tile, exchanged

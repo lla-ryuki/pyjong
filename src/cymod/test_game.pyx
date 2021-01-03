@@ -116,7 +116,7 @@ cdef class TestGame(Game) :
         if (self.rounds_num != int(seed[0]) // 4) or \
            (self.rotations_num != int(seed[0]) % 4) or \
            (self.counters_num != int(seed[1])) or \
-           (self.deposits_num != int(seed[2])) and not(self.is_error) : self.error("subgame info")
+           (self.deposits_num != int(seed[2])) and not(self.is_error) : self.error("subgame info (in TestGame.init_subgame())")
 
         # プレイヤの点数に食い違いがあったらエラーとして報告
         ten = self.attr["ten"].split(",")
@@ -125,7 +125,7 @@ cdef class TestGame(Game) :
             print(f"players[{i}].score: {self.players[i].score}")
             print(f"ten[{i}]          : {int(ten[i]) * 100}")
         for i in range(4) :
-            if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score is different")
+            if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.init_subgame())")
 
         # 配牌を配る
         for i in range(4) :
@@ -142,7 +142,7 @@ cdef class TestGame(Game) :
     # 次のツモ牌を返す
     cdef int supply_next_tile(self) :
         cdef int tile
-        if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in game.supply_next_tile())")
+        if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in TestGame.supply_next_tile())")
         org_tile = int(self.tag_name[1:])
         tile = self.convert_tile(org_tile)
         get = colored("get", "green")
@@ -157,7 +157,7 @@ cdef class TestGame(Game) :
     # 次の嶺上牌を返す
     cdef int supply_next_rinshan_tile(self) :
         cdef int tile
-        if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in game.supply_next_rinshan_tile())")
+        if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in TestGame.supply_next_rinshan_tile())")
         org_tile = int(self.tag_name[1:])
         tile = self.convert_tile(org_tile)
         get = colored("get", "green")
