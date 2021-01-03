@@ -124,12 +124,12 @@ cdef class TestGame(Game) :
         # プレイヤの点数に食い違いがあったらエラーとして報告
         ten = self.attr["ten"].split(",")
         error = False
-        print("="*30)
+        print("="*40)
         for i in range(4) :
             print(f"players[{i}].score: {self.players[i].score}")
             print(f"ten[{i}]          : {int(ten[i]) * 100}")
             if i != 3 : print("")
-        print("="*30)
+        print("="*40)
         for i in range(4) :
             if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.init_subgame())")
 
@@ -275,23 +275,24 @@ cdef class TestGame(Game) :
     # プレイヤ全員のscoreを表示
     cpdef void print_scores(self, info) :
         print(colored(info, "yellow", attrs=["bold"]))
-        print("="*30)
+        print("="*40)
         for i in range(4) : print(f"players[{i}].score: {self.players[i].score}")
-        print("="*30)
+        print("="*40)
 
 
     # 和了った時の飜数と符を表示
-    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu) :
+    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) :
         print(colored("win info", "yellow", attrs=["bold"]))
-        print("="*30)
-        print(f"winner : {i_winner}")
-        if i_winner != i_player : print(f"loser  : {i_player}")
-        print(f"han    : {han}")
-        print(f"fu     : {fu}")
-        print(f"dora   : {self.doras}")
-        print(f"ura    : {self.uras}")
+        print("="*40)
+        print(f"winner   : {i_winner}")
+        if i_winner != i_player : print(f"loser    : {i_player}")
+        print(f"han      : {han}")
+        print(f"fu       : {fu}")
+        print(f"base_pts : {basic_points}")
+        print(f"dora     : {self.doras}")
+        print(f"ura      : {self.uras}")
         self.players[i_winner].print_hand()
-        print("="*30)
+        print("="*40)
 
 
     # UN，REACH(step2)タグ以外の次のタグを読んで，tag_name，attrをメンバ変数にセット

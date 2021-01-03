@@ -201,8 +201,7 @@ cdef class Game :
 
     # ポンが行われた時の処理
     cdef void proc_pon(self, int i_ap, int tile) :
-        cdef int i, pos
-        cdef bool pao
+        cdef int i, pos, pao
 
         pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
         pao = self.players[i_ap].proc_pon(tile, pos)
@@ -275,17 +274,18 @@ cdef class Game :
 
     # ロン和了の処理
     cdef void proc_ron(self, int i_winner) :
-        cdef int i, points
+        cdef int points
+        points = 0
 
         # 基本点から得点を算出
         if self.dealer_wins : points = self.basic_points * 6
         else : points = self.basic_points * 4
 
         # 点数移動
-        if self.wins_by_pao:
+        if self.wins_by_pao :
             self.players[self.i_player].score_points(-1 * (points // 2))
             self.players[self.liability_player].score_points(-1 * ((points // 2) + (300 * self.counters_num)))
-            self.players[self.i_player].score_points(points)
+            self.players[i_winner].score_points(points)
         else :
             if points % 100 != 0 : points += int(100 - (points % 100)) # 100の位で切り上げ
             self.players[self.i_player].score_points(-1 * (points + (300 * self.counters_num)))
@@ -296,7 +296,7 @@ cdef class Game :
     cdef void proc_tsumo(self, int i_winner) :
         cdef int i, i_player, points, points_dealer_pays, points_child_pays
 
-        if self.wins_by_pao:
+        if self.wins_by_pao :
             if not(self.dealer_wins) : points = self.basic_points * 4
             else : points = self.basic_points * 6
             self.players[self.liability_player].score_points(-1 * (points + (300 * self.counters_num)))
@@ -325,20 +325,27 @@ cdef class Game :
     # 和了時の処理
     cdef void proc_win(self) :
         cdef int i, i_winner
-        self.print_scores("proc_win() before")
+        self.print_scores("scores at proc_win() before")
         # ツモった人，最後に牌を切った人から順に和了を見ていく．※ 複数人の和了の可能性があるので全員順番にチェックする必要がある．
         for i in range(4) :
             i_winner = (self.i_player + i) % 4
             if self.players[i_winner].wins :
+                #self.print_scores("1")
                 self.preproc_calculating_basic_points(i_winner)
+                #self.print_scores("2")
                 self.basic_points = self.calculate_basic_points(self.players[i_winner])
+                #self.print_scores("3")
                 if self.wins_by_ron : self.proc_ron(i_winner)
                 else : self.proc_tsumo(i_winner)
+                #self.print_scores("4")
                 self.players[i_winner].score_points(300 * self.counters_num)
+                #self.print_scores("5")
                 self.players[i_winner].score_points(1000 * self.deposits_num)
+                #self.print_scores("6")
                 self.counters_num, self.deposits_num = 0, 0
                 if i == 0 : break
-                self.print_win_info(i_winner, self.i_player, self.han, self.fu)
+                self.print_win_info(i_winner, self.i_player, self.han, self.fu, self.basic_points)
+        #self.print_scores("scores at proc_win() after")
         # ゲーム終了判定
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].wins)
         # 局の数等の変数操作
@@ -1052,5 +1059,5 @@ cdef class Game :
     cpdef void print_scores(self, info) :
         pass
 
-    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu) :
+    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) :
         pass

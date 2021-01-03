@@ -104,4 +104,4 @@ cdef class Game :
     cdef void play_subgame(self)
     cpdef void play_games(self, int games_num)
     cpdef void print_scores(self, info)
-    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu)
+    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points)

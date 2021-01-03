@@ -614,7 +614,7 @@ cdef class Player :
         if tile in TileType.DRAGONS :
             self.dragons_num += 1
             if self.dragons_num == 3 : return 0 # 大三元のパオであれば0を返す
-        elif tile in TileType.HONORS :
+        elif tile in TileType.WINDS :
             self.winds_num += 1
             if self.winds_num == 4 : return 1 # 大喜四のパオであれば1を返す
 
