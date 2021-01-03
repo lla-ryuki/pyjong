@@ -42,6 +42,7 @@ cdef class Game :
 
 
     # 局開始時の初期化
+    # CAUTION テスト管轄外
     cdef bool init_subgame(self) :
         cdef int i
 
@@ -137,6 +138,7 @@ cdef class Game :
 
 
     # 新しいドラを開く
+    # CAUTION テスト管轄外
     cdef void open_new_dora(self) :
         cdef int i
         for i in range(5) :
@@ -179,6 +181,7 @@ cdef class Game :
 
 
     # 次のツモ牌を返す
+    # CAUTION テスト管轄外
     cdef int supply_next_tile(self) :
         tile = self.wall[self.i_wall]
         self.i_wall += 1
@@ -187,6 +190,7 @@ cdef class Game :
 
 
     # 次の嶺上牌を返す
+    # CAUTION テスト管轄外
     cdef int supply_next_rinshan_tile(self) :
         cdef int tile
         tile = self.rinshan_tiles[self.i_rinshan]
@@ -913,6 +917,7 @@ cdef class Game :
 
 
     # 配牌を配る
+    # CAUTION テスト管轄外
     cdef void deal_starting_hand(self) :
         cdef int i, j, tile
         for i in range(4) :
