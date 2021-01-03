@@ -14,11 +14,14 @@ cdef class TestPlayer(Player) :
         if i_player != player_num : game.error("Player index don't match (in decide_which_tile_to_discard())")
 
         tile = int(game.tag_name[1:])
-        print(f"player{player_num} diacard {tile}")
         discarded_tile = game.convert_tile(tile)
+        print(f"player{player_num} diacard {discarded_tile}")
         exchanged = False
+        print("org_got_tile", game.org_got_tile)
+        print("player.last_got_tile", players[player_num].last_got_tile)
+        print("exchanged", exchanged)
         if tile != game.org_got_tile : exchanged = True
-        if tile != players[player_num].last_got_tile or exchanged : game.error("Discarded tile isn't match (in discard_tile_when_player_has_declared_ready())")
+        if discarded_tile != players[player_num].last_got_tile or exchanged : game.error("Discarded tile isn't match (in discard_tile_when_player_has_declared_ready())")
 
         game.read_next_tag()
         return discarded_tile, exchanged

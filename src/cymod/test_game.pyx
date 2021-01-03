@@ -5,6 +5,7 @@ import random
 import xml.etree.ElementTree as et
 
 # 3rd
+from termcolor import colored
 
 # ours
 from game cimport Game
@@ -21,6 +22,7 @@ from libcpp cimport bool
 
 cdef class TestGame(Game) :
     cdef public xml
+    cdef public file_name
     cdef public tag_name
     cdef public attr
     cdef public bool is_error
@@ -28,7 +30,7 @@ cdef class TestGame(Game) :
     cdef public int org_got_tile
 
     def __init__(self, action) :
-        super(TestGame, self).__init__(action, False)
+        super().__init__(action, logging=False, testing=True)
         self.is_error = False
 
 
@@ -108,7 +110,6 @@ cdef class TestGame(Game) :
         cdef list starting_hand, seed, ten
         cdef int indicator
         cdef bool error
-        self.read_next_tag()
 
         # 局の情報に食い違いがあったらエラーとして報告
         seed = self.attr["seed"].split(",")
@@ -121,7 +122,10 @@ cdef class TestGame(Game) :
         ten = self.attr["ten"].split(",")
         error = False
         for i in range(4) :
-            if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score")
+            print(f"players[{i}].score: {self.players[i].score}")
+            print(f"ten[{i}]          : {int(ten[i]) * 100}")
+        for i in range(4) :
+            if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score is different")
 
         # 配牌を配る
         for i in range(4) :
@@ -132,45 +136,40 @@ cdef class TestGame(Game) :
         indicator = self.convert_tile(int(seed[5]))
         self.dora_indicators[0] = indicator
         self.open_new_dora()
+        self.read_next_tag()
 
 
     # 次のツモ牌を返す
     cdef int supply_next_tile(self) :
         cdef int tile
-        if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in game.supply_next_rinshan_tile()")
-        tile = int(self.tag_name[1:])
+        if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in game.supply_next_tile())")
+        org_tile = int(self.tag_name[1:])
+        tile = self.convert_tile(org_tile)
+        print(f"player{self.i_player} get {tile}")
         self.i_wall += 1
         self.remain_tiles_num -= 1
         self.read_next_tag()
+        self.org_got_tile = org_tile
         return tile
 
 
     # 次の嶺上牌を返す
     cdef int supply_next_rinshan_tile(self) :
         cdef int tile
-        if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in game.supply_next_rinshan_tile()")
-        tile = int(self.tag_name[1:])
+        if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in game.supply_next_rinshan_tile())")
+        org_tile = int(self.tag_name[1:])
+        tile = self.convert_tile(org_tile)
+        print(f"player{self.i_player} get {tile} from rinshan")
         self.i_rinshan += 1
         self.remain_tiles_num -= 1
         self.read_next_tag()
+        self.org_got_tile = org_tile
         return tile
 
 
-    # UN，REACH(step2)タグ以外の次のタグを読んで，tag_name，attrをメンバ変数にセット
-    cpdef void read_next_tag(self) :
-        self.i_log += 1
-        while True :
-            tag_name = self.xml[self.i_log].item.tag
-            attr = self.xml[self.i_log].item.attrib
-            if tag_name != "UN" and not(tag_name == "REACH" and attr["step"] == 2) :
-                self.tag_name = tag_name
-                self.attr = attr
-                break
-            self.i_log += 1
-
-
     # xml_logの牌番号をこのプログラムの牌番号に変換
-    cdef int convert_tile(self, int org_tile) :
+    cpdef int convert_tile(self, int org_tile) :
+        cdef int tile
         if org_tile in {16, 52, 88} : tile = (org_tile // 40) * 10
         else :
             tile = org_tile // 4
@@ -182,12 +181,9 @@ cdef class TestGame(Game) :
         return tile
 
 
-    # ログと食い違いが起こった時の処理
-    cpdef void error(self, info) :
-        self.is_error = True
-        print("==============================")
-        print(info)
-        print(f"file_name : {self.file_name} \n round:{self.rounds_num} \n rotation:{self.rotations_num} \n counter:{self.counters_num} \n ")
+    # 配牌を配ると言ったなアレは嘘だ
+    cdef void deal_starting_hand(self) :
+        pass
 
 
     # 半荘の処理
@@ -195,25 +191,66 @@ cdef class TestGame(Game) :
         cdef int i
         while True :
             # 局
+            self.init_subgame()
             self.play_subgame()
             # 半荘終了判定
             if self.is_over : break
 
 
     # テスト用メソッド
-    cpdef void test(self, action) :
+    cpdef void test(self) :
         year = int(input("Input year : "))
         for month in range(1, 12) :
-            path = f"../data/xml/{year}/{month:02}/"
+            # path = f"../data/xml/{year}/{month:02}/"
+            path = f"/Users/fujitaryuki/github/ryujin/data/xml/{year}/{month:02}/"
             dir_components = os.listdir(path)
             files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
             print(f"year:{year}, month:{month}")
-            for file_name in files :
+            for file_name in files[:2] :
                 # 空ファイルが紛れていることがあるのでそれをスキップ
                 try : tree = et.parse(path + file_name)
                 except : continue
 
                 xml = tree.getroot()
                 self.xml = xml[3:]
+                self.read_next_tag()
+                self.file_name = file_name
                 self.init_game()
-                self.play_game()
+                self.play_test_game()
+
+
+    # プレイヤ全員のscoreを表示
+    cpdef void print_scores(self, info) :
+        print(colored(info, "yellow", attrs=["bold"]))
+        print("="*30)
+        for i in range(4) : print(f"players[{i}].score: {self.players[i].score}")
+        print("="*30)
+
+
+    # UN，REACH(step2)タグ以外の次のタグを読んで，tag_name，attrをメンバ変数にセット
+    cpdef void read_next_tag(self) :
+        self.i_log += 1
+        while True :
+            tag_name = self.xml[self.i_log].tag
+            attr = self.xml[self.i_log].attrib
+            if tag_name != "UN" and not(tag_name == "REACH" and attr["step"] == "2") :
+                self.tag_name = tag_name
+                self.attr = attr
+                break
+            self.i_log += 1
+
+
+    # ログと食い違いが起こった時の処理
+    cpdef void error(self, info) :
+        self.is_error = True
+        print("==========================================================================================")
+        print(info)
+        print(f"file_name : {self.file_name}")
+        print(f"round : {self.rounds_num}")
+        print(f"rotation : {self.rotations_num}")
+        print(f"counter : {self.counters_num}")
+        print(f"deposits : {self.deposits_num}")
+        print(f"tag_name : {self.tag_name}")
+        print(f"attribute : {self.attr}")
+        print("==========================================================================================")
+        sys.exit()

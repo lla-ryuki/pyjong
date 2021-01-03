@@ -1,4 +1,5 @@
 # sys
+import sys
 from typing import List
 
 # ours
@@ -22,7 +23,7 @@ class Action :
     # 切る牌を決める
     def decide_which_tile_to_discard(self, game, players, player_num) -> (int, bool) :
         # エラーチェック
-        if game.tag_name[0] not in {"D", "E", "F", "G"} : game.error("Wrong tag (in Player.action.decide_which_tile_to_discard()")
+        if game.tag_name[0] not in {"D", "E", "F", "G"} : game.error("Wrong tag (in Player.action.decide_which_tile_to_discard())")
         if   game.tag_name[0] == "D" : i_player = 0
         elif game.tag_name[0] == "E" : i_player = 1
         elif game.tag_name[0] == "F" : i_player = 2
@@ -31,6 +32,7 @@ class Action :
 
         tile = int(game.tag_name[1:])
         discarded_tile = game.convert_tile(tile)
+        print(f"player{player_num} diacard {discarded_tile}")
         exchanged = False
         if tile != game.org_got_tile : exchanged = True
 
@@ -91,14 +93,14 @@ class Action :
 
     # 和了かどうかタグを見て判断
     def decide_win(self, game, players, player_num:int) -> bool :
-        if game.tag_name != "AGARI" : return False
+        if game.tag_name != "AGARI" and player_num != int(game.attr["who"]) : return False
 
         game.read_next_tag()
         return True
 
 
     # Nタグについているmコードを解析してそれぞれの鳴きに対する処理をする
-    def analyze_mc(self, player_num:int, mc:int) -> int :
+    def analyze_mc(self, mc:int) -> int :
         # チー
         if  (mc & 0x0004) :
             pt = (mc & 0xFC00) >> 10
