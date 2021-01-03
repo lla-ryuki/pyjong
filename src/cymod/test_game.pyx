@@ -145,7 +145,8 @@ cdef class TestGame(Game) :
         if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in game.supply_next_tile())")
         org_tile = int(self.tag_name[1:])
         tile = self.convert_tile(org_tile)
-        print(f"player{self.i_player} get {tile}")
+        get = colored("get", "green")
+        print(f"player{self.i_player} {get} {tile}")
         self.i_wall += 1
         self.remain_tiles_num -= 1
         self.read_next_tag()
@@ -159,7 +160,8 @@ cdef class TestGame(Game) :
         if self.tag_name[0] not in {"T", "U", "V", "W"} : self.error("Wrong tag (in game.supply_next_rinshan_tile())")
         org_tile = int(self.tag_name[1:])
         tile = self.convert_tile(org_tile)
-        print(f"player{self.i_player} get {tile} from rinshan")
+        get = colored("get", "green")
+        print(f"player{self.i_player} {get} {tile} from rinshan")
         self.i_rinshan += 1
         self.remain_tiles_num -= 1
         self.read_next_tag()
@@ -243,8 +245,8 @@ cdef class TestGame(Game) :
     # ログと食い違いが起こった時の処理
     cpdef void error(self, info) :
         self.is_error = True
-        print("==========================================================================================")
-        print(info)
+        print(colored(info, "red", attrs=["bold"]))
+        print("=" * 30)
         print(f"file_name : {self.file_name}")
         print(f"round : {self.rounds_num}")
         print(f"rotation : {self.rotations_num}")
@@ -252,5 +254,5 @@ cdef class TestGame(Game) :
         print(f"deposits : {self.deposits_num}")
         print(f"tag_name : {self.tag_name}")
         print(f"attribute : {self.attr}")
-        print("==========================================================================================")
+        print("=" * 30)
         sys.exit()

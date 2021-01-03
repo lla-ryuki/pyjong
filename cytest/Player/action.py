@@ -2,6 +2,9 @@
 import sys
 from typing import List
 
+# 3rd
+from termcolor import colored
+
 # ours
 from mytypes import TileType
 
@@ -32,7 +35,8 @@ class Action :
 
         tile = int(game.tag_name[1:])
         discarded_tile = game.convert_tile(tile)
-        print(f"player{player_num} diacard {discarded_tile}")
+        dis = colored("dis", "yellow")
+        print(f"player{player_num} {dis} {discarded_tile}")
         exchanged = False
         if tile != game.org_got_tile : exchanged = True
 
@@ -48,6 +52,18 @@ class Action :
         mc = int(game.attr["m"])
         action_num = self.analyze_mc(mc)
         tile1, tile2 = self.tile1, self.tile2
+
+        a = ""
+        if   action_num == 1 : a = "pon"
+        elif action_num == 2 : a = "daiminkan"
+        elif action_num == 3 : a = "under chii"
+        elif action_num == 4 : a = "middle chii"
+        elif action_num == 5 : a = "upper chii"
+        elif action_num == 6 : a = "kakan"
+        elif action_num == 7 : a = "ankan"
+
+        action = colored(f"{a}", "blue")
+        print(f"player{player_num} {action}")
 
         self.reset_N()
         game.read_next_tag()
