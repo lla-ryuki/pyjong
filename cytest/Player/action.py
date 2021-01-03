@@ -51,6 +51,7 @@ class Action :
         # タグのmcからとるactionを判定
         mc = int(game.attr["m"])
         action_num = self.analyze_mc(mc)
+        if action_num not in {1, 2, 3, 4, 5} : game.error("Wrong tag (in Player.aciton.decide_to_steal())")
         tile1, tile2 = self.tile1, self.tile2
 
         a = ""
@@ -59,8 +60,7 @@ class Action :
         elif action_num == 3 : a = "under chii"
         elif action_num == 4 : a = "middle chii"
         elif action_num == 5 : a = "upper chii"
-        elif action_num == 6 : a = "kakan"
-        elif action_num == 7 : a = "ankan"
+
 
         action = colored(f"{a}", "blue")
         print(f"player{player_num} {action}")
@@ -83,6 +83,11 @@ class Action :
         if player_num != int(game.attr["who"]) : game.error("Player index don't match (in Action.decide_to_kan())")
         if action_num not in {6, 7} : game.error("Wrong tag (in Player.aciton.decide_to_kan())")
 
+        if   action_num == 6 : a = "kakan"
+        elif action_num == 7 : a = "ankan"
+        action = colored(f"{a}", "blue")
+        print(f"player{player_num} {action}")
+
         self.reset_N()
         game.read_next_tag()
         return tile
@@ -91,6 +96,9 @@ class Action :
     # 九種九牌を宣言するかどうか決める
     def decide_to_declare_nine_orphans(self, game, players, player_num:int, hand:List[int]) -> bool :
         if not(game.tag_name == "RYUUKYOKU" and game.attr["type"] == "yao9") : return False
+
+        action = colored(f"declare nine orphans", "blue")
+        print(f"player{player_num} {action}")
 
         game.read_next_tag()
         return True
@@ -103,6 +111,9 @@ class Action :
         # エラーチェック
         if player_num != int(game.attr["who"]) : game.error("Player index don't match (in Action.decide_to_declare_ready())")
 
+        action = colored(f"declare ready", "blue")
+        print(f"player{player_num} {action}")
+
         game.read_next_tag()
         return True
 
@@ -110,6 +121,13 @@ class Action :
     # 和了かどうかタグを見て判断
     def decide_win(self, game, players, player_num:int) -> bool :
         if game.tag_name != "AGARI" and player_num != int(game.attr["who"]) : return False
+
+        # 裏ドラをセット
+        uras_s = game.attr.get("doraHaiUra")
+        if uras_s is not(None) : game.set_ura(uras_s)
+
+        action = colored(f"win", "blue")
+        print(f"player{player_num} {action}")
 
         game.read_next_tag()
         return True

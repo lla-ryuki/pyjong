@@ -338,7 +338,7 @@ cdef class Game :
                 self.players[i_winner].score_points(1000 * self.deposits_num)
                 self.counters_num, self.deposits_num = 0, 0
                 if i == 0 : break
-        self.print_scores("proc_win() after")
+                self.print_win_info(i_winner, self.i_player, self.han, self.fu)
         # ゲーム終了判定
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].wins)
         # 局の数等の変数操作
@@ -493,37 +493,58 @@ cdef class Game :
         if nine_gates(hand) and not(player.has_stealed) : self.yakuman += 1
         if self.yakuman == 0 :
             if player.has_declared_double_ready : self.han += 2
-            if player.has_declared_ready : self.han += 1
+            elif player.has_declared_ready : self.han += 1
+            #print("riichi", self.han)
             if player.has_right_to_one_shot : self.han += 1
+            #print("ippatsu", self.han)
             if not(player.has_stealed) and not(self.wins_by_ron) : self.han += 1
+            #print("tsumo", self.han)
             if self.wins_by_rinshan_kaihou : self.han += 1
+            #print("rinshan", self.han)
             if self.wins_by_last_tile : self.han += 1
+            #print("haitei/houtei", self.han)
             if self.wins_by_chankan : self.han += 1
+            #print("chankan", self.han)
             if all_simples(hand) : self.han += 1
+            #print("tanyao", self.han)
             if bakaze(hand, self.prevailing_wind) : self.han += 1
+            #print("ba", self.han)
             if jikaze(hand, self.players_wind) : self.han += 1
+            #print("ji", self.han)
             if white_dragon(hand) : self.han += 1
+            #print("haku", self.han)
             if green_dragon(hand) : self.han += 1
+            #print("hatsu", self.han)
             if red_dragon(hand) : self.han += 1
+            #print("chun", self.han)
             if all_terminals_and_honors(hand) : self.han += 2
+            #print("honroutou", self.han)
             if little_three_dragons(hand) : self.han += 2
+            #print("shousangen", self.han)
             if half_flush(hand) :
                 if not(player.has_stealed) : self.han += 3
                 else : self.han += 2
+            #print("honitsu", self.han)
             if flush(hand) :
                 if not(player.has_stealed) : self.han += 6
                 else : self.han += 5
+            #print("chinitsu", self.han)
             if player.reds[0] or player.opened_reds[0] : self.han += 1
+            #print("red5m", self.han)
             if player.reds[1] or player.opened_reds[1] : self.han += 1
+            #print("red5p", self.han)
             if player.reds[2] or player.opened_reds[2] : self.han += 1
+            #print("red5s", self.han)
             for i in range(5) :
                 if self.dora_has_opened[i] :
                     self.han += hand[self.doras[i]]
                     if player.has_declared_ready or player.has_declared_double_ready :
                         self.han += hand[self.uras[i]]
+            #print("dora", self.han)
             if self.han < 13 :
                 self.analyze_best_composition(player)
             else : self.yakuman = 1
+            #print("best", self.han)
 
 
     # 七対子手の翻数計算
@@ -1029,4 +1050,7 @@ cdef class Game :
 
     # テストoverride用
     cpdef void print_scores(self, info) :
+        pass
+
+    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu) :
         pass

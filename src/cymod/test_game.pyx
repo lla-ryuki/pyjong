@@ -38,6 +38,9 @@ cdef class TestGame(Game) :
     cdef bool init_subgame(self) :
         cdef int i
 
+        msg = colored(f"subgame start", "blue", attrs=["bold"])
+        print(msg)
+
         # プレイヤが持つ局に関わるメンバ変数を初期化
         for i in range(4) :
             self.players[i].init_subgame(self.rotations_num)
@@ -67,7 +70,7 @@ cdef class TestGame(Game) :
         self.appearing_tiles = [0] * 38                # プレイヤ全員に見えている牌， appearing_tiles[i] が j → i番の牌がj枚見えている
         self.appearing_red_tiles = [False] * 3         # プレイヤ全員に見えている赤牌． 萬子，筒子，索子の順．
         self.wall = [0] * 136                          # 山
-        self.remain_tiles_num = 136                    # 山の残り枚数
+        self.remain_tiles_num = 70                     # 山の残り枚数
 
         # インデックス
         self.i_player = self.rotations_num             # 次のループで行動するプレイヤの番号
@@ -121,9 +124,12 @@ cdef class TestGame(Game) :
         # プレイヤの点数に食い違いがあったらエラーとして報告
         ten = self.attr["ten"].split(",")
         error = False
+        print("="*30)
         for i in range(4) :
             print(f"players[{i}].score: {self.players[i].score}")
             print(f"ten[{i}]          : {int(ten[i]) * 100}")
+            if i != 3 : print("")
+        print("="*30)
         for i in range(4) :
             if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.init_subgame())")
 
@@ -134,9 +140,54 @@ cdef class TestGame(Game) :
 
         # 初期ドラをセット
         indicator = self.convert_tile(int(seed[5]))
+        if indicator in TileType.REDS : indicator +=  5
         self.dora_indicators[0] = indicator
-        self.open_new_dora()
+        self.dora_has_opened[0] = True
+        if indicator in TileType.NINES : self.doras[0] = indicator - 8
+        elif indicator == 34 : self.doras[0] = 31
+        elif indicator == 37 : self.doras[0] = 35
+        else : self.doras[0] = indicator + 1
+        self.appearing_tiles[indicator] += 1
+
         self.read_next_tag()
+
+
+    # 新しいドラを開く
+    # CAUTION テスト管轄外
+    cdef void open_new_dora(self) :
+        cdef int i, indicator
+        for i in range(5) :
+            if self.dora_has_opened[i] is False :
+                # エラーチェック
+                if self.tag_name != "DORA" : self.error("Wrong tag (in TestGame.open_new_dora())")
+
+                # ドラ表示牌をタグから判定
+                indicator = self.convert_tile(int(self.attr["hai"]))
+                if indicator in TileType.REDS : indicator +=  5
+
+                # ドラ表示牌とドラをセット
+                self.dora_indicators[i] = indicator
+                if indicator in TileType.NINES : self.doras[i] = indicator - 8
+                elif indicator == 34 : self.doras[i] = 31
+                elif indicator == 37 : self.doras[i] = 35
+                else : self.doras[i] = indicator + 1
+                self.appearing_tiles[indicator] += 1
+
+                self.read_next_tag()
+                break
+
+
+    # 裏ドラをセット
+    cpdef void set_ura(self, str uras_s) :
+        uras = uras_s.split(",")
+        for i, ura in enumerate(uras) :
+            indicator = self.convert_tile(int(ura))
+            if indicator in TileType.REDS : indicator +=  5
+            self.ura_indicators[i] = indicator
+            if indicator in TileType.NINES : self.uras[i] = indicator - 8
+            elif indicator == 34 : self.uras[i] = 31
+            elif indicator == 37 : self.uras[i] = 35
+            else : self.uras[i] = indicator + 1
 
 
     # 次のツモ牌を返す
@@ -226,6 +277,20 @@ cdef class TestGame(Game) :
         print(colored(info, "yellow", attrs=["bold"]))
         print("="*30)
         for i in range(4) : print(f"players[{i}].score: {self.players[i].score}")
+        print("="*30)
+
+
+    # 和了った時の飜数と符を表示
+    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu) :
+        print(colored("win info", "yellow", attrs=["bold"]))
+        print("="*30)
+        print(f"winner : {i_winner}")
+        if i_winner != i_player : print(f"loser  : {i_player}")
+        print(f"han    : {han}")
+        print(f"fu     : {fu}")
+        print(f"dora   : {self.doras}")
+        print(f"ura    : {self.uras}")
+        self.players[i_winner].print_hand()
         print("="*30)
 
 
