@@ -246,7 +246,7 @@ cdef class TestGame(Game) :
     cpdef void error(self, info) :
         self.is_error = True
         print(colored(info, "red", attrs=["bold"]))
-        print("=" * 30)
+        print("=" * 70)
         print(f"file_name : {self.file_name}")
         print(f"round : {self.rounds_num}")
         print(f"rotation : {self.rotations_num}")
@@ -254,5 +254,5 @@ cdef class TestGame(Game) :
         print(f"deposits : {self.deposits_num}")
         print(f"tag_name : {self.tag_name}")
         print(f"attribute : {self.attr}")
-        print("=" * 30)
+        print("=" * 70)
         sys.exit()
