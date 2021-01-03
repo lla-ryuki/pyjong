@@ -20,9 +20,9 @@ from libcpp cimport bool
 cdef class Game :
     def __init__(self, action, logging=True, testing=False) :
         if testing :
-            self.players = [Player(i) for i in range(4)]
-        else :
             self.players = [TestPlayer(i) for i in range(4)]
+        else :
+            self.players = [Player(i) for i in range(4)]
         self.action = action
         self.logger = Logger(logging=False);
         self.shanten_calculator = ShantenNumCalculator()
@@ -319,8 +319,7 @@ cdef class Game :
 
     # 和了時の処理
     cdef void proc_win(self) :
-        cdef int i, i_winner, counters_num_temp
-        counters_num_temp = self.counters_num
+        cdef int i, i_winner
         # ツモった人，最後に牌を切った人から順に和了を見ていく．※ 複数人の和了の可能性があるので全員順番にチェックする必要がある．
         for i in range(4) :
             i_winner = (self.i_player + i) % 4
@@ -849,6 +848,9 @@ cdef class Game :
                 self.win_flag = True
                 self.wins_by_ron = True
                 self.players[i_winner].wins = True
+
+        # 立直宣言牌flagを戻す
+        self.ready_flag = False
 
         # 三家和判定
         if winners_num == 3 :
