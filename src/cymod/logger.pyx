@@ -51,7 +51,7 @@ cdef class Logger :
 
     cpdef void register_kakan(self, int i_player, int tile, int pos, bool red) :
         s_tile = str(tile + 10)
-        if tile in TileType :
+        if tile in TileType.REDS :
             s_rtile = str(51 + (tile // 10))
             if red :
                 if pos == 1 : text = f"{s_tile}{s_tile}{s_rtile}k{s_tile}"

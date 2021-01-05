@@ -115,7 +115,6 @@ cdef class Game :
         self.set_wall()
         self.set_rinshan_tiles()
         self.set_doras()
-        self.open_new_dora()
 
 
     # 赤有りの牌山を生成
@@ -172,6 +171,7 @@ cdef class Game :
             elif ura_indicator == 37 : self.uras[i] = 35
             else : self.uras[i] = ura_indicator + 1
 
+        # 初期ドラを開く
         self.open_new_dora()
 
 
@@ -985,13 +985,19 @@ cdef class Game :
             # 九種九牌用
             if self.is_abortive_draw : break
 
-            # 打牌フェーズ
-            discarded_tile = self.proc_discard_phase(self.players[self.i_player], ready)
-
-            # 大明槓，加槓した場合牌を切った後にドラをめくる
+            # CAUTION
+            # 大明槓，加槓した場合牌を切る直前にめくる．xml_logの順番がこうなっている
             if self.dora_opens_flag :
                 self.open_new_dora()
                 self.dora_opens_flag = False
+
+            # 打牌フェーズ
+            discarded_tile = self.proc_discard_phase(self.players[self.i_player], ready)
+
+            # # 大明槓，加槓した場合牌を切った後にドラをめくる
+            # if self.dora_opens_flag :
+            #     self.open_new_dora()
+            #     self.dora_opens_flag = False
 
             # ロンフェーズ
             self.proc_ron_phase(discarded_tile)

@@ -252,7 +252,8 @@ cdef class TestGame(Game) :
 
     # テスト用メソッド
     cpdef void test(self) :
-        year = int(input("Input year : "))
+        # year = int(input("Input year : "))
+        year = 2019
         for month in range(1, 12) :
             # path = f"../data/xml/{year}/{month:02}/"
             path = f"/Users/fujitaryuki/github/ryujin/data/xml/{year}/{month:02}/"
@@ -306,6 +307,14 @@ cdef class TestGame(Game) :
                 self.attr = attr
                 break
             self.i_log += 1
+
+
+    # タグを表示
+    cpdef void print_tag(self) :
+        print("=" * 30)
+        print(f"tag_name : {self.tag_name}")
+        print(f"attribute : {self.attr}")
+        print("=" * 30)
 
 
     # ログと食い違いが起こった時の処理

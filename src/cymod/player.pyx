@@ -558,7 +558,7 @@ cdef class Player :
 
 
     # 加槓の処理
-    cpdef int proc_kakan(self, int tile) :
+    cpdef tuple proc_kakan(self, int tile) :
         cdef int i
 
         self.kans_num += 1

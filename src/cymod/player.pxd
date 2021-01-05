@@ -71,6 +71,7 @@ cdef class Player :
     cdef bool has_yaku_based_on_tiles(self, int prevailing_wind, bool ron, int ron_tile)
     cdef bool pick_out_mentsu2(self, int[38] hand, int prevailing_wind, bool ron, int ron_tile)
     cpdef void proc_ankan(self, int tile)
+    cpdef tuple proc_kakan(self, int tile)
     cpdef void proc_daiminkan(self, int tile, int pos)
     cpdef int proc_pon(self, int tile, int pos)
     cpdef tuple proc_chii(self, int org_tile, int tile1, int tile2)
@@ -80,5 +81,4 @@ cdef class Player :
     cpdef tuple decide_to_kan(self, game, players)
     cpdef tuple decide_action(self, game, players)
     cpdef void print_hand(self)
-    cpdef int proc_kakan(self, int tile)
 

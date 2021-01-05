@@ -182,7 +182,7 @@ class Action :
             pt = (mc & 0xFF00) >> 8
             r  = pt % 4
             pn =  pt // 4
-            color = pn // 9  # 0:萬子,...
+            color = pn // 9 # 0:萬子,...
             self.tile = (color * 10) + (pn % 9) + 1
             if (self.pos == 0) : action = 7
             else :
