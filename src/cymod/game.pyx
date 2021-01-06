@@ -349,6 +349,7 @@ cdef class Game :
         self.print_scores("scores at proc_win() after")
         # ゲーム終了判定
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].wins)
+        print(self.is_over)
         # 局の数等の変数操作
         if self.players[self.rotations_num].wins :
             self.counters_num += counters_temp + 1
@@ -412,6 +413,7 @@ cdef class Game :
 
 
     # ゲーム終了判定
+    ####
     cdef bool check_game_is_over(self, bool dealer_wins) :
         cdef int i
         cdef bool top

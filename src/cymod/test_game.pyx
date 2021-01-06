@@ -38,7 +38,7 @@ cdef class TestGame(Game) :
     cdef bool init_subgame(self) :
         cdef int i
 
-        msg = colored(f"subgame start", "blue", attrs=["bold"])
+        msg = colored("Subgame start", "blue", attrs=["bold"])
         print(msg)
 
         # プレイヤが持つ局に関わるメンバ変数を初期化
@@ -115,20 +115,25 @@ cdef class TestGame(Game) :
         cdef bool error
 
         # 局の情報に食い違いがあったらエラーとして報告
+        print("="*40)
         seed = self.attr["seed"].split(",")
         if (self.rounds_num != int(seed[0]) // 4) or \
            (self.rotations_num != int(seed[0]) % 4) or \
            (self.counters_num != int(seed[1])) or \
            (self.deposits_num != int(seed[2])) and not(self.is_error) : self.error("subgame info (in TestGame.init_subgame())")
+        print(f"file_name  : {self.file_name}")
+        print(f"round      : {self.rounds_num}")
+        print(f"rotation   : {self.rotations_num}")
+        print(f"counters   : {self.counters_num}")
+        print(f"deposits   : {self.deposits_num}")
+        print("")
 
         # プレイヤの点数に食い違いがあったらエラーとして報告
         ten = self.attr["ten"].split(",")
         error = False
-        print("="*40)
         for i in range(4) :
             print(f"players[{i}].score: {self.players[i].score}")
             print(f"ten[{i}]          : {int(ten[i]) * 100}")
-            if i != 3 : print("")
         print("="*40)
         for i in range(4) :
             if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.init_subgame())")
@@ -268,9 +273,11 @@ cdef class TestGame(Game) :
 
                 xml = tree.getroot()
                 self.xml = xml[3:]
+                self.i_log = 0
                 self.read_next_tag()
                 self.file_name = file_name
                 self.init_game()
+                msg = colored("Game start", "blue", attrs=["bold"])
                 self.play_test_game()
 
 
@@ -284,25 +291,28 @@ cdef class TestGame(Game) :
 
     # 和了った時の飜数と符を表示
     cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) :
+        cdef bool dealer_wins
+        dealer_wins = i_winner == self.rotations_num
         if i_winner == i_player :
             if i_winner == self.rotations_num :
+                points = basic_points * 2
+                if points % 100 != 0 : points += (100 - (points % 100))
+                points = f"{points} all"
+            else :
                 points_dealer_pays = self.basic_points * 2
                 if points_dealer_pays % 100 != 0 : points_dealer_pays += (100 - (points_dealer_pays % 100))
                 points_child_pays = self.basic_points
                 if points_child_pays % 100 != 0 : points_child_pays += (100 - (points_child_pays % 100))
-                points = (points_dealer_pays, points_child_pays)
-            else :
-                points = basic_points * 2
-                if points % 100 != 0 : points += (100 - (points % 100))
-                points = f"{points} all"
+                points = (points_child_pays, points_dealer_pays)
         else :
-            points = basic_points * 4
+            if dealer_wins : points = basic_points * 6
+            else : points = basic_points * 4
             if points % 100 != 0 : points += (100 - (points % 100))
 
 
         print(colored("win info", "yellow", attrs=["bold"]))
         print("="*40)
-        print(f"dealer   : {i_winner == self.rotations_num}")
+        print(f"dealer   : {dealer_wins}")
         print(f"winner   : {i_winner}")
         if i_winner != i_player : print(f"loser    : {i_player}")
         print(f"han      : {han}")
@@ -318,7 +328,9 @@ cdef class TestGame(Game) :
 
     # UN，REACH(step2)タグ以外の次のタグを読んで，tag_name，attrをメンバ変数にセット
     cpdef void read_next_tag(self) :
+        # print(len(self.xml))
         self.i_log += 1
+        # print(self.i_log)
         while True :
             tag_name = self.xml[self.i_log].tag
             attr = self.xml[self.i_log].attrib

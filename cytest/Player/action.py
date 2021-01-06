@@ -129,7 +129,7 @@ class Action :
         action = colored(f"win", "blue")
         print(f"player{player_num} {action}")
 
-        game.read_next_tag()
+        if game.attr.get("owari") is None : game.read_next_tag()
         return True
 
 
