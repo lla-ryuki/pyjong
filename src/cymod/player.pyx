@@ -1,4 +1,5 @@
 # built-in
+import sys
 import random
 
 # 3rd
@@ -748,29 +749,66 @@ cdef class Player :
         return tile, exchanged, ready, ankan, kakan, kyushu
 
 
+    # 表示用に牌を変換
+    cpdef convert_tile_for_print(self, int tile) :
+        s_tile = ""
+        if tile < 1 or tile > 37 or tile % 10 == 0 :
+            print("error in convert_tile_for_print()")
+            print(f"tile : {tile}")
+            sys.exit()
+        elif tile <  30 : s_tile = str(tile%10)
+        elif tile == 31 : s_tile = "東"
+        elif tile == 32 : s_tile = "南"
+        elif tile == 33 : s_tile = "西"
+        elif tile == 34 : s_tile = "北"
+        elif tile == 35 : s_tile = "白"
+        elif tile == 36 : s_tile = "発"
+        elif tile == 37 : s_tile = "中"
+
+        return s_tile
+
+
     # handを標準出力に表示
     cpdef void print_hand(self) :
-        cdef str s_hand
-        cdef int i, j
+        cdef int i, j, min_tile, b_type
 
-        s_hand = ""
+        closed_hand = ""
+        opened_hand = ""
+
+        # 門前部
         for i in range(1,38) :
             # blankの場合種類を示す文字を追加
             if i % 10 == 0 :
-                if   i == 10 : s_hand += "m"
-                elif i == 20 : s_hand += "p"
-                elif i == 30 : s_hand += "s"
+                if   i == 10 : closed_hand += "m"
+                elif i == 20 : closed_hand += "p"
+                elif i == 30 : closed_hand += "s"
                 continue
-
             # 持ってる枚数分，数字を追加
-            if   i < 30  : s_hand += str(i%10) * self.hand[i]
-            elif i == 31 : s_hand += "東" * self.hand[i]
-            elif i == 32 : s_hand += "南" * self.hand[i]
-            elif i == 33 : s_hand += "西" * self.hand[i]
-            elif i == 34 : s_hand += "北" * self.hand[i]
-            elif i == 35 : s_hand += "白" * self.hand[i]
-            elif i == 36 : s_hand += "発" * self.hand[i]
-            else         : s_hand += "中" * self.hand[i]
+            closed_hand += self.convert_tile_for_print(i) * self.hand[i]
 
-        print(s_hand)
+        # 副露部
+        for i in range(4) :
+            if self.opened_hand[i*5] == 0 : break
+            min_tile = self.opened_hand[i*5+1]
+            print(min_tile)
+            tile1 = self.convert_tile_for_print(min_tile)
+            color = ""
+            b_type = self.opened_hand[i*5]
+            if   min_tile // 10 == 0 : color = "m"
+            elif min_tile // 10 == 1 : color = "p"
+            elif min_tile // 10 == 2 : color = "s"
+            if b_type == BlockType.OPENED_RUN :
+                n_tile = self.opened_hand[i*5+2]
+                tile2 = self.convert_tile_for_print(min_tile+1)
+                tile3 = self.convert_tile_for_print(min_tile+2)
+                if n_tile == min_tile   : opened_hand += f"[{tile1}]{tile2}{tile3}{color}, "
+                if n_tile == min_tile+1 : opened_hand += f"{tile1}[{tile2}]{tile3}{color}, "
+                if n_tile == min_tile+2 : opened_hand += f"{tile1}{tile2}[{tile3}]{color}, "
+            elif b_type == BlockType.OPENED_TRIPLET :
+                opened_hand += f"{tile1*3}{color}, "
+            elif b_type in {BlockType.OPENED_KAN, BlockType.CLOSED_KAN} :
+                opened_hand += f"{tile1*4}{color}, "
+
+        print("closed   : " + closed_hand)
+        print("opened   : " + opened_hand)
 
