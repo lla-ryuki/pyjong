@@ -324,7 +324,8 @@ cdef class Game :
 
     # 和了時の処理
     cdef void proc_win(self) :
-        cdef int i, i_winner
+        cdef int i, i_winner, counters_temp
+        counters_temp = self.counters_num
         self.print_scores("scores at proc_win() before")
         # ツモった人，最後に牌を切った人から順に和了を見ていく．※ 複数人の和了の可能性があるので全員順番にチェックする必要がある．
         for i in range(4) :
@@ -342,14 +343,15 @@ cdef class Game :
                 #self.print_scores("5")
                 self.players[i_winner].score_points(1000 * self.deposits_num)
                 #self.print_scores("6")
-                self.deposits_num = 0
+                self.counters_num, self.deposits_num = 0, 0
                 self.print_win_info(i_winner, self.i_player, self.han, self.fu, self.basic_points)
                 if i == 0 : break
         self.print_scores("scores at proc_win() after")
         # ゲーム終了判定
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].wins)
         # 局の数等の変数操作
-        if self.players[self.rotations_num].wins : self.counters_num += 1
+        if self.players[self.rotations_num].wins :
+            self.counters_num += counters_temp + 1
         else :
             self.counters_num = 0
             self.rotations_num += 1
