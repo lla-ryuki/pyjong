@@ -38,8 +38,7 @@ cdef class TestGame(Game) :
     cdef bool init_subgame(self) :
         cdef int i
 
-        msg = colored("Subgame start", "blue", attrs=["bold"])
-        print(msg)
+        print(colored("Subgame start", "blue", attrs=["bold"]))
 
         # プレイヤが持つ局に関わるメンバ変数を初期化
         for i in range(4) :
@@ -132,8 +131,8 @@ cdef class TestGame(Game) :
         ten = self.attr["ten"].split(",")
         error = False
         for i in range(4) :
-            print(f"players[{i}].score: {self.players[i].score}")
-            print(f"ten[{i}]          : {int(ten[i]) * 100}")
+            print(f"players[{i}].score : {self.players[i].score}")
+            print(f"xml_log[{i}].score : {int(ten[i]) * 100}")
         print("="*40)
         for i in range(4) :
             if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.init_subgame())")
@@ -253,7 +252,9 @@ cdef class TestGame(Game) :
             self.init_subgame()
             self.play_subgame()
             # 半荘終了判定
-            if self.is_over : break
+            if self.is_over :
+                self.check_final_score()
+                break
 
 
     # テスト用メソッド
@@ -277,7 +278,7 @@ cdef class TestGame(Game) :
                 self.read_next_tag()
                 self.file_name = file_name
                 self.init_game()
-                msg = colored("Game start", "blue", attrs=["bold"])
+                print(colored("Game start", "blue", attrs=["bold"]))
                 self.play_test_game()
 
 
@@ -363,3 +364,19 @@ cdef class TestGame(Game) :
         print(f"attributes : {self.attr}")
         print("=" * 70)
         sys.exit()
+
+
+    # 最終得点の確認
+    cpdef void check_final_score(self) :
+        print(colored("Check final score", "yellow", attrs=["bold"]))
+        print("="*40)
+        ten = self.attr["owari"].split(",")
+        error = False
+        for i in range(4) :
+            print(f"players[{i}].score : {self.players[i].score}")
+            print(f"xml_log[{i}].score : {int(ten[i*2]) * 100}")
+        for i in range(4) :
+            if (self.players[i].score != int(ten[i*2]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.check_final_score())")
+        print("="*40)
+        print(colored("OK", "green", attrs=["bold"]))
+        print("")
