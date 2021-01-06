@@ -790,7 +790,6 @@ cdef class Player :
         for i in range(4) :
             if self.opened_hand[i*5] == 0 : break
             min_tile = self.opened_hand[i*5+1]
-            print(min_tile)
             tile1 = self.convert_tile_for_print(min_tile)
             color = ""
             b_type = self.opened_hand[i*5]

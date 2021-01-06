@@ -284,15 +284,34 @@ cdef class TestGame(Game) :
 
     # 和了った時の飜数と符を表示
     cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) :
+        if i_winner == i_player :
+            if i_winner == self.rotations_num :
+                points_dealer_pays = self.basic_points * 2
+                if points_dealer_pays % 100 != 0 : points_dealer_pays += (100 - (points_dealer_pays % 100))
+                points_child_pays = self.basic_points
+                if points_child_pays % 100 != 0 : points_child_pays += (100 - (points_child_pays % 100))
+                points = (points_dealer_pays, points_child_pays)
+            else :
+                points = basic_points * 2
+                if points % 100 != 0 : points += (100 - (points % 100))
+                points = f"{points} all"
+        else :
+            points = basic_points * 4
+            if points % 100 != 0 : points += (100 - (points % 100))
+
+
         print(colored("win info", "yellow", attrs=["bold"]))
         print("="*40)
+        print(f"dealer   : {i_winner == self.rotations_num}")
         print(f"winner   : {i_winner}")
         if i_winner != i_player : print(f"loser    : {i_player}")
         print(f"han      : {han}")
         print(f"fu       : {fu}")
+        print(f"points   : {points}")
         print(f"base_pts : {basic_points}")
         print(f"dora     : {self.doras}")
         print(f"ura      : {self.uras}")
+        print(f"win_tile : {self.players[i_winner].last_got_tile}")
         self.players[i_winner].print_hand()
         print("="*40)
 
