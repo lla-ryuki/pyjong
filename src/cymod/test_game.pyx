@@ -172,6 +172,7 @@ cdef class TestGame(Game) :
                 elif indicator == 37 : self.doras[i] = 35
                 else : self.doras[i] = indicator + 1
                 self.appearing_tiles[indicator] += 1
+                self.dora_has_opened[i] = True
 
                 self.read_next_tag()
                 break
