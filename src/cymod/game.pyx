@@ -342,10 +342,10 @@ cdef class Game :
                 #self.print_scores("5")
                 self.players[i_winner].score_points(1000 * self.deposits_num)
                 #self.print_scores("6")
-                self.counters_num, self.deposits_num = 0, 0
+                self.deposits_num = 0
                 if i == 0 : break
                 self.print_win_info(i_winner, self.i_player, self.han, self.fu, self.basic_points)
-        #self.print_scores("scores at proc_win() after")
+        self.print_scores("scores at proc_win() after")
         # ゲーム終了判定
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].wins)
         # 局の数等の変数操作
