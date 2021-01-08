@@ -380,3 +380,9 @@ cdef class TestGame(Game) :
         print("="*40)
         print(colored("OK", "green", attrs=["bold"]))
         print("")
+
+
+    # 流局が発生した時にちゃんとRYUUKYOKUタグがセットされているか確認
+    cpdef void check_RYUUKYOKU_tag(self) :
+        if self.tag_name != "RYUUKYOKU" : self.error("tag is not RYUUKYOKU tag (in TestGame.check_RYUUKYOKU_tag())")
+        self.read_next_tag()

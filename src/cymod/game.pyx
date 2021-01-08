@@ -997,11 +997,6 @@ cdef class Game :
             # 打牌フェーズ
             discarded_tile = self.proc_discard_phase(self.players[self.i_player], ready)
 
-            # # 大明槓，加槓した場合牌を切った後にドラをめくる
-            # if self.dora_opens_flag :
-            #     self.open_new_dora()
-            #     self.dora_opens_flag = False
-
             # ロンフェーズ
             self.proc_ron_phase(discarded_tile)
             # ロン和了ならループから抜ける
@@ -1046,6 +1041,7 @@ cdef class Game :
                    self.players[3].check_nagashi_mangan() ) : self.proc_nagashi_mangan()
             # 和了，途中流局，流し満貫のどれでもなければ普通の流局処理
             else : self.proc_drawn_game()
+            self.check_RYUUKYOKU_tag()
 
 
     # 半荘の処理
@@ -1067,6 +1063,7 @@ cdef class Game :
     # テストoverride用
     cpdef void print_scores(self, info) :
         pass
-
     cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) :
+        pass
+    cpdef void check_RYUUKYOKU_tag(self) :
         pass
