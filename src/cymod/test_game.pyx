@@ -283,6 +283,7 @@ cdef class TestGame(Game) :
                 self.play_test_game()
                 passes_num += 1
                 print(colored(f"{passes_num} files passed!", "green", attrs=["bold"]))
+                print("")
 
 
     # プレイヤ全員のscoreを表示
@@ -380,7 +381,6 @@ cdef class TestGame(Game) :
             if (self.players[i].score != int(ten[i*2]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.check_final_score())")
         print("="*40)
         print(colored("OK", "green", attrs=["bold"]))
-        print("")
 
 
     # 流局が発生した時にちゃんとRYUUKYOKUタグがセットされているか確認
