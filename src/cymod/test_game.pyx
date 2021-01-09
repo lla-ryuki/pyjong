@@ -259,6 +259,7 @@ cdef class TestGame(Game) :
 
     # テスト用メソッド
     cpdef void test(self) :
+        passes_num = 0
         # year = int(input("Input year : "))
         year = 2019
         for month in range(1, 12) :
@@ -267,8 +268,7 @@ cdef class TestGame(Game) :
             path = f"{home}/github/ryujin/data/xml/{year}/{month:02}/"
             dir_components = os.listdir(path)
             files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
-            print(f"year:{year}, month:{month}")
-            for file_name in files[:2] :
+            for file_name in files :
                 # 空ファイルが紛れていることがあるのでそれをスキップ
                 try : tree = et.parse(path + file_name)
                 except : continue
@@ -281,6 +281,8 @@ cdef class TestGame(Game) :
                 self.init_game()
                 print(colored("Game start", "blue", attrs=["bold"]))
                 self.play_test_game()
+                passes_num += 1
+                print(colored(f"{passes_num} files passed!", "green", attrs=["bold"]))
 
 
     # プレイヤ全員のscoreを表示
@@ -330,9 +332,7 @@ cdef class TestGame(Game) :
 
     # UN，REACH(step2)タグ以外の次のタグを読んで，tag_name，attrをメンバ変数にセット
     cpdef void read_next_tag(self) :
-        # print(len(self.xml))
         self.i_log += 1
-        # print(self.i_log)
         while True :
             tag_name = self.xml[self.i_log].tag
             attr = self.xml[self.i_log].attrib
