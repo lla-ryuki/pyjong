@@ -263,7 +263,8 @@ cdef class TestGame(Game) :
         year = 2019
         for month in range(1, 12) :
             # path = f"../data/xml/{year}/{month:02}/"
-            path = f"/Users/fujitaryuki/github/ryujin/data/xml/{year}/{month:02}/"
+            home = os.environ["HOME"]
+            path = f"{home}/github/ryujin/data/xml/{year}/{month:02}/"
             dir_components = os.listdir(path)
             files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
             print(f"year:{year}, month:{month}")
