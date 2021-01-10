@@ -364,6 +364,10 @@ cdef class TestGame(Game) :
         print(f"deposits   : {self.deposits_num}")
         print(f"tag_name   : {self.tag_name}")
         print(f"attributes : {self.attr}")
+        print()
+        for i in range(4) :
+            print(f"player{i}\'s hand")
+            self.players[i].print_hand()
         print("=" * 70)
         sys.exit()
 
