@@ -623,7 +623,7 @@ cdef class Player :
 
 
     # チーの処理
-    cpdef tuple proc_chii(self, int tile, int tile1, int tile2) :
+    cpdef void proc_chii(self, int tile, int tile1, int tile2) :
         cdef int min_tile
 
         if tile in TileType.REDS :

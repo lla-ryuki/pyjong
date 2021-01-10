@@ -74,7 +74,7 @@ cdef class Player :
     cpdef tuple proc_kakan(self, int tile)
     cpdef void proc_daiminkan(self, int tile, int pos)
     cpdef int proc_pon(self, int tile, int pos)
-    cpdef tuple proc_chii(self, int org_tile, int tile1, int tile2)
+    cpdef void proc_chii(self, int org_tile, int tile1, int tile2)
     cpdef void add_to_discard_tiles_after_stealing(self, int tile)
     cpdef list can_kakan(self, game)
     cpdef list can_ankan(self, game)
