@@ -631,8 +631,6 @@ cdef class Player :
         if tile in TileType.REDS :
             self.opened_reds[tile//10] = True
             tile  += 5
-            tile1 += 5
-            tile2 += 5
 
         self.opened_hand[(self.opened_sets_num * 5) + 0] = BlockType.OPENED_RUN
         if tile1 > tile : min_tile = tile
