@@ -235,7 +235,7 @@ cdef class Game :
     # チーが行われた時の処理
     cdef void proc_chii(self, int i_ap, int tile, int tile1, int tile2) :
         cdef int i
-        tile, tile1, tile2 = self.players[i_ap].proc_chii(tile, tile1, tile2)
+        self.players[i_ap].proc_chii(tile, tile1, tile2)
         self.logger.register_chii(i_ap, tile, tile1, tile2)
         for i in range(4) : self.players[i].has_right_to_one_shot = False
         self.players[self.i_player].is_nagashi_mangan = False

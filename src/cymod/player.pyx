@@ -623,14 +623,20 @@ cdef class Player :
 
 
     # チーの処理
-    # TODO 赤含みかどうか選択できない．強制赤含みになっている
-    cpdef tuple proc_chii(self, int org_tile, int tile1, int tile2) :
-        cdef int tile, min_tile
+    cpdef tuple proc_chii(self, int tile, int tile1, int tile2) :
+        cdef int min_tile
 
-        tile = org_tile
         if tile in TileType.REDS :
             self.opened_reds[tile//10] = True
             tile  += 5
+        if tile1 in TileType.REDS :
+            self.reds[tile1//10] = False
+            self.opened_reds[tile1//10] = True
+            tile1 += 5
+        if tile2 in TileType.REDS :
+            self.reds[tile2//10] = False
+            self.opened_reds[tile2//10] = True
+            tile2 += 5
 
         self.opened_hand[(self.opened_sets_num * 5) + 0] = BlockType.OPENED_RUN
         if tile1 > tile : min_tile = tile
@@ -643,17 +649,6 @@ cdef class Player :
 
         self.has_stealed = True
         self.opened_sets_num += 1
-
-        if self.hand[tile1] in TileType.FIVES and self.opened_reds[tile1//10] :
-            self.reds[tile1//10] = False
-            self.opened_reds[tile1//10] = True
-            tile1 -= 5
-        elif self.hand[tile2] in TileType.FIVES and self.opened_reds[tile2//10] :
-            self.reds[tile1//10] = False
-            self.opened_reds[tile1//10] = True
-            tile2 -= 5
-
-        return org_tile, tile1, tile2
 
 
     # 鳴いた後の手出し牌を登録
