@@ -798,8 +798,10 @@ cdef class Player :
                 if n_tile == min_tile+2 : opened_hand += f"{tile1}{tile2}[{tile3}]{color}, "
             elif b_type == BlockType.OPENED_TRIPLET :
                 opened_hand += f"{tile1*3}{color}, "
-            elif b_type in {BlockType.OPENED_KAN, BlockType.CLOSED_KAN} :
-                opened_hand += f"{tile1*4}{color}, "
+            elif b_type == BlockType.OPENED_KAN :
+                opened_hand += f"o{tile1*4}{color}, "
+            elif b_type == BlockType.CLOSED_KAN:
+                opened_hand += f"c{tile1*4}{color}, "
 
         print("closed   : " + closed_hand)
         print("opened   : " + opened_hand)
