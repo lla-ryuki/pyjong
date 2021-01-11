@@ -654,7 +654,7 @@ cdef class Game :
             if hand[i] == 0 : continue
             if hand[i] >= 3 :
                 hand[i] -= 3
-                if self.winning_tile == i and self.wins_by_ron and hand[i] == 0 : self.temp[self.i_temp] = BlockType.CLOSED_TRIPLET
+                if self.winning_tile == i and self.wins_by_ron and hand[i] == 0 : self.temp[self.i_temp] = BlockType.OPENED_TRIPLET
                 else : self.temp[self.i_temp] = BlockType.CLOSED_TRIPLET
                 self.temp[self.i_temp + 1] = i
                 self.i_temp += 2
@@ -733,23 +733,29 @@ cdef class Game :
                     break
         for i in range(0, 10, 2) :
             if self.temp[i] == BlockType.OPENED_TRIPLET :
+                #print(self.temp[i+1], "ポン")
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 4
                 else : fu += 2
             elif self.temp[i] == BlockType.PAIR :
+                #print(self.temp[i+1], "頭")
                 if self.temp[i+1] >= 35 or self.temp[i+1] == self.prevailing_wind : fu += 2
                 if self.temp[i+1] == self.players_wind : fu += 2
             elif self.temp[i] in BlockType.RUNS : continue
             elif self.temp[i] == BlockType.CLOSED_TRIPLET :
+                #print(self.temp[i+1], "暗刻")
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 8
                 else : fu += 4
             elif self.temp[i] == BlockType.OPENED_KAN :
+                #print(self.temp[i+1], "明槓")
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 16
                 else : fu += 8
             elif self.temp[i] == BlockType.CLOSED_KAN :
+                #print(self.temp[i+1], "暗槓")
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 32
                 else : fu += 16
         if fu == 20 : fu = 30
         elif fu % 10 > 0 : fu = (fu + 10) - (fu % 10)
+        #print(fu)
         return fu
 
 
