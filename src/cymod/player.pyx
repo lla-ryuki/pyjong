@@ -388,9 +388,9 @@ cdef class Player :
 
     # 和了れるかどうか
     cpdef bool can_win(self, game, int ron_tile=-1) :
-        cdef bool ron, is_chiitoi, is_kokushi, is_normal
+        cdef bool is_chiitoi, is_kokushi, is_normal
         cdef tuple shanten_nums
-        ron, is_chiitoi, is_kokushi, is_normal = False, False, False, False
+        is_chiitoi, is_kokushi, is_normal = False, False, False
 
         # 向聴数的に和了っているかどうか確認
         shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, self.opened_sets_num, ron_tile)
@@ -405,7 +405,7 @@ cdef class Player :
 
         # 役があるかどうかをチェック
         if is_chiitoi or is_kokushi : return True
-        if is_normal and self.has_yaku(game, ron, ron_tile) : return True
+        if is_normal and self.has_yaku(game, ron_tile) : return True
 
         return False
 
@@ -431,7 +431,7 @@ cdef class Player :
 
 
     # 役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    cdef bool has_yaku(self, game, bool ron, int ron_tile) :
+    cdef bool has_yaku(self, game, int ron_tile) :
         cdef int[38] hand
 
         if ron_tile in TileType.REDS : ron_tile += 5
@@ -444,24 +444,25 @@ cdef class Player :
         if red_dragon(hand) : return True
         if bakaze(hand, game.prevailing_wind) : return True
         if jikaze(hand, self.players_wind) : return True
-        if not(ron) and not(self.has_stealed) : return True
+        if ron_tile > 0 and not(self.has_stealed) : return True
         if half_flush(hand) : return True
         if flush(hand) : return True
         if game.is_last_tile() : return True # 海底・河底
         if game.rinshan_draw_flag : return True # 嶺上
         if game.dora_opens_flag : return True # 槍槓
-        if self.has_yaku_based_on_tiles(game.prevailing_wind, ron, ron_tile) : return True
+        if self.has_yaku_based_on_tiles(game.prevailing_wind, ron_tile) : return True
 
         return False
 
 
     # 手牌構成による役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    cdef bool has_yaku_based_on_tiles(self, int prevailing_wind, bool ron, int ron_tile) :
+    cdef bool has_yaku_based_on_tiles(self, int prevailing_wind, int ron_tile) :
         cdef int[38] hand
         cdef int i
+        cdef bool there_is_yaku
 
         hand = self.hand[:]
-        if ron and ron_tile > 0 : hand[ron_tile] += 1
+        if ron_tile > 0 : hand[ron_tile] += 1
         self.hand_composition = [0] * 10
         self.i_hc = 0
 
@@ -481,7 +482,7 @@ cdef class Player :
                 self.hand_composition[self.i_hc] = BlockType.PAIR
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile);
+                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron_tile);
                 if there_is_yaku : return True
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc] = 0
@@ -492,8 +493,9 @@ cdef class Player :
 
 
     # 面子を抜き出す．pick_out_mentsu()と違い高速化のため役判定に不要な処理を省いたバージョン．
-    cdef bool pick_out_mentsu2(self, int[38] hand, int prevailing_wind, bool ron, int ron_tile) :
+    cdef bool pick_out_mentsu2(self, int[38] hand, int prevailing_wind, int ron_tile) :
         cdef int i
+        cdef bool there_is_yaku
 
         for i in range(1,38) :
             # 判定する手牌構成が決まったら役があるかどうか判定結果を返す
@@ -516,11 +518,12 @@ cdef class Player :
             # 暗刻抜き出し
             if hand[i] >= 3 :
                 hand[i] -= 3
-                if i == ron_tile and ron and hand[i] == 0 : self.hand_composition[self.i_hc] = BlockType.OPENED_TRIPLET
+                if i == ron_tile and hand[i] == 0 : self.hand_composition[self.i_hc] = BlockType.OPENED_TRIPLET
                 else : self.hand_composition[self.i_hc] = BlockType.CLOSED_TRIPLET
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile)
+                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron_tile)
+                if there_is_yaku : return True
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc] = 0
                 self.hand_composition[self.i_hc+1] = 0
@@ -528,17 +531,18 @@ cdef class Player :
 
             # 順子抜き出し
             if i < 30 and hand[i] != 0 and hand[i+1] != 0 and hand[i+2] != 0 :
-                hand[i] = hand[i] - 1
-                hand[i+1] = hand[i+1] - 1
-                hand[i+2] = hand[i+2] - 1
+                hand[i]   -= 1
+                hand[i+1] -= 1
+                hand[i+2] -= 1
                 self.hand_composition[self.i_hc] = BlockType.CLOSED_RUN
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile)
+                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron_tile)
+                if there_is_yaku : return True
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc+1] = 0
                 self.hand_composition[self.i_hc] = 0
-                hand[i] += 1
+                hand[i]   += 1
                 hand[i+1] += 1
                 hand[i+2] += 1
 
