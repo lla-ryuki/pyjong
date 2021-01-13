@@ -264,7 +264,7 @@ cdef class Player :
         cdef tuple shanten_nums
         shanten_nums = shanten_calculator.get_shanten_nums(self.hand, self.opened_sets_num)
 
-        if shanten_nums[0] == 0 and self.has_used_up_winning_tile() or \
+        if shanten_nums[0] == 0 and not(self.has_used_up_winning_tile()) or \
            shanten_nums[1] == 0 or \
            shanten_nums[2] == 0 : self.is_ready = True
         else : self.is_ready = False
@@ -287,8 +287,8 @@ cdef class Player :
             num_of_winning_tile += 4
             num_of_winning_tile -= self.hand[tile]
 
-        if num_of_winning_tile == 0 : return False
-        return True
+        if num_of_winning_tile == 0 : return True
+        return False
 
 
     # 流し満貫かチェック

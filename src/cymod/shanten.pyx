@@ -58,14 +58,16 @@ cdef class ShantenNumCalculator :
         self.opened_sets_num = opened_sets_num
         if ron_tile > 0 : self.hand[ron_tile] += 1
 
-        shanten_nums = self.shanten_table.get(tuple(self.hand))
+        key = tuple(self.hand)
+        shanten_nums = self.shanten_table.get(key)
         if (shanten_nums is None) :
             shanten_nums = self._calc_shanten_nums()
-            key = tuple(hand)
             self.shanten_table[key] = shanten_nums
             if self.record_mode :
                 with open(self.file_path, "wb") as f :
                     pickle.dump(self.shanten_table, f)
+        else :
+            print("hit", shanten_nums)
 
         return shanten_nums
 
@@ -126,6 +128,7 @@ cdef class ShantenNumCalculator :
     # 通常手の向聴数を返す
     cdef int _calc_shanten_num_of_normal(self) :
         self.shanten_num = 8
+        self.shanten_temp = 8
         self.pairs_num = 0
         self.tahtsu_num = 0
         self.sets_num = 0

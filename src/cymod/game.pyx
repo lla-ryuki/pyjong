@@ -366,7 +366,7 @@ cdef class Game :
 
         tenpai_players_num = 0
         for i in range(4) :
-            if self.players[i].is_ready : tenpai_players_num += 1
+            if self.players[i].check_hand_is_ready(self.shanten_calculator) : tenpai_players_num += 1
         if tenpai_players_num != 0 and tenpai_players_num != 4 :
             penalty = -3000 // (4 - tenpai_players_num)
             reward = 3000 // tenpai_players_num
@@ -1038,7 +1038,6 @@ cdef class Game :
         # 和了の処理
         if self.win_flag : self.proc_win()
         else :
-            for i in range(4) : self.players[i].check_hand_is_ready(self.shanten_calculator)
             if self.is_abortive_draw : self.counters_num += 1
             # 流し満貫判定と処理
             elif ( self.players[0].check_nagashi_mangan() or \
@@ -1067,9 +1066,6 @@ cdef class Game :
 
 
     # テストoverride用
-    cpdef void print_scores(self, info) :
-        pass
-    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) :
-        pass
-    cpdef void check_RYUUKYOKU_tag(self) :
-        pass
+    cpdef void print_scores(self, info) : pass
+    cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) : pass
+    cpdef void check_RYUUKYOKU_tag(self) : pass
