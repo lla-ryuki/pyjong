@@ -444,7 +444,7 @@ cdef class Player :
         if red_dragon(hand) : return True
         if bakaze(hand, game.prevailing_wind) : return True
         if jikaze(hand, self.players_wind) : return True
-        if ron_tile > 0 and not(self.has_stealed) : return True
+        if ron_tile < 0 and not(self.has_stealed) : return True
         if half_flush(hand) : return True
         if flush(hand) : return True
         if game.is_last_tile() : return True # 海底・河底
