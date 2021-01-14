@@ -519,7 +519,7 @@ cdef class Game :
             #print("tanyao", self.han)
             if bakaze(hand, self.prevailing_wind) : self.han += 1
             #print("ba", self.han)
-            if jikaze(hand, self.players_wind) : self.han += 1
+            if jikaze(hand, player.players_wind) : self.han += 1
             #print("ji", self.han)
             if white_dragon(hand) : self.han += 1
             #print("haku", self.han)

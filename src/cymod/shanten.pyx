@@ -66,8 +66,6 @@ cdef class ShantenNumCalculator :
             if self.record_mode :
                 with open(self.file_path, "wb") as f :
                     pickle.dump(self.shanten_table, f)
-        else :
-            print("hit", shanten_nums)
 
         return shanten_nums
 

@@ -46,7 +46,7 @@ cdef bool one_set_of_identical_sequences(int[:] temp) :
 # 場風 bakaze
 cdef bool bakaze(int[:] hand, int prevailing_wind) :
     if hand[prevailing_wind] > 2 : return True
-    else : return False
+    return False
 
 
 # 自風 jikaze
