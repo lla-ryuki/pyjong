@@ -337,7 +337,7 @@ cdef class TestGame(Game) :
         while True :
             tag_name = self.xml[self.i_log].tag
             attr = self.xml[self.i_log].attrib
-            if tag_name != "UN" and not(tag_name == "REACH" and attr["step"] == "2") :
+            if tag_name != "UN" and tag_name != "BYE" and not(tag_name == "REACH" and attr["step"] == "2") :
                 self.tag_name = tag_name
                 self.attr = attr
                 break

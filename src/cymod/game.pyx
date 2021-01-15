@@ -251,7 +251,7 @@ cdef class Game :
     # 点数計算前の準備
     cdef void preproc_calculating_basic_points(self, int i_winner) :
         # プレイヤの風牌を記録
-        self.players_wind = 31 + (((i_winner + 4) - self.rounds_num) % 4)
+        self.players_wind = 31 + (((i_winner + 4) - self.rotations_num) % 4)
         # 親かどうかを確認
         if self.rotations_num == i_winner : self.dealer_wins = True
         else : self.dealer_wins = False
@@ -519,7 +519,7 @@ cdef class Game :
             #print("tanyao", self.han)
             if bakaze(hand, self.prevailing_wind) : self.han += 1
             #print("ba", self.han)
-            if jikaze(hand, player.players_wind) : self.han += 1
+            if jikaze(hand, self.players_wind) : self.han += 1
             #print("ji", self.han)
             if white_dragon(hand) : self.han += 1
             #print("haku", self.han)

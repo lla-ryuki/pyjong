@@ -780,6 +780,12 @@ cdef class Player :
                 elif i == 20 : closed_hand += "p"
                 elif i == 30 : closed_hand += "s"
                 continue
+
+            # 赤がある場合は表示
+            if   i ==  5 and self.reds[i//10] : closed_hand += "r"
+            elif i == 15 and self.reds[i//10] : closed_hand += "r"
+            elif i == 25 and self.reds[i//10] : closed_hand += "r"
+
             # 持ってる枚数分，数字を追加
             closed_hand += self.convert_tile_for_print(i) * self.hand[i]
 
