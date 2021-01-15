@@ -456,7 +456,7 @@ cdef class Game :
 
     # 記録はせずに海底・河底かだけ返す
     cpdef bool is_last_tile(self) :
-        if 136 - (self.i_wall + self.i_rinshan) == 14 : return True
+        if self.remain_tiles_num == 0 : return True
 
 
     # 和了牌をセット
