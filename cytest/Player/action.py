@@ -100,7 +100,6 @@ class Action :
         action = colored(f"declare nine orphans", "blue")
         print(f"player{player_num} {action}")
 
-        game.read_next_tag()
         return True
 
 

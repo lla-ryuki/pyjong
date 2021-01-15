@@ -739,10 +739,9 @@ cdef class Player :
         if self.can_declare_ready(game) : ready = game.action.decide_to_declare_ready(game, players, self.player_num)
 
         # 九種九牌で流局するかどうか決める
-        if game.is_first_turn : kyusyu = game.action.decide_to_declare_nine_orphans(game, players, self.player_num, self.hand)
-        else : kyusyu = False
+        if game.is_first_turn : kyushu = game.action.decide_to_declare_nine_orphans(game, players, self.player_num, self.hand)
+        else : kyushu = False
 
-        # return tile, exchanged, ready, ankan, kakan, kyushu
         return tile, exchanged, ready, ankan, kakan, kyushu
 
 
