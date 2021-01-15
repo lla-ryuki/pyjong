@@ -253,6 +253,7 @@ cdef class TestGame(Game) :
             self.play_subgame()
             # 半荘終了判定
             if self.is_over :
+                self.proc_game_end()
                 self.check_final_score()
                 break
 
@@ -335,6 +336,7 @@ cdef class TestGame(Game) :
     cpdef void read_next_tag(self) :
         self.i_log += 1
         while True :
+            if self.i_log == len(self.xml) : break
             tag_name = self.xml[self.i_log].tag
             attr = self.xml[self.i_log].attrib
             if tag_name != "UN" and tag_name != "BYE" and not(tag_name == "REACH" and attr["step"] == "2") :

@@ -1048,6 +1048,18 @@ cdef class Game :
             else : self.proc_drawn_game()
             self.check_RYUUKYOKU_tag()
 
+    cdef void proc_game_end(self) :
+        cdef int i, i_top, top_score
+
+        # トップのプレイヤにリーチ棒を付与
+        i_top = 0
+        top_score = self.players[0].score
+        for i in range(1,4) :
+            if top_score < self.players[i].score :
+                i_top = i
+                top_score = self.players[i].score
+        self.players[i_top].score += self.deposits_num * 1000
+
 
     # 半荘の処理
     cpdef void play_games(self, int games_num) :
@@ -1059,7 +1071,9 @@ cdef class Game :
                 self.init_subgame()
                 self.play_subgame()
                 # 半荘終了判定
-                if self.is_over : break
+                if self.is_over :
+                    self.proc_game_end()
+                    break
 
         # 向聴テーブルをdump
         self.shanten_calculator.dump_table()
