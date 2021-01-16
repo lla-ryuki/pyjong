@@ -66,6 +66,8 @@ cdef class ShantenNumCalculator :
             if self.record_mode :
                 with open(self.file_path, "wb") as f :
                     pickle.dump(self.shanten_table, f)
+        # else :
+        #     print("hit", shanten_nums)
 
         return shanten_nums
 
@@ -176,7 +178,7 @@ cdef class ShantenNumCalculator :
             if self.shanten_temp < self.shanten_num :
                 self.shanten_num = self.shanten_temp
             return
-        if self.sets_num + self.tahtsu_num < 4 :
+        if self.sets_num + self.opened_sets_num + self.tahtsu_num < 4 :
             if self.hand[i] == 2 :
                 self.tahtsu_num += 1
                 self.hand[i] -= 2
