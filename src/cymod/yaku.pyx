@@ -112,8 +112,8 @@ cdef bool straight(int[:] temp) :
 
     check = [False] * 9
     for i in range(0,10,2) :
-        if temp[i] == BlockType.CLOSED_RUN or temp[i] == BlockType.OPENED_RUN :
-            if temp[i+1] in {1, 4, 7, 11, 14, 17, 21, 24, 27} : check[temp[i+1] // 3] = True
+        if temp[i] in {BlockType.CLOSED_RUN, BlockType.OPENED_RUN} and \
+           temp[i+1] in {1, 4, 7, 11, 14, 17, 21, 24, 27} : check[(temp[i+1]-1)//3] = True
     if (check[0] and check[1] and check[2]) or \
        (check[3] and check[4] and check[5]) or \
        (check[6] and check[7] and check[8]) : return True
