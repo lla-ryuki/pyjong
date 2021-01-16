@@ -434,10 +434,14 @@ cdef class Player :
     cdef bool has_yaku(self, game, int ron_tile) :
         cdef int[38] hand
 
-        if ron_tile in TileType.REDS : ron_tile += 5
+        # hand不要の役判定
         if self.has_declared_ready : return True
         if self.has_declared_double_ready : return True
+
+        # hand必要な役判定
+        if ron_tile in TileType.REDS : ron_tile += 5
         hand = self.put_back_opened_hand()
+        hand[ron_tile] += 1
         if all_simples(hand) : return True
         if white_dragon(hand) : return True
         if green_dragon(hand) : return True
