@@ -6,6 +6,7 @@ import xml.etree.ElementTree as et
 
 # 3rd
 from termcolor import colored
+import webbrowser
 
 # ours
 from game cimport Game
@@ -22,7 +23,7 @@ from libcpp cimport bool
 
 cdef class TestGame(Game) :
     cdef public xml
-    cdef public file_name
+    cdef public log_id
     cdef public tag_name
     cdef public attr
     cdef public bool is_error
@@ -120,7 +121,7 @@ cdef class TestGame(Game) :
            (self.rotations_num != int(seed[0]) % 4) or \
            (self.counters_num != int(seed[1])) or \
            (self.deposits_num != int(seed[2])) and not(self.is_error) : self.error("subgame info (in TestGame.init_subgame())")
-        print(f"file_name  : {self.file_name}")
+        print(f"log_id     : {self.log_id}")
         print(f"round      : {self.rounds_num}")
         print(f"rotation   : {self.rotations_num}")
         print(f"counters   : {self.counters_num}")
@@ -278,7 +279,7 @@ cdef class TestGame(Game) :
                 self.xml = xml[3:]
                 self.i_log = 0
                 self.read_next_tag()
-                self.file_name = file_name
+                self.log_id = file_name[:-4]
                 self.init_game()
                 print(colored("Game start", "blue", attrs=["bold"]))
                 self.play_test_game()
@@ -356,13 +357,16 @@ cdef class TestGame(Game) :
 
     # ログと食い違いが起こった時の処理
     cpdef void error(self, info) :
+        # コンソールに表示
+        round_s = ""
+        if   self.rounds_num == 0 : round_s = "東"
+        elif self.rounds_num == 1 : round_s = "南"
+        elif self.rounds_num == 2 : round_s = "西"
         self.is_error = True
         print(colored(info, "red", attrs=["bold"]))
         print("=" * 70)
-        print(f"file_name  : {self.file_name}")
-        print(f"round      : {self.rounds_num}")
-        print(f"rotation   : {self.rotations_num}")
-        print(f"counters   : {self.counters_num}")
+        print(f"log_id     : {self.log_id}")
+        print(f"case       : {round_s}{self.rotations_num+1}局{self.counters_num}本場")
         print(f"deposits   : {self.deposits_num}")
         print(f"tag_name   : {self.tag_name}")
         print(f"attributes : {self.attr}")
@@ -371,6 +375,10 @@ cdef class TestGame(Game) :
             print(f"player{i}\'s hand")
             self.players[i].print_hand()
         print("=" * 70)
+
+        # エラーがあったログを天鳳の牌譜viewerで開く
+        webbrowser.open(f"https://tenhou.net/0/?log={self.log_id}")
+
         sys.exit()
 
 

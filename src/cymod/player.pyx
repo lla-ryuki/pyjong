@@ -296,6 +296,7 @@ cdef class Player :
         cdef int tile
         if self.is_nagashi_mangan is False : return False
 
+        print(self.player_num, self.discarded_tiles)
         for tile in self.discarded_tiles :
             if not(tile in (TileType.TERMINALS | TileType.HONORS | {-1})) :
                 self.is_nagashi_mangan = False

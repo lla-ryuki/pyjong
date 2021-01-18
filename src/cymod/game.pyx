@@ -1037,14 +1037,14 @@ cdef class Game :
 
         # 和了の処理
         if self.win_flag : self.proc_win()
+        # 流局処理
         else :
+            for i in range(4) : self.players[i].check_nagashi_mangan()
             if self.is_abortive_draw : self.counters_num += 1
-            # 流し満貫判定と処理
-            elif ( self.players[0].check_nagashi_mangan() or \
-                   self.players[1].check_nagashi_mangan() or \
-                   self.players[2].check_nagashi_mangan() or \
-                   self.players[3].check_nagashi_mangan() ) : self.proc_nagashi_mangan()
-            # 和了，途中流局，流し満貫のどれでもなければ普通の流局処理
+            elif ( self.players[0].is_nagashi_mangan or \
+                   self.players[1].is_nagashi_mangan or \
+                   self.players[2].is_nagashi_mangan or \
+                   self.players[3].is_nagashi_mangan ) : self.proc_nagashi_mangan()
             else : self.proc_drawn_game()
             self.check_RYUUKYOKU_tag()
 
