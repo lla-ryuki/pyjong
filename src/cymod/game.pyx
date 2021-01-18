@@ -681,7 +681,6 @@ cdef class Game :
     # 翻数を数える
     cdef void count_han(self, bool has_stealed) :
         cdef int han_temp, fu_temp
-        print(self.temp)
         han_temp = self.han_temp
         if no_points_hand(self.temp, self.winning_tile, self.prevailing_wind, self.players_wind) : han_temp += 1
         if terminal_or_honor_in_each_set(self.temp) :

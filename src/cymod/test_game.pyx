@@ -288,6 +288,25 @@ cdef class TestGame(Game) :
                 print("")
 
 
+    # 単一ファイルテスト用メソッド
+    cpdef void partial_test(self, log_id) :
+        year = log_id[0:4]
+        month = log_id[4:6]
+        home = os.environ["HOME"]
+        path = f"{home}/github/ryujin/data/xml/{year}/{month}/"
+        tree = et.parse(path + log_id + ".xml")
+        xml = tree.getroot()
+        self.xml = xml[3:]
+        self.i_log = 0
+        self.read_next_tag()
+        self.log_id = log_id
+        self.init_game()
+        print(colored("Game start", "blue", attrs=["bold"]))
+        self.play_test_game()
+        print(colored(f"Passed!", "green", attrs=["bold"]))
+        print("")
+
+
     # プレイヤ全員のscoreを表示
     cpdef void print_scores(self, info) :
         print(colored(info, "yellow", attrs=["bold"]))
@@ -376,8 +395,9 @@ cdef class TestGame(Game) :
             self.players[i].print_hand()
         print("=" * 70)
 
-        # エラーがあったログを天鳳の牌譜viewerで開く
-        webbrowser.open(f"https://tenhou.net/0/?log={self.log_id}")
+        # エラーがあったログを天鳳の牌譜viewerで開くかどうか聞く
+        yn = input(colored("Open log viewer?(y/else) : ", "yellow", attrs=["bold"]))
+        if yn == "y" : webbrowser.open(f"https://tenhou.net/0/?log={self.log_id}")
 
         sys.exit()
 
