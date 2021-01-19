@@ -836,7 +836,9 @@ cdef class Game :
             if self.dora_opens_flag : self.open_new_dora()
             # 槍槓用ロンフェーズ
             self.proc_ron_phase(tile)
+            self.wins_by_chankan = True
             if self.win_flag : return False
+            self.wins_by_chankan = False
             self.proc_kakan(tile)
         elif kyushu : self.is_abortive_draw = True
         return ready
@@ -873,28 +875,20 @@ cdef class Game :
                     # リー棒返却
                     self.deposits_num -= 1
                     self.players[self.i_player].score_points(1000)
-
                 # 和了人数をincrement
                 winners_num += 1
-
                 # 切られた牌を手牌に加える
                 self.players[i_winner].get_tile(discarded_tile)
-
                 # 和了牌を記録．平和判定とかに使う．
                 self.set_winning_tile(discarded_tile)
-
-                # 偶然役の記録
-                if self.dora_opens_flag : self.wins_by_chankan = True # 槍槓があるかどうかを記録
-                self.check_player_wins_by_last_tile() # 河底のチェック
-
+                # 河底チェック
+                self.check_player_wins_by_last_tile()
                 # ロン和了フラグを立てる
                 self.win_flag = True
                 self.wins_by_ron = True
                 self.players[i_winner].wins = True
-
         # 立直宣言牌flagを戻す
         self.ready_flag = False
-
         # 三家和判定
         if winners_num == 3 :
             self.is_abortive_draw = True
