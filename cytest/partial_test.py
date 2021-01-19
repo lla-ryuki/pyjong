@@ -11,7 +11,8 @@ from test_game import TestGame
 from Player.action import Action
 
 if __name__ == "__main__" :
+    args = sys.argv
+    log_id = args[1]
     action = Action()
     game = TestGame(action)
-    log_id = input(colored("Input log id : ", "yellow"))
     game.partial_test(log_id)
