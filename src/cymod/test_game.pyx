@@ -425,5 +425,5 @@ cdef class TestGame(Game) :
 
     # 三家和かどうかをタグから確認
     cpdef bool three_players_win(self) :
-        if self.tag_name == "RYUUKYOKU" and self.attr["type"] == "ron3" : return True
+        if self.tag_name == "RYUUKYOKU" and self.attr.get("type") == "ron3" : return True
         return False

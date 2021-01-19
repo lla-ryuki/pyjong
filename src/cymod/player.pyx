@@ -296,7 +296,6 @@ cdef class Player :
         cdef int tile
         if self.is_nagashi_mangan is False : return False
 
-        print(self.player_num, self.discarded_tiles)
         for tile in self.discarded_tiles :
             if not(tile in (TileType.TERMINALS | TileType.HONORS | {-1})) :
                 self.is_nagashi_mangan = False
@@ -398,7 +397,7 @@ cdef class Player :
         if   shanten_nums[0] == -1 : is_normal = True
         elif shanten_nums[1] == -1 : is_chiitoi = True
         elif shanten_nums[2] == -1 : is_kokushi = True
-        if not(is_chiitoi or is_kokushi or is_normal) : return False
+        if not(is_normal or is_chiitoi or is_kokushi) : return False
 
         # ロンの時の処理
         if ron_tile > -1 :
@@ -515,6 +514,7 @@ cdef class Player :
                 if three_kans(self.hand_composition) : return True
                 if three_closed_triplets(self.hand_composition) : return True
                 if terminal_in_each_set(self.hand_composition) : return True
+                if two_sets_of_identical_sequences(self.hand_composition) : return True
                 return False
 
             # インデックスが指す場所に牌がなければ次の牌を見にいく
