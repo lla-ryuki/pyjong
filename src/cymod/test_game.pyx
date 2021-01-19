@@ -421,3 +421,9 @@ cdef class TestGame(Game) :
     cpdef void check_RYUUKYOKU_tag(self) :
         if self.tag_name != "RYUUKYOKU" : self.error("tag is not RYUUKYOKU tag (in TestGame.check_RYUUKYOKU_tag())")
         self.read_next_tag()
+
+
+    # 三家和かどうかをタグから確認
+    cpdef bool three_players_win(self) :
+        if self.tag_name == "RYUUKYOKU" and self.attr["type"] == "ron3" : return True
+        return False

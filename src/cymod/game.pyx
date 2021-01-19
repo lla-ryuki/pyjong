@@ -890,6 +890,7 @@ cdef class Game :
         # 立直宣言牌flagを戻す
         self.ready_flag = False
         # 三家和判定
+        if self.three_players_win() : winners_num = 3
         if winners_num == 3 :
             self.is_abortive_draw = True
             self.win_flag = False
@@ -1076,3 +1077,4 @@ cdef class Game :
     cpdef void print_scores(self, info) : pass
     cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) : pass
     cpdef void check_RYUUKYOKU_tag(self) : pass
+    cpdef bool three_players_win(self) : return False
