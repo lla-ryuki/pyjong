@@ -564,7 +564,7 @@ cdef class Game :
         if self.han < 13 :
             self.han += 2
             if player.has_declared_double_ready : self.han += 2
-            if player.has_declared_ready : self.han += 1
+            elif player.has_declared_ready : self.han += 1
             if player.has_right_to_one_shot : self.han += 1
             if not(self.wins_by_ron) : self.han += 1
             if self.wins_by_rinshan_kaihou : self.han += 1
