@@ -194,7 +194,7 @@ cdef bool little_three_dragons(int[:] hand) :
 # 二盃口 ryanpeikou
 cdef bool two_sets_of_identical_sequences(int[:] temp) :
     cdef int i, identical_sequence_num
-    cdef bool[30] check
+    cdef int[30] check
 
     check = [0] * 30
     identical_sequence_num = 0
