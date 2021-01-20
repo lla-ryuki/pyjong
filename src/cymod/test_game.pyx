@@ -121,10 +121,11 @@ cdef class TestGame(Game) :
            (self.rotations_num != int(seed[0]) % 4) or \
            (self.counters_num != int(seed[1])) or \
            (self.deposits_num != int(seed[2])) and not(self.is_error) : self.error("subgame info (in TestGame.init_subgame())")
+        if   self.rounds_num == 0 : round_s = "東"
+        elif self.rounds_num == 1 : round_s = "南"
+        elif self.rounds_num == 2 : round_s = "西"
         print(f"log_id     : {self.log_id}")
-        print(f"round      : {self.rounds_num}")
-        print(f"rotation   : {self.rotations_num}")
-        print(f"counters   : {self.counters_num}")
+        print(f"case       : {round_s}{self.rotations_num+1}局{self.counters_num}本場")
         print(f"deposits   : {self.deposits_num}")
         print("")
 

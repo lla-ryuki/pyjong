@@ -404,6 +404,7 @@ cdef class Game :
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].is_ready)
         # 局の数等の変数操作
         self.counters_num += 1
+        self.players[self.rotations_num].check_hand_is_ready(self.shanten_calculator)
         if self.players[self.rotations_num].is_ready is False :
             self.rotations_num += 1
             if self.rotations_num == 4 :
@@ -1038,7 +1039,10 @@ cdef class Game :
             elif ( self.players[0].is_nagashi_mangan or \
                    self.players[1].is_nagashi_mangan or \
                    self.players[2].is_nagashi_mangan or \
-                   self.players[3].is_nagashi_mangan ) : self.proc_nagashi_mangan()
+                   self.players[3].is_nagashi_mangan ) :
+                self.print_scores("scores at proc_nagashi_mangan() before")
+                self.proc_nagashi_mangan()
+                self.print_scores("scores at proc_nagashi_mangan() before")
             else : self.proc_drawn_game()
             self.check_RYUUKYOKU_tag()
 
