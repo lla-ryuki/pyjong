@@ -24,6 +24,7 @@ cdef class Game :
             self.players = [TestPlayer(i) for i in range(4)]
         else :
             self.players = [Player(i) for i in range(4)]
+        self.pt_mode = False
         self.action = action
         self.logger = Logger(logging=False);
         self.shanten_calculator = ShantenNumCalculator()
@@ -326,27 +327,21 @@ cdef class Game :
     cdef void proc_win(self) :
         cdef int i, i_winner, counters_temp
         counters_temp = self.counters_num
-        self.print_scores("scores at proc_win() before")
+        if self.pt_mode : self.print_scores("scores at proc_win() before")
         # ツモった人，最後に牌を切った人から順に和了を見ていく．※ 複数人の和了の可能性があるので全員順番にチェックする必要がある．
         for i in range(4) :
             i_winner = (self.i_player + i) % 4
             if self.players[i_winner].wins :
-                #self.print_scores("1")
                 self.preproc_calculating_basic_points(i_winner)
-                #self.print_scores("2")
                 self.basic_points = self.calculate_basic_points(self.players[i_winner])
-                #self.print_scores("3")
                 if self.wins_by_ron : self.proc_ron(i_winner)
                 else : self.proc_tsumo(i_winner)
-                #self.print_scores("4")
                 self.players[i_winner].score_points(300 * self.counters_num)
-                #self.print_scores("5")
                 self.players[i_winner].score_points(1000 * self.deposits_num)
-                #self.print_scores("6")
                 self.counters_num, self.deposits_num = 0, 0
-                self.print_win_info(i_winner, self.i_player, self.han, self.fu, self.basic_points)
+                if self.pt_mode : self.print_win_info(i_winner, self.i_player, self.han, self.fu, self.basic_points)
                 if i == 0 : break
-        self.print_scores("scores at proc_win() after")
+        if self.pt_mode : self.print_scores("scores at proc_win() after")
         # ゲーム終了判定
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].wins)
         # 局の数等の変数操作
@@ -504,57 +499,57 @@ cdef class Game :
         if self.yakuman == 0 :
             if player.has_declared_double_ready : self.han += 2
             elif player.has_declared_ready : self.han += 1
-            print("riichi", self.han)
+            if self.pt_mode : print("riichi", self.han)
             if player.has_right_to_one_shot : self.han += 1
-            print("ippatsu", self.han)
+            if self.pt_mode : print("ippatsu", self.han)
             if not(player.has_stealed) and not(self.wins_by_ron) : self.han += 1
-            print("tsumo", self.han)
+            if self.pt_mode : print("tsumo", self.han)
             if self.wins_by_rinshan_kaihou : self.han += 1
-            print("rinshan", self.han)
+            if self.pt_mode : print("rinshan", self.han)
             if self.wins_by_last_tile : self.han += 1
-            print("haitei/houtei", self.han)
+            if self.pt_mode : print("haitei/houtei", self.han)
             if self.wins_by_chankan : self.han += 1
-            print("chankan", self.han)
+            if self.pt_mode : print("chankan", self.han)
             if all_simples(hand) : self.han += 1
-            print("tanyao", self.han)
+            if self.pt_mode : print("tanyao", self.han)
             if bakaze(hand, self.prevailing_wind) : self.han += 1
-            print("ba", self.han)
+            if self.pt_mode : print("ba", self.han)
             if jikaze(hand, self.players_wind) : self.han += 1
-            print("ji", self.han)
+            if self.pt_mode : print("ji", self.han)
             if white_dragon(hand) : self.han += 1
-            print("haku", self.han)
+            if self.pt_mode : print("haku", self.han)
             if green_dragon(hand) : self.han += 1
-            print("hatsu", self.han)
+            if self.pt_mode : print("hatsu", self.han)
             if red_dragon(hand) : self.han += 1
-            print("chun", self.han)
+            if self.pt_mode : print("chun", self.han)
             if all_terminals_and_honors(hand) : self.han += 2
-            print("honroutou", self.han)
+            if self.pt_mode : print("honroutou", self.han)
             if little_three_dragons(hand) : self.han += 2
-            print("shousangen", self.han)
+            if self.pt_mode : print("shousangen", self.han)
             if half_flush(hand) :
                 if not(player.has_stealed) : self.han += 3
                 else : self.han += 2
-            print("honitsu", self.han)
+            if self.pt_mode : print("honitsu", self.han)
             if flush(hand) :
                 if not(player.has_stealed) : self.han += 6
                 else : self.han += 5
-            print("chinitsu", self.han)
+            if self.pt_mode : print("chinitsu", self.han)
             if player.reds[0] or player.opened_reds[0] : self.han += 1
-            print("red5m", self.han)
+            if self.pt_mode : print("red5m", self.han)
             if player.reds[1] or player.opened_reds[1] : self.han += 1
-            print("red5p", self.han)
+            if self.pt_mode : print("red5p", self.han)
             if player.reds[2] or player.opened_reds[2] : self.han += 1
-            print("red5s", self.han)
+            if self.pt_mode : print("red5s", self.han)
             for i in range(5) :
                 if self.dora_has_opened[i] :
                     self.han += hand[self.doras[i]]
                     if player.has_declared_ready or player.has_declared_double_ready :
                         self.han += hand[self.uras[i]]
-            print("dora", self.han)
+            if self.pt_mode : print("dora", self.han)
             if self.han < 13 :
                 self.analyze_best_composition(player)
             else : self.yakuman = 1
-            print("best", self.han)
+            if self.pt_mode : print("best", self.han)
 
 
     # 七対子手の翻数計算
@@ -733,29 +728,23 @@ cdef class Game :
                     break
         for i in range(0, 10, 2) :
             if self.temp[i] == BlockType.OPENED_TRIPLET :
-                #print(self.temp[i+1], "ポン")
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 4
                 else : fu += 2
             elif self.temp[i] == BlockType.PAIR :
-                #print(self.temp[i+1], "頭")
                 if self.temp[i+1] >= 35 or self.temp[i+1] == self.prevailing_wind : fu += 2
                 if self.temp[i+1] == self.players_wind : fu += 2
             elif self.temp[i] in BlockType.RUNS : continue
             elif self.temp[i] == BlockType.CLOSED_TRIPLET :
-                #print(self.temp[i+1], "暗刻")
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 8
                 else : fu += 4
             elif self.temp[i] == BlockType.OPENED_KAN :
-                #print(self.temp[i+1], "明槓")
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 16
                 else : fu += 8
             elif self.temp[i] == BlockType.CLOSED_KAN :
-                #print(self.temp[i+1], "暗槓")
                 if self.temp[i+1] % 10 in [1,9] or self.temp[i+1] > 30 : fu += 32
                 else : fu += 16
         if fu == 20 : fu = 30
         elif fu % 10 > 0 : fu = (fu + 10) - (fu % 10)
-        #print(fu)
         return fu
 
 
@@ -944,7 +933,7 @@ cdef class Game :
                     elif j == 5 and chii3 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
                     elif j == 2 and kan   : self.proc_daiminkan(i_ap, discarded_tile)
                     else :
-                        print("error in game.proc_steal_phase()")
+                        if self.pt_mode : print("error in game.proc_steal_phase()")
                         sys.exit()
 
 
@@ -1040,9 +1029,9 @@ cdef class Game :
                    self.players[1].is_nagashi_mangan or \
                    self.players[2].is_nagashi_mangan or \
                    self.players[3].is_nagashi_mangan ) :
-                self.print_scores("scores at proc_nagashi_mangan() before")
+                if self.pt_mode : self.print_scores("scores at proc_nagashi_mangan() before")
                 self.proc_nagashi_mangan()
-                self.print_scores("scores at proc_nagashi_mangan() before")
+                if self.pt_mode : self.print_scores("scores at proc_nagashi_mangan() before")
             else : self.proc_drawn_game()
             self.check_RYUUKYOKU_tag()
 

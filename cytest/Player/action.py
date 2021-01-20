@@ -35,8 +35,9 @@ class Action :
 
         tile = int(game.tag_name[1:])
         discarded_tile = game.convert_tile(tile)
-        dis = colored("dis", "yellow")
-        print(f"player{player_num} {dis} {discarded_tile}")
+        if game.pt_mode :
+            dis = colored("dis", "yellow")
+            print(f"player{player_num} {dis} {discarded_tile}")
         exchanged = False
         if tile != game.org_got_tile : exchanged = True
 
@@ -62,8 +63,9 @@ class Action :
         elif action_num == 5 : a = "upper chii"
 
 
-        action = colored(f"{a}", "blue")
-        print(f"player{player_num} {action}")
+        if game.pt_mode :
+            action = colored(f"{a}", "blue")
+            print(f"player{player_num} {action}")
 
         self.reset_N()
         game.read_next_tag()
@@ -83,10 +85,11 @@ class Action :
         if player_num != int(game.attr["who"]) : game.error("Player index don't match (in Action.decide_to_kan())")
         if action_num not in {6, 7} : game.error("Wrong tag (in Player.aciton.decide_to_kan())")
 
-        if   action_num == 6 : a = "kakan"
-        elif action_num == 7 : a = "ankan"
-        action = colored(f"{a}", "blue")
-        print(f"player{player_num} {action}")
+        if game.pt_mode :
+            if   action_num == 6 : a = "kakan"
+            elif action_num == 7 : a = "ankan"
+            action = colored(f"{a}", "blue")
+            print(f"player{player_num} {action}")
 
         self.reset_N()
         game.read_next_tag()
@@ -97,8 +100,9 @@ class Action :
     def decide_to_declare_nine_orphans(self, game, players, player_num:int, hand:List[int]) -> bool :
         if not(game.tag_name == "RYUUKYOKU" and game.attr["type"] == "yao9") : return False
 
-        action = colored(f"declare nine orphans", "blue")
-        print(f"player{player_num} {action}")
+        if game.pt_mode :
+            action = colored(f"declare nine orphans", "blue")
+            print(f"player{player_num} {action}")
 
         return True
 
@@ -109,8 +113,9 @@ class Action :
         if game.tag_name != "REACH" : return False
         if player_num != int(game.attr["who"]) : game.error("Player index don't match (in Action.decide_to_declare_ready())")
 
-        action = colored(f"declare ready", "blue")
-        print(f"player{player_num} {action}")
+        if game.pt_mode :
+            action = colored(f"declare ready", "blue")
+            print(f"player{player_num} {action}")
 
         game.read_next_tag()
         return True
@@ -125,8 +130,9 @@ class Action :
         uras_s = game.attr.get("doraHaiUra")
         if uras_s is not(None) : game.set_ura(uras_s)
 
-        action = colored(f"win", "blue")
-        print(f"player{player_num} {action}")
+        if game.pt_mode :
+            action = colored(f"win", "blue")
+            print(f"player{player_num} {action}")
 
         if game.attr.get("owari") is None : game.read_next_tag()
         return True

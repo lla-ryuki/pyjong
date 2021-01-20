@@ -16,8 +16,9 @@ cdef class TestPlayer(Player) :
 
         tile = int(game.tag_name[1:])
         discarded_tile = game.convert_tile(tile)
-        dis = colored("dis", "yellow")
-        print(f"player{player_num} {dis} {discarded_tile}")
+        if game.pt_mode :
+            dis = colored("dis", "yellow")
+            print(f"player{player_num} {dis} {discarded_tile}")
         exchanged = False
         if tile != game.org_got_tile : exchanged = True
         if discarded_tile != players[player_num].last_got_tile or exchanged : game.error("Discarded tile isn't match (in TestPlayer.discard_tile_when_player_has_declared_ready())")

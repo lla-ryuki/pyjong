@@ -59,6 +59,8 @@ cdef class Game :
     cdef public bool dora_opens_flag
     cdef public bool rinshan_draw_flag
 
+    cdef public bool pt_mode
+
     # methods
     cdef void init_game(self)
     cdef bool init_subgame(self)

@@ -381,7 +381,7 @@ cdef class Player :
         cdef tuple shanten_nums
 
         if self.has_stealed or self.has_declared_ready or game.remain_tiles_num < 4 : return False
-        shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, 0)
+        shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, self.opened_sets_num)
         for s in shanten_nums :
             if s <= 0 : return True
 

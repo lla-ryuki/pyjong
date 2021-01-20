@@ -39,7 +39,7 @@ cdef class TestGame(Game) :
     cdef bool init_subgame(self) :
         cdef int i
 
-        print(colored("Subgame start", "blue", attrs=["bold"]))
+        if self.pt_mode : print(colored("Subgame start", "blue", attrs=["bold"]))
 
         # プレイヤが持つ局に関わるメンバ変数を初期化
         for i in range(4) :
@@ -115,7 +115,7 @@ cdef class TestGame(Game) :
         cdef bool error
 
         # 局の情報に食い違いがあったらエラーとして報告
-        print("="*40)
+        if self.pt_mode : print("="*40)
         seed = self.attr["seed"].split(",")
         if (self.rounds_num != int(seed[0]) // 4) or \
            (self.rotations_num != int(seed[0]) % 4) or \
@@ -124,18 +124,19 @@ cdef class TestGame(Game) :
         if   self.rounds_num == 0 : round_s = "東"
         elif self.rounds_num == 1 : round_s = "南"
         elif self.rounds_num == 2 : round_s = "西"
-        print(f"log_id     : {self.log_id}")
-        print(f"case       : {round_s}{self.rotations_num+1}局{self.counters_num}本場")
-        print(f"deposits   : {self.deposits_num}")
-        print("")
+        if self.pt_mode :
+            print(f"log_id     : {self.log_id}")
+            print(f"case       : {round_s}{self.rotations_num+1}局{self.counters_num}本場")
+            print(f"deposits   : {self.deposits_num}")
+            print("")
 
         # プレイヤの点数に食い違いがあったらエラーとして報告
         ten = self.attr["ten"].split(",")
         error = False
         for i in range(4) :
-            print(f"players[{i}].score : {self.players[i].score}")
-            print(f"xml_log[{i}].score : {int(ten[i]) * 100}")
-        print("="*40)
+            if self.pt_mode : print(f"players[{i}].score : {self.players[i].score}")
+            if self.pt_mode : print(f"xml_log[{i}].score : {int(ten[i]) * 100}")
+        if self.pt_mode : print("="*40)
         for i in range(4) :
             if (self.players[i].score != int(ten[i]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.init_subgame())")
 
@@ -204,7 +205,7 @@ cdef class TestGame(Game) :
         org_tile = int(self.tag_name[1:])
         tile = self.convert_tile(org_tile)
         get = colored("get", "green")
-        print(f"player{self.i_player} {get} {tile}")
+        if self.pt_mode : print(f"player{self.i_player} {get} {tile}")
         self.i_wall += 1
         self.remain_tiles_num -= 1
         self.read_next_tag()
@@ -219,7 +220,7 @@ cdef class TestGame(Game) :
         org_tile = int(self.tag_name[1:])
         tile = self.convert_tile(org_tile)
         get = colored("get", "green")
-        print(f"player{self.i_player} {get} {tile} from rinshan")
+        if self.pt_mode : print(f"player{self.i_player} {get} {tile} from rinshan")
         self.i_rinshan += 1
         self.remain_tiles_num -= 1
         self.read_next_tag()
@@ -282,15 +283,16 @@ cdef class TestGame(Game) :
                 self.read_next_tag()
                 self.log_id = file_name[:-4]
                 self.init_game()
-                print(colored("Game start", "blue", attrs=["bold"]))
+                if self.pt_mode : print(colored("Game start", "blue", attrs=["bold"]))
                 self.play_test_game()
                 passes_num += 1
                 print(colored(f"{passes_num} files passed!", "green", attrs=["bold"]))
-                print("")
+                if self.pt_mode : print("")
 
 
     # 単一ファイルテスト用メソッド
     cpdef void partial_test(self, log_id) :
+        self.pt_mode = True
         year = log_id[0:4]
         month = log_id[4:6]
         home = os.environ["HOME"]
@@ -397,25 +399,31 @@ cdef class TestGame(Game) :
         print("=" * 70)
 
         # エラーがあったログを天鳳の牌譜viewerで開くかどうか聞く
-        yn = input(colored("Open log viewer?(y/else) : ", "yellow", attrs=["bold"]))
-        if yn == "y" : webbrowser.open(f"https://tenhou.net/0/?log={self.log_id}")
+        if self.pt_mode :
+            yn = input(colored("Open log viewer?(y/else) : ", "yellow", attrs=["bold"]))
+            if yn == "y" : webbrowser.open(f"https://tenhou.net/0/?log={self.log_id}")
+
+        # 向聴テーブルをsave
+        if not(self.pt_mode) : self.shanten_calculator.dump_table()
 
         sys.exit()
 
 
     # 最終得点の確認
     cpdef void check_final_score(self) :
-        print(colored("Check final score", "yellow", attrs=["bold"]))
-        print("="*40)
+        if self.pt_mode : print(colored("Check final score", "yellow", attrs=["bold"]))
+        if self.pt_mode : print("="*40)
         ten = self.attr["owari"].split(",")
         error = False
-        for i in range(4) :
-            print(f"players[{i}].score : {self.players[i].score}")
-            print(f"xml_log[{i}].score : {int(ten[i*2]) * 100}")
+        if self.pt_mode :
+            for i in range(4) :
+                print(f"players[{i}].score : {self.players[i].score}")
+                print(f"xml_log[{i}].score : {int(ten[i*2]) * 100}")
         for i in range(4) :
             if (self.players[i].score != int(ten[i*2]) * 100) and (not(self.is_error)) : self.error("score is different (in TestGame.check_final_score())")
-        print("="*40)
-        print(colored("OK", "green", attrs=["bold"]))
+        if self.pt_mode :
+            print("="*40)
+            print(colored("OK", "green", attrs=["bold"]))
 
 
     # 流局が発生した時にちゃんとRYUUKYOKUタグがセットされているか確認
