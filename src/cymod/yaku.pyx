@@ -135,7 +135,7 @@ cdef bool three_color_triplets(int[:] temp) :
 
     check = [False] * 30
     for i in range(0,10,2) :
-        if temp[i+1] < 30 and temp[i] in (BlockType.TRIPLETS | BlockType.KANS) : check[temp[i+1]] = True
+        if temp[i+1] < 30 and (temp[i] in (BlockType.TRIPLETS | BlockType.KANS)) : check[temp[i+1]] = True
     for i in range(1,10) :
         if check[i] and check[i+10] and check[i+20] : return True
     return False
@@ -146,12 +146,12 @@ cdef bool all_terminals_and_honors(int[:] hand) :
     cdef bool honor, terminal
     cdef int i
 
-    honor, terminal  = False, False
+    honor, terminal = False, False
     for i in range(1,38) :
         if hand[i] == 0 : continue
-        if not(i % 10 in {1,9}) and i < 30 : return False
-        elif i % 10 in {1,9} : terminal = True
+        elif i in TileType.TERMINALS : terminal = True
         elif i > 30 : honor = True
+        else : return False
     return honor and terminal
 
 
