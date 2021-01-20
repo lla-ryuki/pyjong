@@ -825,8 +825,8 @@ cdef class Game :
             # 直前の行動が加槓だった場合このタイミングでドラが開く
             if self.dora_opens_flag : self.open_new_dora()
             # 槍槓用ロンフェーズ
-            self.proc_ron_phase(tile)
             self.wins_by_chankan = True
+            self.proc_ron_phase(tile)
             if self.win_flag : return False
             self.wins_by_chankan = False
             self.proc_kakan(tile)
@@ -950,7 +950,7 @@ cdef class Game :
 
     # 局の処理
     cdef void play_subgame(self) :
-        cdef int i, j, op, tile, discarded_tile
+        cdef int i, j, op, tile, discarded_tile, nm_players_num
         cdef bool ready
 
         # 配牌を配る
@@ -1029,6 +1029,10 @@ cdef class Game :
                    self.players[1].is_nagashi_mangan or \
                    self.players[2].is_nagashi_mangan or \
                    self.players[3].is_nagashi_mangan ) :
+                nm_players_num = 0
+                for j in range(4) :
+                    if self.players[j].is_nagashi_mangan : nm_players_num += 1
+                if nm_players_num >= 2 : self.multi_nm_players()
                 if self.pt_mode : self.print_scores("scores at proc_nagashi_mangan() before")
                 self.proc_nagashi_mangan()
                 if self.pt_mode : self.print_scores("scores at proc_nagashi_mangan() before")
@@ -1070,4 +1074,5 @@ cdef class Game :
     cpdef void print_scores(self, info) : pass
     cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points) : pass
     cpdef void check_RYUUKYOKU_tag(self) : pass
+    cpdef void multi_nm_players(self) : pass
     cpdef bool three_players_win(self) : return False

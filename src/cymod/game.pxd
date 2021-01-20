@@ -109,4 +109,5 @@ cdef class Game :
     cpdef void print_scores(self, info)
     cpdef void print_win_info(self, int i_winner, int i_player, int han, int fu, int basic_points)
     cpdef void check_RYUUKYOKU_tag(self)
+    cpdef void multi_nm_players(self)
     cpdef bool three_players_win(self)

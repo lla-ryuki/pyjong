@@ -434,6 +434,11 @@ cdef class TestGame(Game) :
         self.read_next_tag()
 
 
+    # 複数人の流し満貫ログを見つけるためのメソッド
+    cpdef void multi_nm_players(self) :
+        self.error("There is multi nagashi mangan players")
+
+
     # 三家和かどうかをタグから確認
     cpdef bool three_players_win(self) :
         if self.tag_name == "RYUUKYOKU" and self.attr.get("type") == "ron3" : return True

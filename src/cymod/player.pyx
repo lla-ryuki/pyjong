@@ -453,7 +453,7 @@ cdef class Player :
         if flush(hand) : return True
         if game.is_last_tile() : return True # 海底・河底
         if game.rinshan_draw_flag : return True # 嶺上
-        if game.dora_opens_flag : return True # 槍槓
+        if game.wins_by_chankan : return True # 槍槓
         if self.has_yaku_based_on_tiles(game.prevailing_wind, ron_tile) : return True
 
         return False
