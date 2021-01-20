@@ -30,9 +30,11 @@ cdef class TestGame(Game) :
     cdef public int i_log
     cdef public int org_got_tile
 
+
     def __init__(self, action) :
         super().__init__(action, logging=False, testing=True)
         self.is_error = False
+        self.shanten_calculator.st_mode = False
 
 
     # 局開始時の初期化
