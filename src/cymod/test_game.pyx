@@ -288,7 +288,7 @@ cdef class TestGame(Game) :
                 if self.pt_mode : print(colored("Game start", "blue", attrs=["bold"]))
                 self.play_test_game()
                 passes_num += 1
-                print(colored(f"{passes_num} files passed!", "green", attrs=["bold"]))
+                print(colored(f"{passes_num} files passed!,", "green", attrs=["bold"]) + f" id: {self.log_id}")
                 if self.pt_mode : print("")
 
 
