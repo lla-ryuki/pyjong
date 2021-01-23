@@ -395,11 +395,12 @@ cdef class Game :
                     for j in range(1,4) :
                         if ((i+j)%4) == self.rotations_num : self.players[(i+j)%4].score_points(-4000)
                         else : self.players[(i+j)%4].score_points(-2000)
+        # 親の聴牌判定
+        self.players[self.rotations_num].check_hand_is_ready(self.shanten_calculator)
         # ゲーム終了判定
         self.is_over = self.check_game_is_over(self.players[self.rotations_num].is_ready)
         # 局の数等の変数操作
         self.counters_num += 1
-        self.players[self.rotations_num].check_hand_is_ready(self.shanten_calculator)
         if self.players[self.rotations_num].is_ready is False :
             self.rotations_num += 1
             if self.rotations_num == 4 :

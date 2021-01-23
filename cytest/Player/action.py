@@ -176,9 +176,11 @@ class Action :
             self.pos = mc & 0x0003
             pt = (mc & 0xFE00) >> 9
             r  = pt % 3
+            rr  = pt % 4
             pn =  pt // 3
             color = pn // 9
             self.tile = (color * 10) + (pn % 9) + 1
+            if(color != 3 and self.tile % 10 == 5 and (mc & 0x0060) == 0) : self.tile -= 5
             return 6
 
         # 大明槓, 暗槓

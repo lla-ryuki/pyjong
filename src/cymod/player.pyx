@@ -683,6 +683,7 @@ cdef class Player :
         for i in range(4) :
             if self.opened_hand[i*5] == BlockType.OPENED_TRIPLET and self.hand[self.opened_hand[(i*5)+1]] > 0 :
                 kakan_tiles += [self.opened_hand[(i*5)+1]]
+                if self.opened_hand[(i*5)+1] in TileType.FIVES : kakan_tiles += [self.opened_hand[(i*5)+1] - 5]
 
         return kakan_tiles
 
@@ -711,6 +712,7 @@ cdef class Player :
     cpdef tuple decide_to_kan(self, game, players) :
         cdef int tile
         cdef bool ankan, kakan
+        cdef list ankan_tiles, kakan_tiles
         tile, ankan, kakan = -1, False, False
 
         # 槓できるか判定
