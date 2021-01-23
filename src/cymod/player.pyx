@@ -22,7 +22,7 @@ cdef class Player :
     # 半荘の初期化
     cpdef void init_game(self) :
         self.score = 25000                                # 点棒
-        self.exists                                       # 回線落ち判定用
+        self.exists = True                                # 回線落ち判定用
 
 
     # 局の初期化

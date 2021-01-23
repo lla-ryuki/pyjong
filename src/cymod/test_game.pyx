@@ -268,7 +268,7 @@ cdef class TestGame(Game) :
         passes_num = 0
         # year = int(input("Input year : "))
         year = 2019
-        for month in range(1, 12) :
+        for month in range(1, 13) :
             # path = f"../data/xml/{year}/{month:02}/"
             home = os.environ["HOME"]
             path = f"{home}/github/ryujin/data/xml/{year}/{month:02}/"
@@ -320,7 +320,7 @@ cdef class TestGame(Game) :
         passes_num = 0
         # year = int(input("Input year : "))
         year = 2019
-        for month in range(1, 12) :
+        for month in range(1, 13) :
             home = os.environ["HOME"]
             path = f"{home}/github/ryujin/data/xml/{year}/{month:02}/"
             dir_components = os.listdir(path)
