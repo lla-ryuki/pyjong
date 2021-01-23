@@ -274,6 +274,7 @@ cdef class TestGame(Game) :
             path = f"{home}/github/ryujin/data/xml/{year}/{month:02}/"
             dir_components = os.listdir(path)
             files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
+            files.sort()
             for file_name in files :
                 # 空ファイルが紛れていることがあるのでそれをスキップ
                 try : tree = et.parse(path + file_name)
@@ -310,6 +311,44 @@ cdef class TestGame(Game) :
         self.play_test_game()
         print(colored(f"Passed!", "green", attrs=["bold"]))
         print("")
+
+
+    # 続きからテスト用メソッド
+    cpdef void continue_test(self, log_id) :
+        check_point_file = log_id + ".xml"
+        check_point_passed = False
+        passes_num = 0
+        # year = int(input("Input year : "))
+        year = 2019
+        for month in range(1, 12) :
+            home = os.environ["HOME"]
+            path = f"{home}/github/ryujin/data/xml/{year}/{month:02}/"
+            dir_components = os.listdir(path)
+            files = [f for f in dir_components if os.path.isfile(os.path.join(path, f))]
+            files.sort()
+            for file_name in files :
+                # チェックポイントファイルに到達してなかったらcontinue
+                if not(check_point_passed) :
+                    if file_name == check_point_file : check_point_passed = True
+                    passes_num += 1
+                    continue
+
+                # 空ファイルが紛れていることがあるのでそれをスキップ
+                try : tree = et.parse(path + file_name)
+                except : continue
+
+                xml = tree.getroot()
+                self.xml = xml[3:]
+                self.i_log = 0
+                self.read_next_tag()
+                self.log_id = file_name[:-4]
+                self.init_game()
+                if self.pt_mode : print(colored("Game start", "blue", attrs=["bold"]))
+                self.play_test_game()
+                passes_num += 1
+                print(colored(f"{passes_num} files passed!,", "green", attrs=["bold"]) + f" id: {self.log_id}")
+                if self.pt_mode : print("")
+
 
 
     # プレイヤ全員のscoreを表示
