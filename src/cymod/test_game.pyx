@@ -403,7 +403,16 @@ cdef class TestGame(Game) :
             if self.i_log == len(self.xml) : break
             tag_name = self.xml[self.i_log].tag
             attr = self.xml[self.i_log].attrib
-            if tag_name != "UN" and tag_name != "BYE" and not(tag_name == "REACH" and attr["step"] == "2") :
+            if tag_name == "BYE" :
+                self.players[int(attr["who"])].exists = False
+            elif tag_name == "UN" :
+                if   attr.get("n0") : self.players[0].exists = True
+                elif attr.get("n1") : self.players[1].exists = True
+                elif attr.get("n2") : self.players[2].exists = True
+                elif attr.get("n3") : self.players[3].exists = True
+            elif tag_name == "REACH" and attr["step"] == "2" :
+                pass
+            else :
                 self.tag_name = tag_name
                 self.attr = attr
                 break

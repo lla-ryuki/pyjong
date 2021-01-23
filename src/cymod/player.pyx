@@ -19,8 +19,10 @@ cdef class Player :
         self.player_num = player_num                      # プレイヤ番号 スタート時の席と番号の関係(0:起家, 1:南家, 2:西家, 3:北家)
 
 
+    # 半荘の初期化
     cpdef void init_game(self) :
         self.score = 25000                                # 点棒
+        self.exists                                       # 回線落ち判定用
 
 
     # 局の初期化
@@ -605,11 +607,11 @@ cdef class Player :
 
 
     # ポンの処理
-    cpdef int proc_pon(self, int tile, int pos) :
+    cpdef int proc_pon(self, int tile, int pos, bool contain_red) :
         if tile in TileType.REDS :
             self.opened_reds[tile//10] = True
             tile += 5
-        elif tile in TileType.FIVES and self.reds[tile//10]:
+        elif contain_red and tile in TileType.FIVES and self.reds[tile//10] :
             self.reds[tile//10]= False
             self.opened_reds[tile//10] = True
 

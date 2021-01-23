@@ -70,7 +70,7 @@ cdef class Game :
     cdef void set_rinshan_tiles(self)
     cdef int supply_next_tile(self)
     cdef int supply_next_rinshan_tile(self)
-    cdef void proc_pon(self, int i_ap, int tile)
+    cdef void proc_pon(self, int i_ap, int tile, bool contain_red)
     cdef void proc_daiminkan(self, int i_ap, int tile)
     cdef void proc_chii(self, int i_ap, int tile, int tile1, int tile2)
     cdef void preproc_calculating_basic_points(self, int i_winner)

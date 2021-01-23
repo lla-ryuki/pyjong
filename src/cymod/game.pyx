@@ -201,11 +201,11 @@ cdef class Game :
 
 
     # ポンが行われた時の処理
-    cdef void proc_pon(self, int i_ap, int tile) :
+    cdef void proc_pon(self, int i_ap, int tile, bool contain_red) :
         cdef int i, pos, pao
 
         pos = (4 + self.i_player - i_ap) % 4  # 鳴いた人（i_ap)から見た切った人の場所．pos = 1:下家, 2:対面, 3上家
-        pao = self.players[i_ap].proc_pon(tile, pos)
+        pao = self.players[i_ap].proc_pon(tile, pos, contain_red)
         if pao > -1 : self.set_pao(pao, i_ap, self.i_player)
         self.logger.register_pon(i_ap, tile, pos)
         if tile in TileType.REDS : tile += 5
@@ -386,7 +386,7 @@ cdef class Game :
     cdef void proc_nagashi_mangan(self) :
         cdef int i, j
         for i in range(4) :
-            if self.players[i].is_nagashi_mangan :
+            if self.players[i].is_nagashi_mangan and self.players[i].exists :
                 if self.rotations_num == i :
                     self.players[i].score_points(12000)
                     for j in range(1,4) : self.players[(i+j)%4].score_points(-4000)
@@ -825,13 +825,13 @@ cdef class Game :
         if ready : self.proc_ready(self.players[self.i_player])
         elif ankan : self.proc_ankan(tile)
         elif kakan :
-            # 直前の行動が加槓だった場合このタイミングでドラが開く
-            if self.dora_opens_flag : self.open_new_dora()
             # 槍槓用ロンフェーズ
             self.wins_by_chankan = True
             self.proc_ron_phase(tile)
             if self.win_flag : return False
             self.wins_by_chankan = False
+            # 直前の行動が加槓だった場合，かつ，槍槓が起きてない場合に，このタイミングでドラが開く
+            if self.dora_opens_flag and not(self.win_flag): self.open_new_dora()
             self.proc_kakan(tile)
         elif kyushu : self.is_abortive_draw = True
         return ready
@@ -937,7 +937,7 @@ cdef class Game :
                 si = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i_ap) # si : steal information
                 for j in si[:6] :
                     if   j == 0           : break
-                    elif j == 1 and pon   : self.proc_pon(i_ap, discarded_tile)
+                    elif j == 1 and pon   : self.proc_pon(i_ap, discarded_tile, si[8])
                     elif j == 4 and chii2 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
                     elif j == 3 and chii1 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
                     elif j == 5 and chii3 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
@@ -1035,10 +1035,10 @@ cdef class Game :
         else :
             for i in range(4) : self.players[i].check_nagashi_mangan()
             if self.is_abortive_draw : self.counters_num += 1
-            elif ( self.players[0].is_nagashi_mangan or \
-                   self.players[1].is_nagashi_mangan or \
-                   self.players[2].is_nagashi_mangan or \
-                   self.players[3].is_nagashi_mangan ) :
+            elif ( self.players[0].is_nagashi_mangan and self.players[0].exists or \
+                   self.players[1].is_nagashi_mangan and self.players[1].exists or \
+                   self.players[2].is_nagashi_mangan and self.players[2].exists or \
+                   self.players[3].is_nagashi_mangan and self.players[3].exists ) :
                 nm_players_num = 0
                 for j in range(4) :
                     if self.players[j].is_nagashi_mangan : nm_players_num += 1

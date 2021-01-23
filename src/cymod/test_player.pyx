@@ -1,5 +1,14 @@
+# sys
+
+# 3rd
 from termcolor import colored
+
+# ours
 from player cimport Player
+
+# cython
+from libcpp cimport bool
+
 
 cdef class TestPlayer(Player) :
     def __init__(self, player_num) :

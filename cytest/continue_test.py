@@ -14,4 +14,4 @@ if __name__ == "__main__" :
     log_id = args[1]
     action = Action()
     game = TestGame(action)
-    game.partial_test(log_id)
+    game.continue_test(log_id)

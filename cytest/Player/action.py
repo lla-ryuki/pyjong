@@ -46,7 +46,7 @@ class Action :
 
 
     # 鳴くかどうか決める
-    def decide_to_steal(self, game, players, tile, pos, player_num) -> (int, int, int, int, int, int, int, int) :
+    def decide_to_steal(self, game, players, tile, pos, player_num) -> (int, int, int, int, int, int, int, int, bool) :
         if game.tag_name != "N" or player_num != int(game.attr["who"]) : return 0, 0, 0, 0, 0, 0, -1, -1
 
         # タグのmcからとるactionを判定
@@ -54,6 +54,7 @@ class Action :
         action_num = self.analyze_mc(mc)
         if action_num not in {1, 2, 3, 4, 5} : game.error("Wrong tag (in Player.aciton.decide_to_steal())")
         tile1, tile2 = self.tile1, self.tile2
+        contain_red = self.contain_red
 
         a = ""
         if   action_num == 1 : a = "pon"
@@ -62,14 +63,13 @@ class Action :
         elif action_num == 4 : a = "middle chii"
         elif action_num == 5 : a = "upper chii"
 
-
         if game.pt_mode :
             action = colored(f"{a}", "blue")
             print(f"player{player_num} {action}")
 
         self.reset_N()
         game.read_next_tag()
-        return action_num, 0, 0, 0, 0, 0, tile1, tile2
+        return action_num, 0, 0, 0, 0, 0, tile1, tile2, contain_red
 
 
     # 槓するかどうか決める
