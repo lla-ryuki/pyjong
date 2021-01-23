@@ -586,8 +586,10 @@ cdef class Game :
     cpdef int calculate_basic_points(self, player) :
         cdef int basic_points
         cdef tuple shanten_nums
-
         self.han = 0
+        self.fu = 0
+        self.yakuman = 0
+
         if self.wins_by_tenhou : self.yakuman += 1
         if self.wins_by_chiihou : self.yakuman += 1
         shanten_nums = self.shanten_calculator.get_shanten_nums(player.hand, player.opened_sets_num)
@@ -878,10 +880,17 @@ cdef class Game :
                 self.win_flag = True
                 self.wins_by_ron = True
                 self.players[i_winner].wins = True
+        # テスト用三家和判定
+        if self.three_players_win() :
+            winners_num = 3
+            # リー棒返却
+            if self.ready_flag :
+                self.ready_flag = False
+                self.deposits_num -= 1
+                self.players[self.i_player].score_points(1000)
         # 立直宣言牌flagを戻す
         self.ready_flag = False
-        # 三家和判定
-        if self.three_players_win() : winners_num = 3
+        # 三家和処理
         if winners_num == 3 :
             self.is_abortive_draw = True
             self.win_flag = False
