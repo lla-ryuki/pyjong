@@ -266,10 +266,8 @@ cdef class TestGame(Game) :
     # テスト用メソッド
     cpdef void test(self) :
         passes_num = 0
-        # year = int(input("Input year : "))
-        year = 2019
+        year = int(input("Input year : "))
         for month in range(1, 13) :
-            # path = f"../data/xml/{year}/{month:02}/"
             home = os.environ["HOME"]
             path = f"{home}/github/ryujin/data/xml/{year}/{month:02}/"
             dir_components = os.listdir(path)
@@ -315,11 +313,10 @@ cdef class TestGame(Game) :
 
     # 続きからテスト用メソッド
     cpdef void continue_test(self, log_id) :
-        check_point_file = log_id + ".xml"
-        check_point_passed = False
+        ckpt_file = log_id + ".xml"
+        ckpt_passed = False
         passes_num = 0
-        # year = int(input("Input year : "))
-        year = 2019
+        year = log_id[0:4]
         for month in range(1, 13) :
             home = os.environ["HOME"]
             path = f"{home}/github/ryujin/data/xml/{year}/{month:02}/"
@@ -328,8 +325,8 @@ cdef class TestGame(Game) :
             files.sort()
             for file_name in files :
                 # チェックポイントファイルに到達してなかったらcontinue
-                if not(check_point_passed) :
-                    if file_name == check_point_file : check_point_passed = True
+                if not(ckpt_passed) :
+                    if file_name == ckpt_file : ckpt_passed = True
                     passes_num += 1
                     continue
 
