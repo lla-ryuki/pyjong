@@ -1,4 +1,5 @@
 # built-in
+import sys
 import random
 
 # 3rd
@@ -12,52 +13,16 @@ from yakuman cimport *
 from libcpp cimport bool
 
 
+# TODO やっぱりこいつがactionインスタンスを持った方がいいと思うの...
 cdef class Player :
-    cdef public int player_num
-    cdef public int score
-
-    cdef public list reds
-    cdef public list opened_reds
-    cdef public int[38] hand
-    cdef public int[20] opened_hand
-    cdef public list discarded_tiles
-    cdef public list discarded_state
-    cdef public list same_turn_furiten_tiles
-    cdef public int[38] discarded_tiles_hist
-    cdef public int[38] furiten_tiles
-    cdef public bool has_stealed
-    cdef public bool has_declared_ready
-    cdef public bool has_declared_double_ready
-    cdef public bool has_right_to_one_shot
-    cdef public bool is_ready
-    cdef public bool is_nagashi_mangan
-    cdef public bool wins
-    cdef public int opened_sets_num
-    cdef public int kans_num
-    cdef public int players_wind
-    cdef public int last_got_tile
-    cdef public int last_discarded_tile
-
-    cdef public int shanten_num_of_kokushi
-    cdef public int shanten_num_of_chiitoi
-    cdef public int shanten_num_of_normal
-    cdef public int shanten_num_of_temp
-    cdef public int sets_num
-    cdef public int pairs_num
-    cdef public int tahtsu_num
-    cdef public int[10] hand_composition
-    cdef public int i_hc
-    cdef public int dragons_num
-    cdef public int winds_num
-    cdef public int[38] pb_hand
-
-
     def __init__(self, player_num) :
         self.player_num = player_num                      # プレイヤ番号 スタート時の席と番号の関係(0:起家, 1:南家, 2:西家, 3:北家)
 
 
+    # 半荘の初期化
     cpdef void init_game(self) :
         self.score = 25000                                # 点棒
+        self.exists = True                                # 回線落ち判定用
 
 
     # 局の初期化
@@ -76,9 +41,12 @@ cdef class Player :
                 [4*5*n]  副露した直後に切った牌
             ]
         """
-        self.discarded_tiles = []                         # 河
-        self.discarded_state = []                         # D:ツモ切り，d:手出し , i:"D" ==> discarded_tiles[i]はツモ切られた牌
-        self.same_turn_furiten_tiles = []                 # 同巡に切られた牌
+        self.discarded_tiles = [-1] * 30                  # 河
+        self.discarded_state = [-1] * 30                  # D:ツモ切り，d:手出し , discarded_state[i]:1 ==> discarded_tiles[i]は手出しされた牌
+        self.same_turn_furiten_tiles = [-1] * 30          # 同巡に切られた牌
+        self.i_dt = 0                                     # index of discarded_tiles
+        self.i_ds = 0                                     # index of discarded_state
+        self.i_stft = 0                                   # index of same_turn_furiten_tiles
         self.discarded_tiles_hist = [0] * 38              # 切られた枚数だけ記録する河
         self.furiten_tiles = [0] * 38                     # フリテン牌 furiten_tiles[i] > 0 ==> i番の牌は既に自分で切っているか同巡に切られた牌
         self.has_stealed = False                          # 1度でもポン, ダイミンカン, チーしていればTrueになる
@@ -261,13 +229,17 @@ cdef class Player :
         cdef bool exchanged
 
         # 切る牌を決める
-        if self.has_declared_ready and not(self.has_right_to_one_shot) : discarded_tile, exchanged = self.last_got_tile, False
-        else : discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
+        if self.has_declared_ready and not(self.has_right_to_one_shot) :
+            discarded_tile, exchanged = self.discard_tile_when_player_has_declared_ready(game, players, self.player_num)
+        else :
+            discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
         self.last_discarded_tile = discarded_tile
 
         # 河への記録
-        self.discarded_state += [exchanged]
-        self.discarded_tiles += [discarded_tile]
+        self.discarded_state[self.i_ds] = int(exchanged)
+        self.discarded_tiles[self.i_dt] = discarded_tile
+        self.i_ds += 1
+        self.i_dt += 1
 
         # 赤牌を番号に変換
         if discarded_tile in TileType.REDS :
@@ -284,12 +256,17 @@ cdef class Player :
         return self.last_discarded_tile
 
 
+    # リーチ時のツモ切る牌と手出し状態を返す
+    cpdef tuple discard_tile_when_player_has_declared_ready(self, game, players, int player_num) :
+        return self.last_got_tile, False
+
+
     # 聴牌かどうかを判定
     cpdef bool check_hand_is_ready(self, shanten_calculator) :
         cdef tuple shanten_nums
         shanten_nums = shanten_calculator.get_shanten_nums(self.hand, self.opened_sets_num)
 
-        if shanten_nums[0] == 0 and self.has_used_up_winning_tile() or \
+        if shanten_nums[0] == 0 and not(self.has_used_up_winning_tile()) or \
            shanten_nums[1] == 0 or \
            shanten_nums[2] == 0 : self.is_ready = True
         else : self.is_ready = False
@@ -312,8 +289,8 @@ cdef class Player :
             num_of_winning_tile += 4
             num_of_winning_tile -= self.hand[tile]
 
-        if num_of_winning_tile == 0 : return False
-        return True
+        if num_of_winning_tile == 0 : return True
+        return False
 
 
     # 流し満貫かチェック
@@ -322,7 +299,7 @@ cdef class Player :
         if self.is_nagashi_mangan is False : return False
 
         for tile in self.discarded_tiles :
-            if not(tile in (TileType.TERMINALS | TileType.HONORS)) :
+            if not(tile in (TileType.TERMINALS | TileType.HONORS | {-1})) :
                 self.is_nagashi_mangan = False
                 return False
 
@@ -330,20 +307,25 @@ cdef class Player :
 
 
     # フリテン牌を追加
-    cpdef void add_furiten_tile(self, int tile) : self.furiten_tiles[tile] += 1
+    cpdef void add_furiten_tile(self, int tile) :
+        if tile in TileType.REDS : tile += 5
+        self.furiten_tiles[tile] += 1
 
 
     # 同巡フリテン牌を追加
     cpdef void add_same_turn_furiten_tile(self, int tile) :
-        self.same_turn_furiten_tiles += [tile]
+        if tile in TileType.REDS : tile += 5
+        self.same_turn_furiten_tiles[self.i_stft] = tile
+        self.i_stft += 1
         self.furiten_tiles[tile] += 1
 
 
     # 同巡フリテンを解消
     cpdef void reset_same_turn_furiten(self) :
         cdef int tile
-        for tile in self.same_turn_furiten_tiles : self.furiten_tiles[tile] -= 1
-        self.same_turn_furiten_tiles = []
+        for tile in self.same_turn_furiten_tiles[:self.i_stft] : self.furiten_tiles[tile] -= 1
+        self.same_turn_furiten_tiles = [-1] * 30
+        self.i_stft = 0
 
 
     # 鳴いて晒した牌を全部戻した手をreturnする
@@ -401,23 +383,23 @@ cdef class Player :
         cdef tuple shanten_nums
 
         if self.has_stealed or self.has_declared_ready or game.remain_tiles_num < 4 : return False
-        shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, 0)
+        shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, self.opened_sets_num)
         for s in shanten_nums :
             if s <= 0 : return True
 
 
     # 和了れるかどうか
     cpdef bool can_win(self, game, int ron_tile=-1) :
-        cdef bool ron, is_chiitoi, is_kokushi, is_normal
+        cdef bool is_chiitoi, is_kokushi, is_normal
         cdef tuple shanten_nums
-        ron, is_chiitoi, is_kokushi, is_normal = False, False, False, False
+        is_chiitoi, is_kokushi, is_normal = False, False, False
 
         # 向聴数的に和了っているかどうか確認
         shanten_nums = game.shanten_calculator.get_shanten_nums(self.hand, self.opened_sets_num, ron_tile)
         if   shanten_nums[0] == -1 : is_normal = True
         elif shanten_nums[1] == -1 : is_chiitoi = True
         elif shanten_nums[2] == -1 : is_kokushi = True
-        if not(is_chiitoi or is_kokushi or is_normal) : return False
+        if not(is_normal or is_chiitoi or is_kokushi) : return False
 
         # ロンの時の処理
         if ron_tile > -1 :
@@ -425,13 +407,13 @@ cdef class Player :
 
         # 役があるかどうかをチェック
         if is_chiitoi or is_kokushi : return True
-        if is_normal and self.has_yaku(game, ron, ron_tile) : return True
+        if is_normal and self.has_yaku(game, ron_tile) : return True
 
         return False
 
 
     # フリテンかどうか
-    cdef is_furiten(self, bool is_chiitoi, bool is_kokushi, bool is_normal, int ron_tile) :
+    cdef bool is_furiten(self, bool is_chiitoi, bool is_kokushi, bool is_normal, int ron_tile) :
         cdef int[38] hand, effective_tiles
 
         if ron_tile in TileType.REDS : ron_tile += 5
@@ -451,37 +433,42 @@ cdef class Player :
 
 
     # 役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    cdef bool has_yaku(self, game, bool ron, int ron_tile) :
+    cdef bool has_yaku(self, game, int ron_tile) :
         cdef int[38] hand
 
-        if ron_tile in TileType.REDS : ron_tile += 5
+        # hand不要の役判定
         if self.has_declared_ready : return True
         if self.has_declared_double_ready : return True
+
+        # hand必要な役判定
+        if ron_tile in TileType.REDS : ron_tile += 5
         hand = self.put_back_opened_hand()
+        hand[ron_tile] += 1
         if all_simples(hand) : return True
         if white_dragon(hand) : return True
         if green_dragon(hand) : return True
         if red_dragon(hand) : return True
         if bakaze(hand, game.prevailing_wind) : return True
         if jikaze(hand, self.players_wind) : return True
-        if not(ron) and not(self.has_stealed) : return True
+        if ron_tile < 0 and not(self.has_stealed) : return True
         if half_flush(hand) : return True
         if flush(hand) : return True
         if game.is_last_tile() : return True # 海底・河底
         if game.rinshan_draw_flag : return True # 嶺上
-        if game.dora_opens_flag : return True # 槍槓
-        if self.has_yaku_based_on_tiles(game.prevailing_wind, ron, ron_tile) : return True
+        if game.wins_by_chankan : return True # 槍槓
+        if self.has_yaku_based_on_tiles(game.prevailing_wind, ron_tile) : return True
 
         return False
 
 
     # 手牌構成による役があるか．和了れるかどうかの判定に使うから全部の役は見ない．
-    cdef bool has_yaku_based_on_tiles(self, int prevailing_wind, bool ron, int ron_tile) :
+    cdef bool has_yaku_based_on_tiles(self, int prevailing_wind, int ron_tile) :
         cdef int[38] hand
         cdef int i
+        cdef bool there_is_yaku
 
         hand = self.hand[:]
-        if ron and ron_tile > 0 : hand[ron_tile] += 1
+        if ron_tile > 0 : hand[ron_tile] += 1
         self.hand_composition = [0] * 10
         self.i_hc = 0
 
@@ -501,7 +488,7 @@ cdef class Player :
                 self.hand_composition[self.i_hc] = BlockType.PAIR
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile);
+                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron_tile);
                 if there_is_yaku : return True
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc] = 0
@@ -512,8 +499,9 @@ cdef class Player :
 
 
     # 面子を抜き出す．pick_out_mentsu()と違い高速化のため役判定に不要な処理を省いたバージョン．
-    cdef bool pick_out_mentsu2(self, int[38] hand, int prevailing_wind, bool ron, int ron_tile) :
+    cdef bool pick_out_mentsu2(self, int[38] hand, int prevailing_wind, int ron_tile) :
         cdef int i
+        cdef bool there_is_yaku
 
         for i in range(1,38) :
             # 判定する手牌構成が決まったら役があるかどうか判定結果を返す
@@ -528,6 +516,7 @@ cdef class Player :
                 if three_kans(self.hand_composition) : return True
                 if three_closed_triplets(self.hand_composition) : return True
                 if terminal_in_each_set(self.hand_composition) : return True
+                if two_sets_of_identical_sequences(self.hand_composition) : return True
                 return False
 
             # インデックスが指す場所に牌がなければ次の牌を見にいく
@@ -536,11 +525,12 @@ cdef class Player :
             # 暗刻抜き出し
             if hand[i] >= 3 :
                 hand[i] -= 3
-                if i == ron_tile and ron and hand[i] == 0 : self.hand_composition[self.i_hc] = BlockType.OPENED_TRIPLET
+                if i == ron_tile and hand[i] == 0 : self.hand_composition[self.i_hc] = BlockType.OPENED_TRIPLET
                 else : self.hand_composition[self.i_hc] = BlockType.CLOSED_TRIPLET
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile)
+                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron_tile)
+                if there_is_yaku : return True
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc] = 0
                 self.hand_composition[self.i_hc+1] = 0
@@ -548,23 +538,24 @@ cdef class Player :
 
             # 順子抜き出し
             if i < 30 and hand[i] != 0 and hand[i+1] != 0 and hand[i+2] != 0 :
-                hand[i] = hand[i] - 1
-                hand[i+1] = hand[i+1] - 1
-                hand[i+2] = hand[i+2] - 1
+                hand[i]   -= 1
+                hand[i+1] -= 1
+                hand[i+2] -= 1
                 self.hand_composition[self.i_hc] = BlockType.CLOSED_RUN
                 self.hand_composition[self.i_hc+1] = i
                 self.i_hc += 2
-                self.pick_out_mentsu2(hand, prevailing_wind, ron, ron_tile)
+                there_is_yaku = self.pick_out_mentsu2(hand, prevailing_wind, ron_tile)
+                if there_is_yaku : return True
                 self.i_hc -= 2
                 self.hand_composition[self.i_hc+1] = 0
                 self.hand_composition[self.i_hc] = 0
-                hand[i] += 1
+                hand[i]   += 1
                 hand[i+1] += 1
                 hand[i+2] += 1
 
 
     # 暗槓の処理
-    cpdef proc_ankan(self, int tile) :
+    cpdef void proc_ankan(self, int tile) :
         self.opened_hand[self.opened_sets_num * 5] = BlockType.CLOSED_KAN
         self.opened_hand[self.opened_sets_num * 5 + 1] = tile
         self.opened_hand[self.opened_sets_num * 5 + 2] = tile
@@ -579,7 +570,7 @@ cdef class Player :
 
 
     # 加槓の処理
-    cpdef int proc_kakan(self, int tile) :
+    cpdef tuple proc_kakan(self, int tile) :
         cdef int i
 
         self.kans_num += 1
@@ -616,11 +607,11 @@ cdef class Player :
 
 
     # ポンの処理
-    cpdef int proc_pon(self, int tile, int pos) :
+    cpdef int proc_pon(self, int tile, int pos, bool contain_red) :
         if tile in TileType.REDS :
             self.opened_reds[tile//10] = True
             tile += 5
-        elif tile in TileType.FIVES and self.reds[tile//10]:
+        elif contain_red and tile in TileType.FIVES and self.reds[tile//10] :
             self.reds[tile//10]= False
             self.opened_reds[tile//10] = True
 
@@ -635,7 +626,7 @@ cdef class Player :
         if tile in TileType.DRAGONS :
             self.dragons_num += 1
             if self.dragons_num == 3 : return 0 # 大三元のパオであれば0を返す
-        elif tile in TileType.HONORS :
+        elif tile in TileType.WINDS :
             self.winds_num += 1
             if self.winds_num == 4 : return 1 # 大喜四のパオであれば1を返す
 
@@ -643,15 +634,19 @@ cdef class Player :
 
 
     # チーの処理
-    # TODO 赤含みかどうか選択できない．強制赤含みになっている
-    cpdef tuple proc_chii(self, int org_tile, int tile1, int tile2) :
-        cdef int tile, min_tile
+    cpdef void proc_chii(self, int tile, int tile1, int tile2) :
+        cdef int min_tile
 
-        tile = org_tile
         if tile in TileType.REDS :
             self.opened_reds[tile//10] = True
             tile  += 5
+        if tile1 in TileType.REDS :
+            self.reds[tile1//10] = False
+            self.opened_reds[tile1//10] = True
             tile1 += 5
+        if tile2 in TileType.REDS :
+            self.reds[tile2//10] = False
+            self.opened_reds[tile2//10] = True
             tile2 += 5
 
         self.opened_hand[(self.opened_sets_num * 5) + 0] = BlockType.OPENED_RUN
@@ -665,17 +660,6 @@ cdef class Player :
 
         self.has_stealed = True
         self.opened_sets_num += 1
-
-        if self.hand[tile1] in TileType.FIVES and self.opened_reds[tile1//10] :
-            self.reds[tile1//10] = False
-            self.opened_reds[tile1//10] = True
-            tile1 -= 5
-        elif self.hand[tile2] in TileType.FIVES and self.opened_reds[tile2//10] :
-            self.reds[tile1//10] = False
-            self.opened_reds[tile1//10] = True
-            tile2 -= 5
-
-        return org_tile, tile1, tile2
 
 
     # 鳴いた後の手出し牌を登録
@@ -701,6 +685,7 @@ cdef class Player :
         for i in range(4) :
             if self.opened_hand[i*5] == BlockType.OPENED_TRIPLET and self.hand[self.opened_hand[(i*5)+1]] > 0 :
                 kakan_tiles += [self.opened_hand[(i*5)+1]]
+                if self.opened_hand[(i*5)+1] in TileType.FIVES : kakan_tiles += [self.opened_hand[(i*5)+1] - 5]
 
         return kakan_tiles
 
@@ -729,7 +714,7 @@ cdef class Player :
     cpdef tuple decide_to_kan(self, game, players) :
         cdef int tile
         cdef bool ankan, kakan
-
+        cdef list ankan_tiles, kakan_tiles
         tile, ankan, kakan = -1, False, False
 
         # 槓できるか判定
@@ -738,8 +723,7 @@ cdef class Player :
         if not(ankan_tiles or kakan_tiles) : return -1, False, False
 
         # プレイヤが槓の内容（どの牌で槓するか，しないか）を決める
-        # tile = game.action.decide_to_kan(game, players, self.player_num, ankan_tiles, kakan_tiles)
-        tile = -1
+        tile = game.action.decide_to_kan(game, players, self.player_num, ankan_tiles, kakan_tiles)
         if tile == -1 : pass
         elif tile in ankan_tiles : ankan = True
         elif tile in kakan_tiles : kakan = True
@@ -764,31 +748,79 @@ cdef class Player :
         if self.can_declare_ready(game) : ready = game.action.decide_to_declare_ready(game, players, self.player_num)
 
         # 九種九牌で流局するかどうか決める
-        if game.is_first_turn : kyusyu = game.action.decide_to_declare_nine_orphans(self.hand)
-        else : kyusyu = False
+        if game.is_first_turn : kyushu = game.action.decide_to_declare_nine_orphans(game, players, self.player_num, self.hand)
+        else : kyushu = False
 
-        # return tile, exchanged, ready, ankan, kakan, kyushu
         return tile, exchanged, ready, ankan, kakan, kyushu
 
 
-    # handを標準出力に表示
-    cpdef bool print_hand(self):
-        cdef str s_hand
-        cdef int i, j
+    # 表示用に牌を変換
+    cpdef convert_tile_for_print(self, int tile) :
+        s_tile = ""
+        if tile < 1 or tile > 37 or tile % 10 == 0 :
+            print("error in convert_tile_for_print()")
+            print(f"tile : {tile}")
+            sys.exit()
+        elif tile <  30 : s_tile = str(tile%10)
+        elif tile == 31 : s_tile = "東"
+        elif tile == 32 : s_tile = "南"
+        elif tile == 33 : s_tile = "西"
+        elif tile == 34 : s_tile = "北"
+        elif tile == 35 : s_tile = "白"
+        elif tile == 36 : s_tile = "発"
+        elif tile == 37 : s_tile = "中"
 
-        s_hand = ""
+        return s_tile
+
+
+    # handを標準出力に表示
+    cpdef void print_hand(self) :
+        cdef int i, j, min_tile, b_type
+
+        closed_hand = ""
+        opened_hand = ""
+
+        # 門前部
         for i in range(1,38) :
-            if i == 10 : s_hand += "m"
-            elif i == 20 : s_hand += "p"
-            elif i == 30 : s_hand += "s"
-            for j in range(self.hand[i]) :
-                if i < 30 : s_hand += str(i%10)
-                elif i == 31 : s_hand += "東"
-                elif i == 32 : s_hand += "南"
-                elif i == 33 : s_hand += "西"
-                elif i == 34 : s_hand += "北"
-                elif i == 35 : s_hand += "白"
-                elif i == 36 : s_hand += "発"
-                else : s_hand += "中"
-        print(s_hand)
+            # blankの場合種類を示す文字を追加
+            if i % 10 == 0 :
+                if   i == 10 : closed_hand += "m"
+                elif i == 20 : closed_hand += "p"
+                elif i == 30 : closed_hand += "s"
+                continue
+
+            # 赤がある場合は表示
+            if   i ==  5 and self.reds[i//10] : closed_hand += "r"
+            elif i == 15 and self.reds[i//10] : closed_hand += "r"
+            elif i == 25 and self.reds[i//10] : closed_hand += "r"
+
+            # 持ってる枚数分，数字を追加
+            closed_hand += self.convert_tile_for_print(i) * self.hand[i]
+
+        # 副露部
+        for i in range(4) :
+            if self.opened_hand[i*5] == 0 : break
+            min_tile = self.opened_hand[i*5+1]
+            tile1 = self.convert_tile_for_print(min_tile)
+            color = ""
+            b_type = self.opened_hand[i*5]
+            if   min_tile // 10 == 0 : color = "m"
+            elif min_tile // 10 == 1 : color = "p"
+            elif min_tile // 10 == 2 : color = "s"
+            if b_type == BlockType.OPENED_RUN :
+                n_tile = self.opened_hand[i*5+2]
+                tile2 = self.convert_tile_for_print(min_tile+1)
+                tile3 = self.convert_tile_for_print(min_tile+2)
+                if n_tile == min_tile   : opened_hand += f"[{tile1}]{tile2}{tile3}{color}, "
+                if n_tile == min_tile+1 : opened_hand += f"{tile1}[{tile2}]{tile3}{color}, "
+                if n_tile == min_tile+2 : opened_hand += f"{tile1}{tile2}[{tile3}]{color}, "
+            elif b_type == BlockType.OPENED_TRIPLET :
+                opened_hand += f"{tile1*3}{color}, "
+            elif b_type == BlockType.OPENED_KAN :
+                opened_hand += f"o{tile1*4}{color}, "
+            elif b_type == BlockType.CLOSED_KAN:
+                opened_hand += f"c{tile1*4}{color}, "
+
+        print("closed   : " + closed_hand)
+        print("opened   : " + opened_hand)
 

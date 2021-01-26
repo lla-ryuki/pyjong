@@ -46,7 +46,7 @@ cdef bool one_set_of_identical_sequences(int[:] temp) :
 # 場風 bakaze
 cdef bool bakaze(int[:] hand, int prevailing_wind) :
     if hand[prevailing_wind] > 2 : return True
-    else : return False
+    return False
 
 
 # 自風 jikaze
@@ -112,8 +112,8 @@ cdef bool straight(int[:] temp) :
 
     check = [False] * 9
     for i in range(0,10,2) :
-        if temp[i] == BlockType.CLOSED_RUN or temp[i] == BlockType.OPENED_RUN :
-            if temp[i+1] in {1, 4, 7, 11, 14, 17, 21, 24, 27} : check[i] = True
+        if temp[i] in {BlockType.CLOSED_RUN, BlockType.OPENED_RUN} and \
+           temp[i+1] in {1, 4, 7, 11, 14, 17, 21, 24, 27} : check[(temp[i+1]-1)//3] = True
     if (check[0] and check[1] and check[2]) or \
        (check[3] and check[4] and check[5]) or \
        (check[6] and check[7] and check[8]) : return True
@@ -135,7 +135,7 @@ cdef bool three_color_triplets(int[:] temp) :
 
     check = [False] * 30
     for i in range(0,10,2) :
-        if temp[i+1] < 30 and temp[i] in (BlockType.TRIPLETS | BlockType.KANS) : check[temp[i+1]] = True
+        if temp[i+1] < 30 and (temp[i] in (BlockType.TRIPLETS | BlockType.KANS)) : check[temp[i+1]] = True
     for i in range(1,10) :
         if check[i] and check[i+10] and check[i+20] : return True
     return False
@@ -146,12 +146,12 @@ cdef bool all_terminals_and_honors(int[:] hand) :
     cdef bool honor, terminal
     cdef int i
 
-    honor, terminal  = False, False
+    honor, terminal = False, False
     for i in range(1,38) :
         if hand[i] == 0 : continue
-        if not(i % 10 in {1,9}) and i < 30 : return False
-        elif i % 10 in {1,9} : terminal = True
+        elif i in TileType.TERMINALS : terminal = True
         elif i > 30 : honor = True
+        else : return False
     return honor and terminal
 
 
@@ -194,7 +194,7 @@ cdef bool little_three_dragons(int[:] hand) :
 # 二盃口 ryanpeikou
 cdef bool two_sets_of_identical_sequences(int[:] temp) :
     cdef int i, identical_sequence_num
-    cdef bool[30] check
+    cdef int[30] check
 
     check = [0] * 30
     identical_sequence_num = 0

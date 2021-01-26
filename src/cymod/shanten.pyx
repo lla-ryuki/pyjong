@@ -12,6 +12,7 @@ from libcpp cimport bool
 
 
 cdef class ShantenNumCalculator :
+    cdef public bool st_mode
     cdef str file_path
     cdef bool record_mode
     cdef dict shanten_table
@@ -23,18 +24,17 @@ cdef class ShantenNumCalculator :
     cdef int sets_num
     cdef int[38] hand
 
-    def __init__(self, str file_path="../data/shanten_table.pickle", bool record_mode=False) :
+    def __init__(self, str file_path="../data/shanten_table.pkl", bool record_mode=False, bool st_mode=True) :
         self.file_path = file_path
         self.record_mode = record_mode
+        self.st_mode = st_mode
 
-        # 向聴数を記録するハッシュテーブルをロード
-        if (os.path.exists(self.file_path)) :
+        # 向聴数を記録するハッシュテーブルをロード/作成
+        if st_mode and (os.path.exists(self.file_path)) :
             with open(self.file_path, "rb") as f :
                 self.shanten_table = pickle.load(f)
         else :
             self.shanten_table = {}
-            with open(self.file_path, "wb") as f :
-                pickle.dump(self.shanten_table, f)
 
         # normal handの向聴数計算用．複数のメソッドをまたいで使うのでここで定義．
         self.shanten_num = 8
@@ -58,22 +58,25 @@ cdef class ShantenNumCalculator :
         self.opened_sets_num = opened_sets_num
         if ron_tile > 0 : self.hand[ron_tile] += 1
 
-        shanten_nums = self.shanten_table.get(tuple(self.hand))
-        if (shanten_nums is None) :
-            shanten_nums = self._calc_shanten_nums()
-            key = tuple(hand)
-            self.shanten_table[key] = shanten_nums
-            if self.record_mode :
-                with open(self.file_path, "wb") as f :
-                    pickle.dump(self.shanten_table, f)
+        if self.st_mode :
+            key = tuple(self.hand)
+            shanten_nums = self.shanten_table.get(key)
+            if (shanten_nums is None) :
+                shanten_nums = self._calc_shanten_nums()
+                self.shanten_table[key] = shanten_nums
+                if self.record_mode :
+                    with open(self.file_path, "wb") as f :
+                        pickle.dump(self.shanten_table, f)
+        else : shanten_nums = self._calc_shanten_nums()
 
         return shanten_nums
 
 
     # 向聴テーブルをダンプ
     cpdef void dump_table(self) :
-        with open(self.file_path, "wb") as f :
-            pickle.dump(self.shanten_table, f)
+        if self.st_mode :
+            with open(self.file_path, "wb") as f :
+                pickle.dump(self.shanten_table, f)
 
 
     # handの向聴数を計算
@@ -126,6 +129,7 @@ cdef class ShantenNumCalculator :
     # 通常手の向聴数を返す
     cdef int _calc_shanten_num_of_normal(self) :
         self.shanten_num = 8
+        self.shanten_temp = 8
         self.pairs_num = 0
         self.tahtsu_num = 0
         self.sets_num = 0
@@ -175,7 +179,7 @@ cdef class ShantenNumCalculator :
             if self.shanten_temp < self.shanten_num :
                 self.shanten_num = self.shanten_temp
             return
-        if self.sets_num + self.tahtsu_num < 4 :
+        if self.sets_num + self.opened_sets_num + self.tahtsu_num < 4 :
             if self.hand[i] == 2 :
                 self.tahtsu_num += 1
                 self.hand[i] -= 2

@@ -16,13 +16,13 @@ from libcpp cimport bool
 cdef class Logger :
     cdef public dir_path
     cdef public save_path
-    cdef public bool is_logging
+    cdef public bool logging
     cdef public list actions
     cdef public list starting_hands
     cdef public list tiles_player_got
 
-    def __init__(self, bool is_logging) :
-        self.is_logging = is_logging
+    def __init__(self, bool logging) :
+        self.logging = logging
 
 
     cpdef init_game(self) :
@@ -51,7 +51,7 @@ cdef class Logger :
 
     cpdef void register_kakan(self, int i_player, int tile, int pos, bool red) :
         s_tile = str(tile + 10)
-        if tile in TileType :
+        if tile in TileType.REDS :
             s_rtile = str(51 + (tile // 10))
             if red :
                 if pos == 1 : text = f"{s_tile}{s_tile}{s_rtile}k{s_tile}"
@@ -132,6 +132,7 @@ cdef class Logger :
 
 
     cpdef void save(self, game) :
+        if self.logging is False : return
         cdef int i
         cdef list temp, scores, dora_indicators, ura_indicators
 
