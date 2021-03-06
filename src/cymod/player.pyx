@@ -232,7 +232,7 @@ cdef class Player :
         if self.has_declared_ready and not(self.has_right_to_one_shot) :
             discarded_tile, exchanged = self.discard_tile_when_player_has_declared_ready(game, players, self.player_num)
         else :
-            discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num, self.has_declared_ready)
+            discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
         self.last_discarded_tile = discarded_tile
 
         # 河への記録
