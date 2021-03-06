@@ -15,5 +15,5 @@ if __name__ == "__main__" :
     games_num = int(input(colored("Input games num: ","yellow", attrs=["bold"])))
 
     action = Action()
-    game = Game(action=action)
+    game = Game(action=action, logging=True, testing=False)
     game.play_games(games_num)
