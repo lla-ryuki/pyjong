@@ -934,18 +934,31 @@ cdef class Game :
             player = self.players[i_ap]
             pon, kan, chii1, chii2, chii3 = player.can_steal(discarded_tile, i)
             if pon or kan or chii1 or chii2 or chii3 :
-                si = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i_ap) # si : steal information
-                for j in si[:6] :
-                    if   j == 0           : break
-                    elif j == 1 and pon   : self.proc_pon(i_ap, discarded_tile, si[8])
-                    elif j == 4 and chii2 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
-                    elif j == 3 and chii1 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
-                    elif j == 5 and chii3 : self.proc_chii(i_ap, discarded_tile, si[6], si[7])
-                    elif j == 2 and kan   : self.proc_daiminkan(i_ap, discarded_tile)
-                    else :
-                        if self.pt_mode : print("error in game.proc_steal_phase()")
-                        sys.exit()
+                # プレイヤが鳴くかどうかを判断
+                action, contain_red = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i_ap)
 
+                # チーだったら一緒に晒す牌を算出
+                if action in {3, 4, 5} :
+                    tile, tile1, tile2 = discarded_tile, -1, -1
+                    if  in TileType.REDS : tile += 5
+                    if   action == 3 : tile1, tile2 = tile - 2, tile - 1
+                    elif action == 4 : tile1, tile2 = tile - 1, tile + 1
+                    elif action == 5 : tile1, tile2 = tile + 1, tile + 2
+                    # 赤含みで鳴いた場合
+                    if contain_red :
+                        if   players[player_num].reds[tile1 // 10] and tile1 in TileType.FIVES : tile1 -= 5
+                        elif players[player_num].reds[tile2 // 10] and tile2 in TileType.FIVES : tile2 -= 5
+
+                # 鳴きの処理
+                if   action == 0           : break
+                elif action == 1 and pon   : self.proc_pon(i_ap, discarded_tile, contain_red)
+                elif action == 4 and chii2 : self.proc_chii(i_ap, discarded_tile, tile1, tile2)
+                elif action == 3 and chii1 : self.proc_chii(i_ap, discarded_tile, tile1, tile2)
+                elif action == 5 and chii3 : self.proc_chii(i_ap, discarded_tile, tile1, tile2)
+                elif action == 2 and kan   : self.proc_daiminkan(i_ap, discarded_tile)
+                else :
+                    if self.pt_mode : print("error in game.proc_steal_phase()")
+                    sys.exit()
 
     # 配牌を配る
     # CAUTION テスト管轄外
