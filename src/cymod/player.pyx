@@ -759,7 +759,7 @@ cdef class Player :
 
 
     # 表示用に牌を変換
-    cpdef convert_tile_for_print(self, int tile) :
+    cpdef convert_tile_to_str(self, int tile) :
         s_tile = ""
         if tile < 1 or tile > 37 or tile % 10 == 0 :
             print("error in convert_tile_for_print()")
@@ -777,8 +777,8 @@ cdef class Player :
         return s_tile
 
 
-    # handを標準出力に表示
-    cpdef void print_hand(self) :
+    # 手牌を文字列に変換
+    cpdef convert_hand_to_str(self) :
         cdef int i, j, min_tile, b_type
 
         closed_hand = ""
@@ -825,6 +825,12 @@ cdef class Player :
             elif b_type == BlockType.CLOSED_KAN:
                 opened_hand += f"c{tile1*4}{color}, "
 
+        return closed_hand, opened_hand
+
+
+    # handを標準出力に表示
+    cpdef void print_hand(self) :
+        closed_hand, opened_hand = self.convert_hand_to_str()
         print("closed   : " + closed_hand)
         print("opened   : " + opened_hand)
 

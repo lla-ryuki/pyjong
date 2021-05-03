@@ -81,6 +81,7 @@ cdef class Player :
     cpdef list can_ankan(self, game)
     cpdef tuple decide_to_kan(self, game, players)
     cpdef tuple decide_action(self, game, players)
-    cpdef convert_tile_for_print(self, int tile)
+    cpdef convert_tile_to_str(self, int tile)
+    cpdef convert_hand_to_str(self, int tile)
     cpdef void print_hand(self)
 
