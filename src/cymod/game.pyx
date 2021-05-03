@@ -19,12 +19,11 @@ from libcpp cimport bool
 
 
 cdef class Game :
-    def __init__(self, players, cp, logging, testing) :
+    def __init__(self, actions, logging, testing) :
         if testing :
             self.players = [TestPlayer(i) for i in range(4)]
-        else if players == [] :
-            self.players = [Player(player_num=i, action=cp) for i in range(4)]
         else :
+            self.players = [Player(player_num=i, action=actions[i]) for i in range(4)]
         self.pt_mode = False
         self.logger = Logger(logging=logging);
         self.hanten_calculator = ShantenNumCalculator()
