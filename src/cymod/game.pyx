@@ -19,15 +19,15 @@ from libcpp cimport bool
 
 
 cdef class Game :
-    def __init__(self, action, logging, testing) :
+    def __init__(self, players, cp, logging, testing) :
         if testing :
             self.players = [TestPlayer(i) for i in range(4)]
+        else if players == [] :
+            self.players = [Player(player_num=i, action=cp) for i in range(4)]
         else :
-            self.players = [Player(i) for i in range(4)]
         self.pt_mode = False
-        self.action = action
         self.logger = Logger(logging=logging);
-        self.shanten_calculator = ShantenNumCalculator()
+        self.hanten_calculator = ShantenNumCalculator()
 
 
     # 半荘開始時の初期化
@@ -929,13 +929,13 @@ cdef class Game :
 
         for i in (3,2,1) :
             if self.steal_flag : break
-            i_ap = (self.i_player + i) % 4 #i_ap : index of action player
-            pos = 4 - i
+            i_ap = (self.i_player + i) % 4 # i_ap : index of action player
+            pos = 4 - i # pos : The position of the player who discard the tile as seen by the action player
             player = self.players[i_ap]
             pon, kan, chii1, chii2, chii3 = player.can_steal(discarded_tile, i)
             if pon or kan or chii1 or chii2 or chii3 :
                 # プレイヤが鳴くかどうかを判断
-                action, contain_red = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i_ap)
+                action, contain_red = self.players[i_ap].decide_to_steal(self, self.players, discarded_tile, pos, i_ap)
 
                 # チーだったら一緒に晒す牌を算出
                 if action in {3, 4, 5} :
