@@ -13,10 +13,10 @@ from yakuman cimport *
 from libcpp cimport bool
 
 
-# TODO やっぱりこいつがactionインスタンスを持った方がいいと思うの...
 cdef class Player :
-    def __init__(self, player_num) :
+    def __init__(self, player_num, action) :
         self.player_num = player_num                      # プレイヤ番号 スタート時の席と番号の関係(0:起家, 1:南家, 2:西家, 3:北家)
+        self.action = action                              # プレイヤの行動決定クラスインスタンス
 
 
     # 半荘の初期化
@@ -232,7 +232,7 @@ cdef class Player :
         if self.has_declared_ready and not(self.has_right_to_one_shot) :
             discarded_tile, exchanged = self.discard_tile_when_player_has_declared_ready(game, players, self.player_num)
         else :
-            discarded_tile, exchanged = game.action.decide_which_tile_to_discard(game, players, self.player_num)
+            discarded_tile, exchanged = self.action.decide_which_tile_to_discard(game, players, self.player_num)
         self.last_discarded_tile = discarded_tile
 
         # 河への記録
@@ -353,7 +353,7 @@ cdef class Player :
         if not(self.can_win(game, ron_tile)) : return False
 
         # 和了るかどうかの判断
-        self.wins = game.action.decide_win(game, game.players, self.player_num)
+        self.wins = self.action.decide_win(game, game.players, self.player_num)
 
         return self.wins
 
@@ -710,6 +710,12 @@ cdef class Player :
         return ankan_tiles
 
 
+    # 副露するかどうか決める
+    cpdef tuple decide_to_steal(self, game, players, discarded_tile, pos, i) :
+        action, contain_red = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i)
+        return action, contain_red
+
+
     # 槓するかどうか決める
     cpdef tuple decide_to_kan(self, game, players) :
         cdef int tile
@@ -723,7 +729,7 @@ cdef class Player :
         if not(ankan_tiles or kakan_tiles) : return -1, False, False
 
         # プレイヤが槓の内容（どの牌で槓するか，しないか）を決める
-        tile = game.action.decide_to_kan(game, players, self.player_num, ankan_tiles, kakan_tiles)
+        tile = self.action.decide_to_kan(game, players, self.player_num, ankan_tiles, kakan_tiles)
         if tile == -1 : pass
         elif tile in ankan_tiles : ankan = True
         elif tile in kakan_tiles : kakan = True
@@ -743,10 +749,10 @@ cdef class Player :
         if ankan or kakan : return tile, exchanged, ready, ankan, kakan, kyushu
 
         # 立直するかどうか決める
-        if self.can_declare_ready(game) : ready = game.action.decide_to_declare_ready(game, players, self.player_num)
+        if self.can_declare_ready(game) : ready = self.action.decide_to_declare_ready(game, players, self.player_num)
 
         # 九種九牌で流局するかどうか決める
-        if game.is_first_turn : kyushu = game.action.decide_to_declare_nine_orphans(game, players, self.player_num, self.hand)
+        if game.is_first_turn : kyushu = self.action.decide_to_declare_nine_orphans(game, players, self.player_num, self.hand)
         else : kyushu = False
 
         return tile, exchanged, ready, ankan, kakan, kyushu
