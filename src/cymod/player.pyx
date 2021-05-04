@@ -762,7 +762,7 @@ cdef class Player :
     cpdef convert_tile_to_str(self, int tile) :
         s_tile = ""
         if tile < 1 or tile > 37 or tile % 10 == 0 :
-            print("error in convert_tile_for_print()")
+            print("error in convert_tile_to_str()")
             print(f"tile : {tile}")
             sys.exit()
         elif tile <  30 : s_tile = str(tile%10)
@@ -799,13 +799,13 @@ cdef class Player :
             elif i == 25 and self.reds[i//10] : closed_hand += "r"
 
             # 持ってる枚数分，数字を追加
-            closed_hand += self.convert_tile_for_print(i) * self.hand[i]
+            closed_hand += self.convert_tile_to_str(i) * self.hand[i]
 
         # 副露部
         for i in range(4) :
             if self.opened_hand[i*5] == 0 : break
             min_tile = self.opened_hand[i*5+1]
-            tile1 = self.convert_tile_for_print(min_tile)
+            tile1 = self.convert_tile_to_str(min_tile)
             color = ""
             b_type = self.opened_hand[i*5]
             if   min_tile // 10 == 0 : color = "m"
@@ -813,8 +813,8 @@ cdef class Player :
             elif min_tile // 10 == 2 : color = "s"
             if b_type == BlockType.OPENED_RUN :
                 n_tile = self.opened_hand[i*5+2]
-                tile2 = self.convert_tile_for_print(min_tile+1)
-                tile3 = self.convert_tile_for_print(min_tile+2)
+                tile2 = self.convert_tile_to_str(min_tile+1)
+                tile3 = self.convert_tile_to_str(min_tile+2)
                 if n_tile == min_tile   : opened_hand += f"[{tile1}]{tile2}{tile3}{color}, "
                 if n_tile == min_tile+1 : opened_hand += f"{tile1}[{tile2}]{tile3}{color}, "
                 if n_tile == min_tile+2 : opened_hand += f"{tile1}{tile2}[{tile3}]{color}, "
