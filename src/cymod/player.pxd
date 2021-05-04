@@ -1,6 +1,7 @@
 from libcpp cimport bool
 
 cdef class Player :
+    cdef public action
     cdef public int player_num
     cdef public int score
     cdef public bool exists
