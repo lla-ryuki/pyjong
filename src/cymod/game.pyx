@@ -26,7 +26,7 @@ cdef class Game :
             self.players = [Player(player_num=i, action=actions[i]) for i in range(4)]
         self.pt_mode = False
         self.logger = Logger(logging=logging);
-        self.hanten_calculator = ShantenNumCalculator()
+        self.shanten_calculator = ShantenNumCalculator()
 
 
     # 半荘開始時の初期化
