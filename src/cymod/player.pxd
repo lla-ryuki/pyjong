@@ -79,9 +79,10 @@ cdef class Player :
     cpdef void add_to_discard_tiles_after_stealing(self, int tile)
     cpdef list can_kakan(self, game)
     cpdef list can_ankan(self, game)
+    cpdef tuple decide_to_steal(self, game, players, discarded_tile, pos, i)
     cpdef tuple decide_to_kan(self, game, players)
     cpdef tuple decide_action(self, game, players)
     cpdef convert_tile_to_str(self, int tile)
-    cpdef convert_hand_to_str(self, int tile)
+    cpdef convert_hand_to_str(self)
     cpdef void print_hand(self)
 
