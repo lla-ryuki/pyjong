@@ -712,7 +712,7 @@ cdef class Player :
 
     # 副露するかどうか決める
     cpdef tuple decide_to_steal(self, game, players, discarded_tile, pos, i) :
-        action, contain_red = self.action.decide_to_steal(self, self.players, discarded_tile, pos, i)
+        action, contain_red = self.action.decide_to_steal(self, game.players, discarded_tile, pos, i)
         return action, contain_red
 
 
