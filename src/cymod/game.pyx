@@ -931,7 +931,7 @@ cdef class Game :
             i_ap = (self.i_player + i) % 4 # i_ap : index of action player
             pos = 4 - i # pos : The position of the player who discard the tile as seen by the action player
             player = self.players[i_ap]
-            pon, kan, chii1, chii2, chii3 = player.can_steal(discarded_tile, i)
+            pon, kan, chii1, chii2, chii3 = player.can_steal(discarded_tile, pos)
             if pon or kan or chii1 or chii2 or chii3 :
                 # プレイヤが鳴くかどうかを判断
                 action, contain_red = self.players[i_ap].decide_to_steal(self, self.players, discarded_tile, pos, i_ap)

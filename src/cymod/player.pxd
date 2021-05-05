@@ -65,7 +65,7 @@ cdef class Player :
     cpdef void reset_same_turn_furiten(self)
     cpdef put_back_opened_hand(self)
     cpdef bool decide_win(self, game, int ron_tile=*)
-    cpdef tuple can_steal(self, int tile, int i)
+    cpdef tuple can_steal(self, int tile, int pos)
     cpdef bool can_declare_ready(self, game)
     cpdef bool can_win(self, game, int ron_tile=*)
     cdef bool is_furiten(self, bool is_chiitoi, bool is_kokushi, bool is_normal, int ron_tile)
