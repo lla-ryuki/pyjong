@@ -370,7 +370,7 @@ cdef class Player :
         # 大明槓判定
         if self.hand[tile] >= 3 : can_kan = True
         # チー判定
-        if pos != 1 or tile > 30 : return can_pon, can_kan, can_chii1, can_chii2, can_chii3
+        if pos != 3 or tile > 30 : return can_pon, can_kan, can_chii1, can_chii2, can_chii3
         if self.hand[tile-2] > 0 and self.hand[tile-1] > 0 and tile % 10 >= 3                    : can_chii1 = True
         if self.hand[tile-1] > 0 and self.hand[tile+1] > 0 and tile % 10 >= 2 and tile % 10 <= 8 : can_chii2 = True
         if self.hand[tile+2] > 0 and self.hand[tile+1] > 0 and tile % 10 <= 7                    : can_chii3 = True
