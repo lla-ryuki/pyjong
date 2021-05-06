@@ -934,7 +934,7 @@ cdef class Game :
             pon, kan, chii1, chii2, chii3 = player.can_steal(discarded_tile, pos)
             if pon or kan or chii1 or chii2 or chii3 :
                 # プレイヤが鳴くかどうかを判断
-                action, contain_red = self.player.decide_to_steal(self, self.players, discarded_tile, pos, i_ap)
+                action, contain_red = player.decide_to_steal(self, self.players, discarded_tile, pos, i_ap)
 
                 # チーだったら一緒に晒す牌を算出
                 if action in {3, 4, 5} :
